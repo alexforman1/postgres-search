@@ -1,0 +1,39 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+  line-height: 1.4;
+}
+
+body { margin: 0; }
+main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+
+form { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-end; }
+label { flex-basis: 100%; font-weight: 600; }
+.combo { position: relative; flex: 1 1 14rem; }
+input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 0.5rem; font: inherit; }
+button { min-height: 44px; padding: 0 1rem; font: inherit; cursor: pointer; }
+:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+
+#suggestions {
+  position: absolute; left: 0; right: 0; z-index: 1;
+  margin: 0; padding: 0; list-style: none;
+  background: Canvas; border: 1px solid CanvasText;
+}
+#suggestions li { padding: 0.5rem; cursor: pointer; overflow-wrap: anywhere; }
+#suggestions li[aria-selected=true], #suggestions li:hover { background: Highlight; color: HighlightText; }
+
+.layout { display: grid; grid-template-columns: 14rem 1fr; gap: 1.5rem; margin-top: 1rem; }
+@media (max-width: 40rem) { .layout { grid-template-columns: 1fr; } }
+
+#facets h2 { margin: 1rem 0 0.25rem; font-size: 1rem; text-transform: capitalize; }
+#facets ul, #results { margin: 0; padding: 0; list-style: none; }
+#facets button {
+  width: 100%; min-height: 24px; padding: 0.25rem 0.5rem; text-align: left;
+  background: none; border: 1px solid transparent; overflow-wrap: anywhere;
+}
+#facets button[aria-pressed=true] { border-color: currentColor; font-weight: 600; }
+
+#results li { display: flex; flex-direction: column; padding: 0.6rem 0; border-bottom: 1px solid CanvasText; }
+.name { font-weight: 600; overflow-wrap: anywhere; }
+.other, .meta, .sunk { font-size: 0.9rem; }
+.sunk { font-style: italic; }

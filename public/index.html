@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>postgres-search demo</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main>
+    <h1>postgres-search</h1>
+    <p>USDA FoodData Central branded foods, searched with Postgres. Each result says which step found it.</p>
+    <form id="search-form" role="search">
+      <label for="q">Search products</label>
+      <div class="combo">
+        <input id="q" name="q" type="search" autocomplete="off" role="combobox"
+               aria-autocomplete="list" aria-expanded="false" aria-controls="suggestions">
+        <ul id="suggestions" role="listbox" aria-label="Suggestions" hidden></ul>
+      </div>
+      <button type="submit">Search</button>
+    </form>
+    <p id="status" role="status"></p>
+    <div class="layout">
+      <aside id="facets" aria-label="Filters"></aside>
+      <ol id="results"></ol>
+    </div>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
