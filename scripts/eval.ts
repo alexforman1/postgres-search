@@ -16,24 +16,30 @@ interface Row extends Candidate {
 
 interface Score {
   cases: number
-  hit1: number
-  hit10: number
+  // hits[i] counts the cases with a match in the top CUTOFFS[i] results.
+  hits: number[]
 }
+
+const CUTOFFS = [1, 3, 10]
+// Jev only reorders the top 10, so its hit@10 always equals the plain one.
+const JEV_CUTOFFS = [1, 3]
 
 const cases: Case[] = JSON.parse(await readFile(new URL('../eval/queries.json', import.meta.url), 'utf8'))
 const withJev = Boolean(process.env.TYPESAFE_API_KEY)
 const scores = new Map<string, { plain: Score; jev: Score }>()
 const misses: string[] = []
+const jev = { reranked: 0, skipped: 0, failed: 0 }
 
 const matches = (row: Row, pattern: RegExp) => pattern.test(`${row.name} ${row.other_names ?? ''}`)
 
 function add(score: Score, rows: Row[], pattern: RegExp) {
   score.cases += 1
-  if (rows.slice(0, 1).some(r => matches(r, pattern))) score.hit1 += 1
-  if (rows.slice(0, 10).some(r => matches(r, pattern))) score.hit10 += 1
+  CUTOFFS.forEach((k, i) => {
+    if (rows.slice(0, k).some(r => matches(r, pattern))) score.hits[i] += 1
+  })
 }
 
-const blank = (): Score => ({ cases: 0, hit1: 0, hit10: 0 })
+const blank = (): Score => ({ cases: 0, hits: CUTOFFS.map(() => 0) })
 const pool = connect()
 try {
   for (const c of cases) {
@@ -44,11 +50,17 @@ try {
       [c.q],
     )
     const pattern = new RegExp(c.expect, 'i')
+    const reranked = withJev ? await rerank(c.q, rows) : undefined
+    if (reranked) {
+      if (reranked.error) jev.failed += 1
+      else if (reranked.reranked) jev.reranked += 1
+      else jev.skipped += 1
+    }
     for (const kind of [c.kind, 'all']) {
       if (!scores.has(kind)) scores.set(kind, { plain: blank(), jev: blank() })
       const entry = scores.get(kind)!
       add(entry.plain, rows, pattern)
-      if (withJev && kind === c.kind) add(entry.jev, (await rerank(c.q, rows)).results, pattern)
+      if (reranked) add(entry.jev, reranked.results, pattern)
     }
     if (!rows.slice(0, 10).some(r => matches(r, pattern))) {
       misses.push(`${c.kind}: "${c.q}" -> ${rows[0]?.name ?? 'no results'}`)
@@ -58,24 +70,19 @@ try {
   await pool.end()
 }
 
-if (withJev) {
-  const all = scores.get('all')!
-  all.jev = blank()
-  for (const [kind, entry] of scores) {
-    if (kind === 'all') continue
-    all.jev.cases += entry.jev.cases
-    all.jev.hit1 += entry.jev.hit1
-    all.jev.hit10 += entry.jev.hit10
-  }
-}
-
 const pct = (n: number, d: number) => `${Math.round((100 * n) / d)}%`
-const header = ['kind', 'cases', 'hit@1', 'hit@10']
-if (withJev) header.push('jev hit@1', 'jev hit@10')
+const header = ['kind', 'cases', ...CUTOFFS.map(k => `hit@${k}`)]
+if (withJev) header.push(...JEV_CUTOFFS.map(k => `jev hit@${k}`))
 console.log(header.join('\t'))
-for (const [kind, { plain, jev }] of scores) {
-  const cols = [kind, String(plain.cases), pct(plain.hit1, plain.cases), pct(plain.hit10, plain.cases)]
-  if (withJev) cols.push(pct(jev.hit1, jev.cases), pct(jev.hit10, jev.cases))
+const kinds = [...scores.keys()].filter(k => k !== 'all').concat('all')
+for (const kind of kinds) {
+  const { plain, jev: withRerank } = scores.get(kind)!
+  const cols = [kind, String(plain.cases), ...plain.hits.map(h => pct(h, plain.cases))]
+  if (withJev) cols.push(...JEV_CUTOFFS.map(k => pct(withRerank.hits[CUTOFFS.indexOf(k)], withRerank.cases)))
   console.log(cols.join('\t'))
+}
+if (withJev) {
+  // A failed call leaves the search order, so failures would otherwise look like "Jev changed nothing".
+  console.log(`\njev: ${jev.reranked} reranked, ${jev.skipped} skipped, ${jev.failed} failed`)
 }
 if (misses.length) console.log(`\nnot in the top 10:\n${misses.join('\n')}`)
