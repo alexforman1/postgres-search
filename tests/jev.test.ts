@@ -23,6 +23,13 @@ test('throws without a key', async () => {
   await assert.rejects(askJev(request, { apiKey: '' }), /TYPESAFE_API_KEY/)
 })
 
+test('throws on a network error', async () => {
+  const fake: typeof fetch = async () => {
+    throw new TypeError('fetch failed')
+  }
+  await assert.rejects(askJev(request, { apiKey: 'key', fetch: fake }), /fetch failed/)
+})
+
 test('throws on an error status', async () => {
   const fake: typeof fetch = async () => new Response('slow down', { status: 429 })
   await assert.rejects(askJev(request, { apiKey: 'key', fetch: fake }), /429/)

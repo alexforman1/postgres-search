@@ -32,11 +32,14 @@ export async function rerank<T extends Candidate>(
   options: RerankOptions = {},
 ): Promise<RerankResult<T>> {
   const top = options.top ?? 10
-  const threshold = options.threshold ?? Number(process.env.JEV_THRESHOLD ?? 0.3)
+  const threshold = options.threshold ?? thresholdFromEnv()
   const ask = options.ask ?? ((request: JevRequest) => askJev(request))
   const head = results.slice(0, top)
   const tail = results.slice(top)
   const unchanged = (ms: number, error?: string): RerankResult<T> => ({ results, sunk: [], reranked: false, ms, error })
+
+  // Every comparison with NaN is false, which would drop every candidate from both lists.
+  if (!Number.isFinite(threshold)) return unchanged(0, 'threshold is not a number')
 
   // Jev helps choose between different things. When every candidate is the same thing, its scores
   // differ only by noise, so the call is skipped.
@@ -54,6 +57,11 @@ export async function rerank<T extends Candidate>(
   } catch (err) {
     return unchanged(Date.now() - started, err instanceof Error ? err.message : String(err))
   }
+}
+
+function thresholdFromEnv(): number {
+  const raw = process.env.JEV_THRESHOLD
+  return raw === undefined || raw.trim() === '' ? 0.3 : Number(raw)
 }
 
 function buildRequest(query: string, candidates: Candidate[]): JevRequest {

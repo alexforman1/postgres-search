@@ -36,6 +36,12 @@ test('moves candidates below the threshold to the bottom and keeps the rest in o
   assert.equal(out.reranked, true)
 })
 
+test('keeps the original order among candidates above the threshold', async () => {
+  const { ask } = answering([0.5, 0.9, 0.1, 0.8])
+  const out = await rerank('oreo', four, { ask, threshold: 0.3 })
+  assert.deepEqual(out.results.map(r => r.id), ['a', 'b', 'd', 'c'])
+})
+
 test('asks one question per candidate in a single call', async () => {
   const { ask, calls } = answering([0.9, 0.9, 0.9, 0.9])
   await rerank('oreo', four, { ask })
@@ -85,4 +91,26 @@ test('keeps the original order when an answer is missing', async () => {
   const out = await rerank('oreo', four, { ask })
   assert.deepEqual(out.results, four)
   assert.equal(out.reranked, false)
+})
+
+test('keeps the original order when the threshold is not a number', async () => {
+  const { ask, calls } = answering([0.9, 0.1, 0.8, 0.2])
+  const out = await rerank('oreo', four, { ask, threshold: Number('abc') })
+  assert.deepEqual(out.results, four)
+  assert.equal(out.reranked, false)
+  assert.equal(calls.length, 0)
+})
+
+test('reads JEV_THRESHOLD from the environment', async () => {
+  const saved = process.env.JEV_THRESHOLD
+  try {
+    process.env.JEV_THRESHOLD = 'abc'
+    assert.equal((await rerank('oreo', four, answering([0.9, 0.1, 0.8, 0.2]))).reranked, false)
+    process.env.JEV_THRESHOLD = '0.95'
+    const out = await rerank('oreo', four, answering([0.9, 0.99, 0.8, 0.2]))
+    assert.deepEqual(out.results.map(r => r.id), ['b', 'a', 'c', 'd'])
+  } finally {
+    if (saved === undefined) delete process.env.JEV_THRESHOLD
+    else process.env.JEV_THRESHOLD = saved
+  }
 })
