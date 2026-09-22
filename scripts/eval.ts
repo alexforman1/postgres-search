@@ -1,5 +1,5 @@
-// Scores eval/queries.json against the loaded data. Reports Jev columns only when
-// TYPESAFE_API_KEY is set.
+// Scores eval/queries.json (the results page) and eval/suggest.json (typeahead) against the loaded
+// data. Reports Jev columns only when TYPESAFE_API_KEY is set.
 import { readFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { rerank, type Candidate } from '../src/rerank.ts'
@@ -7,6 +7,13 @@ import { rerank, type Candidate } from '../src/rerank.ts'
 interface Case {
   q: string
   kind: string
+  expect: string
+}
+
+// Two partial words typed toward one name, and a pattern the intended suggestion matches.
+interface SuggestCase {
+  q4: string
+  q5: string
   expect: string
 }
 
@@ -24,11 +31,15 @@ const CUTOFFS = [1, 3, 10]
 // Jev only reorders the top 10, so its hit@10 always equals the plain one.
 const JEV_CUTOFFS = [1, 3]
 
-const cases: Case[] = JSON.parse(await readFile(new URL('../eval/queries.json', import.meta.url), 'utf8'))
+const read = async (file: string) => JSON.parse(await readFile(new URL(`../eval/${file}`, import.meta.url), 'utf8'))
+const cases: Case[] = await read('queries.json')
+const suggestCases: SuggestCase[] = await read('suggest.json')
 const withJev = Boolean(process.env.TYPESAFE_API_KEY)
 const scores = new Map<string, { plain: Score; jev: Score }>()
 const misses: string[] = []
 const jev = { reranked: 0, skipped: 0, failed: 0 }
+const typed = new Map([4, 5].map(n => [n, { cases: 0, hit1: 0, hit8: 0 }]))
+const suggestMisses: string[] = []
 
 const matches = (row: Row, pattern: RegExp) => pattern.test(`${row.name} ${row.other_names ?? ''}`)
 
@@ -66,6 +77,17 @@ try {
       misses.push(`${c.kind}: "${c.q}" -> ${rows[0]?.name ?? 'no results'}`)
     }
   }
+  for (const c of suggestCases) {
+    const pattern = new RegExp(c.expect, 'i')
+    for (const [n, q] of [[4, c.q4], [5, c.q5]] as const) {
+      const { rows } = await pool.query<{ name: string }>('SELECT name FROM search.suggest($1, 8)', [q])
+      const score = typed.get(n)!
+      score.cases += 1
+      if (rows.slice(0, 1).some(r => pattern.test(r.name))) score.hit1 += 1
+      if (rows.some(r => pattern.test(r.name))) score.hit8 += 1
+      else suggestMisses.push(`"${q}" (${c.expect}) -> ${rows[0]?.name ?? 'no suggestions'}`)
+    }
+  }
 } finally {
   await pool.end()
 }
@@ -86,3 +108,9 @@ if (withJev) {
   console.log(`\njev: ${jev.reranked} reranked, ${jev.skipped} skipped, ${jev.failed} failed`)
 }
 if (misses.length) console.log(`\nnot in the top 10:\n${misses.join('\n')}`)
+
+console.log('\nsuggest\tcases\thit@1\thit@8')
+for (const [n, score] of typed) {
+  console.log([`${n} letters`, score.cases, pct(score.hit1, score.cases), pct(score.hit8, score.cases)].join('\t'))
+}
+if (suggestMisses.length) console.log(`\nnot in the top 8 suggestions:\n${suggestMisses.join('\n')}`)
