@@ -26,7 +26,8 @@ INSERT INTO fixture_items VALUES
 CREATE SCHEMA search;
 
 CREATE VIEW search.source AS
-SELECT id, name, brand AS other_names, NULL::text AS group_key, code,
+SELECT id, name, brand AS other_names,
+       CASE WHEN name ILIKE '%cheerios%' THEN 'cheerios' END AS group_key, code,
        jsonb_build_object('category', category, 'brand', brand) AS facets,
        popularity AS rank
 FROM fixture_items;

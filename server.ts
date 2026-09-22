@@ -37,7 +37,7 @@ function parseFilters(raw: string | null): Record<string, string> {
 async function search(q: string, filters: Record<string, string>) {
   const { rows } = await pool.query<Row>(
     `SELECT d.id, d.name, d.name_key, d.other_names, d.group_key, d.facets, r.step
-       FROM search.query($1, $2::jsonb) r
+       FROM search.query_distinct($1, $2::jsonb) r
        JOIN search.documents d ON d.id = r.id
       ORDER BY r.pos`,
     [q, JSON.stringify(filters)],

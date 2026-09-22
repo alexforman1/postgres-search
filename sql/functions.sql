@@ -95,6 +95,24 @@ BEGIN
 END
 $$;
 
+-- One row per group (group_key, or the name when group_key is null), like Algolia's distinct
+-- setting. It collapses the first 1000 matches, so a group that fills all of them hides the rest.
+CREATE OR REPLACE FUNCTION search.query_distinct(q text, filters jsonb DEFAULT '{}', lim int DEFAULT 50)
+RETURNS TABLE (id text, step text, pos int)
+LANGUAGE sql STABLE
+SET search_path = search, public, extensions
+AS $$
+  SELECT g.id, g.step, (row_number() OVER (ORDER BY g.pos))::int
+  FROM (
+    SELECT DISTINCT ON (coalesce(d.group_key, d.name_key)) r.id, r.step, r.pos
+    FROM search.query(q, filters, 1000) r
+    JOIN search.documents d ON d.id = r.id
+    ORDER BY coalesce(d.group_key, d.name_key), r.pos
+  ) g
+  ORDER BY g.pos
+  LIMIT least(greatest(coalesce(lim, 50), 1), 1000)
+$$;
+
 -- Typeahead. Under four characters the word step is easily taken over by rare words, so short
 -- input is matched against the list of distinct names instead.
 CREATE OR REPLACE FUNCTION search.suggest(q text, lim int DEFAULT 8)

@@ -131,6 +131,17 @@ describe('search.query', () => {
   })
 })
 
+describe('search.query_distinct', () => {
+  test('returns one row per group, at the position of its best row', async () => {
+    const byPos = async (q: string) =>
+      (await pool.query('SELECT id FROM search.query_distinct($1) ORDER BY pos', [q])).rows.map(r => r.id)
+    // Row 12 has the same name as row 7, so it folds into it.
+    assert.deepEqual(await byPos('milk'), ['8', '7', '6'])
+    // The fixture gives every Cheerios row the same group_key.
+    assert.deepEqual(await byPos('cheerios'), ['3'])
+  })
+})
+
 async function suggest(q: string) {
   const { rows } = await pool.query<{ name: string; id: string; doc_count: number }>(
     'SELECT name, id, doc_count FROM search.suggest($1)',
