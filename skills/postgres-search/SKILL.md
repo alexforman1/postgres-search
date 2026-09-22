@@ -19,7 +19,7 @@ Read the project's schema (migrations, ORM models, or `\d` output). Propose a vi
 
 | column | type | meaning |
 |---|---|---|
-| id | any | row key |
+| id | any | row key; must be unique (schema.sql builds a unique index on it) |
 | name | text | main name, searched and shown |
 | other_names | text | extra searched text (brand, maker, aliases), may be null |
 | group_key | text | rows that are the same thing, may be null |
@@ -60,6 +60,9 @@ browser-facing role such as `anon`.
 `search.documents` is a materialized view. Add `SELECT search.refresh();` after the project's
 import jobs, or on a schedule. Ask the user which. For data that changes constantly, suggest a
 trigger-maintained table instead (see https://github.com/alexforman1/postgres-search/blob/main/docs/your-data.md).
+With a table in place of the view, refresh only the names list with
+`REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;` since `search.refresh()` expects both to
+be materialized views.
 
 `search.refresh()` must run as the role that owns the materialized views, usually the role that
 ran the migration; the grants above do not include that. Run the refresh as that role, or hand the
