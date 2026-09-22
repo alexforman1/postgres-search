@@ -89,3 +89,41 @@ BEGIN
     ORDER BY 3;
 END
 $$;
+
+-- Typeahead. Under four characters the word step is easily taken over by rare words, so short
+-- input is matched against the list of distinct names instead.
+CREATE OR REPLACE FUNCTION search.suggest(q text, lim int DEFAULT 8)
+RETURNS TABLE (name text, id text, doc_count int)
+LANGUAGE plpgsql STABLE
+SET search_path = search, public, extensions
+AS $$
+DECLARE
+  query text := array_to_string(search.tokens(q), ' ');
+  n     int  := least(greatest(coalesce(lim, 8), 1), 50);
+BEGIN
+  IF query = '' THEN
+    RETURN;
+  END IF;
+
+  IF length(query) < 4 THEN
+    RETURN QUERY
+      SELECT s.name, s.sample_id, s.doc_count FROM search.names s
+      WHERE s.name_key LIKE query || '%'
+      ORDER BY s.doc_count DESC, s.name_key
+      LIMIT n;
+    RETURN;
+  END IF;
+
+  RETURN QUERY
+    SELECT s.name, h.id, s.doc_count
+    FROM (
+      SELECT DISTINCT ON (d.name_key) d.name_key, r.id, r.pos
+      FROM search.query(q, '{}', 80) r
+      JOIN search.documents d ON d.id = r.id
+      ORDER BY d.name_key, r.pos
+    ) h
+    JOIN search.names s ON s.name_key = h.name_key
+    ORDER BY h.pos
+    LIMIT n;
+END
+$$;

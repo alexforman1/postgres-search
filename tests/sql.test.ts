@@ -101,3 +101,32 @@ describe('search.query', () => {
     for (const q of ['', '   ', '!!!', 'the']) assert.deepEqual(await query(q), [])
   })
 })
+
+async function suggest(q: string) {
+  const { rows } = await pool.query<{ name: string; id: string; doc_count: number }>(
+    'SELECT name, id, doc_count FROM search.suggest($1)',
+    [q],
+  )
+  return rows
+}
+
+describe('search.suggest', () => {
+  test('short input matches the start of distinct names, most common first', async () => {
+    assert.deepEqual(await suggest('wh'), [{ name: 'Whole Milk', id: '7', doc_count: 2 }])
+    assert.deepEqual(
+      (await suggest('ch')).map(s => s.name),
+      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Chocolate Milk'],
+    )
+  })
+
+  test('longer input uses search.query and lists each name once', async () => {
+    assert.deepEqual(
+      (await suggest('chee')).map(s => s.name),
+      ['Cheerios Cereal', 'Cheerioz Oat Rings', 'Honey Nut Cheerios Cereal', 'Cheerios'],
+    )
+  })
+
+  test('empty input returns nothing', async () => {
+    assert.deepEqual(await suggest('  '), [])
+  })
+})
