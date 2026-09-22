@@ -69,11 +69,11 @@ last five, in milliseconds, and the guide's other timings were taken the same wa
 The typo step answers 11 of the 18 typo cases and hits 10 (not `dortios`); the word step answers
 the other 7 and misses 4, whose misspellings exist in USDA names.
 
-| typeahead         | cases | hit@1 | hit@8 | before hit@1 | before hit@8 |
-|-------------------|------:|------:|------:|-------------:|-------------:|
-| first 4 letters   | 49    | 90%   | 100%  | 35%          | 49%          |
-| first 5 letters   | 50    | 100%  | 100%  | 38%          | 60%          |
-| whole short word  | 27    | 85%   | 93%   | 89%          | 96%          |
+| typeahead              | cases | before hit@1 | before hit@8 | now hit@1 | now hit@8 |
+|------------------------|------:|-------------:|-------------:|----------:|----------:|
+| first 4 letters        | 49    | 35%          | 49%          | 90%       | 100%      |
+| first 5 letters        | 50    | 38%          | 60%          | 100%      | 100%      |
+| whole short word       | 27    | 89%          | 96%          | 85%       | 93%       |
 
 "Before" is the `search.suggest` of commit `3f78545`, scored on a copy of the database. Stop
 `npm start` first: `CREATE DATABASE ... TEMPLATE` refuses while anything is connected to
