@@ -65,8 +65,8 @@ trigger-maintained table instead (see the guide's docs/your-data.md).
 SELECT d.* FROM search.query($1, $2::jsonb, 50) r
 JOIN search.documents d ON d.id = r.id ORDER BY r.pos;      -- results
 -- use search.query_distinct instead when many rows are variants of one product
--- (sizes, colors); it returns one row per group_key
-SELECT * FROM search.suggest($1);                            -- typeahead, name + id
+-- (sizes, colors); it returns one row per group_key, or per name when group_key is null
+SELECT * FROM search.suggest($1);                            -- typeahead: name, id, doc_count
 SELECT * FROM search.facets($1, $2::jsonb);                  -- facet, value, doc_count
 ```
 
