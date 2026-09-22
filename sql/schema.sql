@@ -8,9 +8,7 @@ CREATE OR REPLACE FUNCTION search.tokens(q text)
 RETURNS text[]
 LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$
-  SELECT coalesce(array_agg(t), '{}')
-  FROM regexp_split_to_table(lower(coalesce(q, '')), '[^[:alnum:]]+') AS t
-  WHERE t <> ''
+  SELECT coalesce(string_to_array(nullif(btrim(regexp_replace(lower(coalesce(q, '')), '[^[:alnum:]]+', ' ', 'g')), ''), ' '), '{}')
 $$;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS search.documents AS

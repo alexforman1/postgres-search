@@ -25,6 +25,15 @@ describe('search.documents', () => {
   })
 })
 
+describe('search.tokens', () => {
+  test('lower-cases and splits on anything that is not a letter or digit', async () => {
+    const tokens = async (q: string | null) => (await pool.query('SELECT search.tokens($1) AS t', [q])).rows[0].t
+    assert.deepEqual(await tokens('  Häagen-Dazs S.Pellegrino, 2.5OZ!! '), ['häagen', 'dazs', 's', 'pellegrino', '2', '5oz'])
+    assert.deepEqual(await tokens('Lemon/Lime'), ['lemon', 'lime'])
+    for (const q of [null, '', '   ', '!!! ...']) assert.deepEqual(await tokens(q), [])
+  })
+})
+
 async function query(q: string, filters: object = {}, lim: number | null = 50) {
   const { rows } = await pool.query<{ id: string; step: string; pos: number }>(
     'SELECT id, step, pos FROM search.query($1, $2::jsonb, $3) ORDER BY pos',
