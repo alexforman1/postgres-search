@@ -62,6 +62,14 @@ On the demo, `rank` is the number of barcodes that share a name. It favors produ
 many sizes: `cheerios` lists Frosted Cheerios before plain Cheerios, and `strawb` lists Skittles
 first (rank 20). What `rank` means for your data is up to your `search.source`.
 
+## Plans
+
+`search.query` and `search.suggest` set `plan_cache_mode = force_custom_plan`. PL/pgSQL caches the
+plan of each statement, and after five calls on one connection Postgres may switch to a generic
+plan that does not see the arguments. For `search.query` with empty filters, that plan scanned the
+whole facets index; for `search.suggest`, it scanned all of `search.names`. Keep the setting when
+you change either function.
+
 ## One row per product
 
 One USDA product can have many barcodes: M&M'S MILK CHOCOLATE CANDIES has 114. Without
