@@ -7,6 +7,7 @@ import { mkdir, readFile, rename } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { createGunzip } from 'node:zlib'
 import type pg from 'pg'
@@ -59,11 +60,23 @@ async function loadRelease(client: pg.PoolClient, dir: string): Promise<void> {
   await client.query(await sql('demo/usda-import.sql'))
 }
 
+// A container started a moment ago may not accept connections yet.
+async function connectWithRetry(pool: pg.Pool, attempts = 10): Promise<pg.PoolClient> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await pool.connect()
+    } catch (err) {
+      if (attempt >= attempts) throw err
+      await sleep(1000)
+    }
+  }
+}
+
 const full = process.argv.includes('--full')
 const releaseDir = full ? await fetchRelease() : null
 
 const pool = connect()
-const client = await pool.connect()
+const client = await connectWithRetry(pool)
 try {
   // The load drops tables, so refuse to run against some other project's database by accident.
   const { rows: [db] } = await client.query('SELECT current_database() AS name')
