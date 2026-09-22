@@ -23,7 +23,7 @@ Read the project's schema (migrations, ORM models, or `\d` output). Propose a vi
 | name | text | main name, searched and shown |
 | other_names | text | extra searched text (brand, maker, aliases), may be null |
 | group_key | text | rows that are the same thing, may be null |
-| code | text | barcode or SKU for digit-prefix search, may be null |
+| code | text | barcode or other all-digit code, searched by prefix when the query is all digits; may be null. Put alphanumeric SKUs in other_names. |
 | facets | jsonb | flat object of facet name to string value |
 | rank | number | tie-breaker, higher first, may be null |
 
@@ -50,14 +50,21 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA search TO <role>;
 GRANT SELECT ON ALL TABLES IN SCHEMA search TO <role>;
 ```
 
-Anyone who can call `search.query` can ask for every match with `lim => NULL`. If searches come
-straight from untrusted clients, put them behind the app's server or a wrapper function.
+These functions run with the caller's privileges, so the `SELECT` grant also lets that role read
+`search.documents` and `search.names` directly, and anyone who can call `search.query` can ask for
+every match with `lim => NULL`. Grant to the role your server connects as, never to a
+browser-facing role such as `anon`.
 
 ### 3. Keep it current
 
 `search.documents` is a materialized view. Add `SELECT search.refresh();` after the project's
 import jobs, or on a schedule. Ask the user which. For data that changes constantly, suggest a
-trigger-maintained table instead (see the guide's docs/your-data.md).
+trigger-maintained table instead (see https://github.com/alexforman1/postgres-search/blob/main/docs/your-data.md).
+
+`search.refresh()` must run as the role that owns the materialized views, usually the role that
+ran the migration; the grants above do not include that. Run the refresh as that role, or hand the
+views over with `ALTER MATERIALIZED VIEW search.documents OWNER TO <role>;` and the same for
+search.names.
 
 ### 4. Call it
 

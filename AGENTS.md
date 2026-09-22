@@ -6,8 +6,13 @@
     npm run db            # Postgres 16 in Docker on port 5432
     npm run load          # 100,000-product sample; add -- --full for the whole USDA release
     npm start             # demo at http://localhost:3000
+    npm run eval          # search and typeahead scores on the full load
 
 Node 22.18 or later runs the `.ts` files directly. There is no build step.
+
+The Jev step needs a TypeSafe API key. Put `TYPESAFE_API_KEY=...` in `.env` (git ignores it) and
+run `node --env-file=.env server.ts` or `node --env-file=.env scripts/eval.ts`. Everything else
+works without it.
 
 ## Checks (all must pass before a pull request)
 
@@ -18,7 +23,8 @@ Node 22.18 or later runs the `.ts` files directly. There is no build step.
 ## Layout
 
 - `sql/` is the product. `schema.sql` builds the search objects from `search.source`;
-  `functions.sql` holds `search.query`, `search.suggest`, `search.facets`, `search.refresh`.
+  `functions.sql` holds `search.query`, `search.query_distinct`, `search.suggest`,
+  `search.facets`, `search.refresh`.
 - `src/` is the optional Jev step and a database helper.
 - `server.ts` and `public/` are the demo only. Do not grow them into an API.
 - `skills/postgres-search/` is a copy for other projects. When `sql/` changes, copy the two files

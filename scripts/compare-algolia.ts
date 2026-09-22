@@ -25,7 +25,7 @@ const pool = connect()
 try {
   let total = 0
   for (const { q } of cases) {
-    const { rows } = await pool.query<{ id: string }>('SELECT id FROM search.query($1, $2::jsonb, 10) ORDER BY pos', [q, '{}'])
+    const { rows } = await pool.query<{ id: string }>('SELECT id FROM search.query_distinct($1, $2::jsonb, 10) ORDER BY pos', [q, '{}'])
     const ours = new Set(rows.map(r => r.id))
     const theirs = await algolia(q)
     const shared = theirs.filter(id => ours.has(id)).length
