@@ -1,10 +1,9 @@
 # The Jev step
 
 [Jev](https://docs.typesafe.ai) is a hosted model from TypeSafe. It answers typed questions about
-a piece of state. This step uses its Noul question type, whose answer is a calibrated probability
-between 0 (no) and 1 (yes). Get a key from https://console.typesafe.ai and set `TYPESAFE_API_KEY`
-where the server runs. Without a key, the demo and the eval skip the step and use the Postgres
-order.
+a piece of state. This step uses its Noul question type, whose answer is a probability between 0
+(no) and 1 (yes). Get a key from https://console.typesafe.ai and set `TYPESAFE_API_KEY` where the
+server runs. Without a key, the demo and the eval skip the step and use the Postgres order.
 
 The step lives in `src/rerank.ts`, with the HTTP call in `src/jev.ts`. It runs on the results page
 only, after `search.query_distinct`. `JEV_MODEL` sets the model (default `jev-latest`) and
@@ -83,7 +82,9 @@ node --env-file=.env scripts/eval.ts
 With a key, the eval adds `jev hit@1` and `jev hit@3` columns and a count of calls that reranked,
 were skipped, or failed. Jev's hit@10 always equals the plain hit@10, because it only reorders the
 top 10. The 0.3 default was not calibrated on this data; rerun the eval with other `JEV_THRESHOLD`
-values to choose one.
+values to choose one. `jev-latest` is an alias that moves when TypeSafe ships a new release, so
+once a threshold is tuned, pin the versioned model it was tuned against with `JEV_MODEL`, as
+[TypeSafe's models page](https://docs.typesafe.ai/models) recommends.
 
 ## When the call is skipped
 
