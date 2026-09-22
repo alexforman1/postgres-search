@@ -1,6 +1,6 @@
 # How it works
 
-## Postgres finds, Jev judges
+## Where results come from
 
 Every result comes from Postgres. `search.query` finds the candidates and puts them in order. The
 optional Jev step reads only the top 10 of that list and may move some of them to the bottom of
@@ -55,11 +55,10 @@ it would add a network call to every keystroke. Facets are not disjunctive: a fi
 facet's counts, and the demo allows one active value per facet. Transposed letters are not
 corrected.
 
-The costs of the design are stated where they occur. Steps never mix, so a misspelling that some
-product also carries hides every correctly spelled product ([search steps](search-steps.md)).
-Typeahead completes names by their first letters, so a short whole word can complete to a brand
-first ([typeahead](typeahead.md)). A typo of a very common word is slow: on the USDA data
-(2025-12-18 release), the page waits about 1.25 seconds for `chocolatte`. There is no accent
-folding: `häagen` finds 2 rows and `haagen` 188. The materialized views show old data until
-`search.refresh()` runs. Anyone who can call `search.query` can ask for every match with
-`lim => NULL`; limit who can call it ([using your own data](your-data.md)).
+Steps never mix, so a misspelling that some product also carries hides every correctly spelled
+product ([search steps](search-steps.md)). Typeahead completes names by their first letters, so a
+short whole word can complete to a brand first ([typeahead](typeahead.md)). A typo of a very common
+word is slow: on the USDA data (2025-12-18 release), the page waits about 1.25 seconds for
+`chocolatte`. There is no accent folding: `häagen` finds 2 rows and `haagen` 188. The materialized
+views show old data until `search.refresh()` runs. Anyone who can call `search.query` can ask for
+every match with `lim => NULL`; limit who can call it ([using your own data](your-data.md)).
