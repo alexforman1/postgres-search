@@ -1,0 +1,30 @@
+{
+  "name": "postgres-search",
+  "version": "0.1.0",
+  "description": "Algolia-style search in plain Postgres, with an optional Jev step that sinks wrong results.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "db": "docker run -d --name postgres-search -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=search_demo -p 5432:5432 postgres:16",
+    "load": "node scripts/load.ts",
+    "start": "node server.ts",
+    "test": "node --test",
+    "typecheck": "tsc -p .",
+    "eval": "node scripts/eval.ts",
+    "check-skill-sql": "cmp sql/schema.sql skills/postgres-search/sql/schema.sql && cmp sql/functions.sql skills/postgres-search/sql/functions.sql"
+  },
+  "dependencies": {
+    "pg": "8.23.0",
+    "pg-copy-streams": "7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/pg-copy-streams": "1.2.5",
+    "typescript": "7.0.2"
+  }
+}
