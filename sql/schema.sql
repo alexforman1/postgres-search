@@ -42,7 +42,7 @@ CREATE INDEX IF NOT EXISTS documents_other_names_trgm ON search.documents USING 
 CREATE INDEX IF NOT EXISTS documents_facets ON search.documents USING gin (facets jsonb_path_ops);
 CREATE INDEX IF NOT EXISTS documents_code ON search.documents (code text_pattern_ops);
 
--- One row per distinct name, for typeahead on short prefixes.
+-- One row per distinct name, for typeahead: search.suggest completes names from it.
 CREATE MATERIALIZED VIEW IF NOT EXISTS search.names AS
 SELECT
   d.name_key,

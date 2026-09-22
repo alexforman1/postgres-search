@@ -137,7 +137,9 @@ BEGIN
     ORDER BY s.doc_count DESC, s.name_key
     LIMIT n;
   GET DIAGNOSTICS listed = ROW_COUNT;
-  IF listed >= n THEN
+  -- Under four characters the fill would run the typo step on a few trigrams, which is slow and
+  -- matches unrelated names ("cng" finds ground beef and ketchup).
+  IF listed >= n OR length(query) < 4 THEN
     RETURN;
   END IF;
 

@@ -171,15 +171,14 @@ describe('search.suggest', () => {
     )
   })
 
+  test('under four characters, only names that start with the input are listed', async () => {
+    assert.deepEqual(
+      (await suggest('ch')).map(s => s.name),
+      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Chocolate Milk'],
+    )
+  })
+
   test('search.query fills the rest in its own order, listing each name once', async () => {
-    assert.deepEqual((await suggest('ch')).map(s => s.name), [
-      'Cheerios',
-      'Cheerios Cereal',
-      'Cheerioz Oat Rings',
-      'Chocolate Milk',
-      'Milk Chocolate Bar',
-      'Honey Nut Cheerios Cereal',
-    ])
     assert.deepEqual(
       (await suggest('chee')).map(s => s.name),
       ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Honey Nut Cheerios Cereal'],
@@ -188,13 +187,8 @@ describe('search.suggest', () => {
   })
 
   test('the fill stops at lim', async () => {
-    assert.deepEqual((await pool.query("SELECT name FROM search.suggest('ch', 5)")).rows.map(r => r.name), [
-      'Cheerios',
-      'Cheerios Cereal',
-      'Cheerioz Oat Rings',
-      'Chocolate Milk',
-      'Milk Chocolate Bar',
-    ])
+    const { rows } = await pool.query("SELECT name FROM search.suggest('milk', 2)")
+    assert.deepEqual(rows.map(r => r.name), ['Milk Chocolate Bar', 'Whole Milk'])
   })
 
   test('a name that starts with the input beats a rare whole-word match', async () => {
