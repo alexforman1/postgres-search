@@ -61,13 +61,16 @@ describe('search.query', () => {
     assert.ok(!ids(await query('cheerios')).includes('10'))
   })
 
-  test('word step finds words joined by a slash or a dot', async () => {
+  test('word and prefix steps find words joined by a slash or a dot', async () => {
     // Postgres's parser reads "Lemon/Lime" as a file path and "Cran.Apple" as a host name.
     for (const [q, id] of [['lime', '17'], ['lemon', '17'], ['apple', '18']]) {
       const rows = await query(q)
       assert.deepEqual(ids(rows), [id])
       assert.deepEqual(steps(rows), ['word'])
     }
+    const rows = await query('lim')
+    assert.deepEqual(ids(rows), ['17'])
+    assert.deepEqual(steps(rows), ['prefix'])
   })
 
   test('prefix step runs when no whole word matches', async () => {
