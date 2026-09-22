@@ -36,7 +36,14 @@ async function suggest() {
   const q = input.value.trim()
   if (!q) return closeList()
   const id = ++suggestId
-  const { suggestions } = await get('/suggest', { q })
+  let suggestions
+  try {
+    ({ suggestions } = await get('/suggest', { q }))
+  } catch {
+    // A newer request may be in flight; closing would cancel its answer too.
+    if (id === suggestId) closeList()
+    return
+  }
   if (id !== suggestId || q !== input.value.trim()) return
   list.replaceChildren(...suggestions.map((s, i) => {
     const option = el('li', { id: `option-${i}`, role: 'option', 'aria-selected': 'false' }, s.name)

@@ -79,10 +79,11 @@ in `public/app.js` numbers each request:
 
 ```js
 const id = ++suggestId
-const { suggestions } = await get('/suggest', { q })
+...
 if (id !== suggestId || q !== input.value.trim()) return
 ```
 
 An answer is dropped if a newer request started or the text changed while it was in flight.
 Closing the list (Escape, blur, a search) also increments `suggestId`, so an answer that arrives
-after the list closed is dropped too.
+after the list closed is dropped too. A failed request closes the list, unless a newer request has
+started.
