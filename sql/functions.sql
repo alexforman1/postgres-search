@@ -1,0 +1,91 @@
+-- search.query runs four steps in order and returns the rows of the first step that matches
+-- anything. Later steps never add rows to an earlier step's results. Pass lim => NULL for every
+-- matching row (search.facets does this).
+CREATE OR REPLACE FUNCTION search.query(q text, filters jsonb DEFAULT '{}', lim int DEFAULT 50)
+RETURNS TABLE (id text, step text, pos int)
+LANGUAGE plpgsql STABLE
+SET search_path = search, public, extensions
+SET pg_trgm.word_similarity_threshold = 0.5
+AS $$
+DECLARE
+  tokens text[]  := search.tokens(q);
+  query  text    := array_to_string(tokens, ' ');
+  code_q text    := ltrim(query, '0');
+  f      jsonb   := coalesce(filters, '{}');
+  n      int     := CASE WHEN lim IS NULL THEN NULL ELSE least(greatest(lim, 1), 1000) END;
+  kept   text[];
+  words  tsquery;
+  prefix tsquery;
+BEGIN
+  IF query = '' THEN
+    RETURN;
+  END IF;
+
+  IF query ~ '^[0-9]+$' AND length(code_q) >= 4 THEN
+    RETURN QUERY
+      SELECT r.id, 'code'::text, (row_number() OVER (ORDER BY r.code, r.id))::int
+      FROM (
+        SELECT d.id, d.code FROM search.documents d
+        WHERE d.code LIKE code_q || '%' AND d.facets @> f
+        ORDER BY d.code, d.id
+        LIMIT n
+      ) r
+      ORDER BY 3;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  words := plainto_tsquery('english', query);
+  IF numnode(words) > 0 THEN
+    RETURN QUERY
+      SELECT r.id, 'word'::text, (row_number() OVER (ORDER BY r.exact DESC, r.rank DESC NULLS LAST, r.id))::int
+      FROM (
+        SELECT d.id, d.name_key = query AS exact, d.rank FROM search.documents d
+        WHERE d.search_vector @@ words AND d.facets @> f
+        ORDER BY exact DESC, d.rank DESC NULLS LAST, d.id
+        LIMIT n
+      ) r
+      ORDER BY 3;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  -- Stop words are dropped, since prefix_vector keeps them. Prefixes of one or two letters match
+  -- too much to be useful.
+  SELECT array_agg(t) INTO kept FROM unnest(tokens) AS t
+  WHERE ts_lexize('english_stem', t) IS DISTINCT FROM '{}';
+  IF (SELECT min(length(t)) FROM unnest(kept) AS t) >= 3 THEN
+    prefix := to_tsquery('simple', array_to_string(ARRAY(SELECT t || ':*' FROM unnest(kept) AS t), ' & '));
+  END IF;
+
+  IF numnode(prefix) > 0 THEN
+    RETURN QUERY
+      SELECT r.id, 'prefix'::text, (row_number() OVER (ORDER BY r.exact DESC, r.rank DESC NULLS LAST, r.id))::int
+      FROM (
+        SELECT d.id, d.name_key = query AS exact, d.rank FROM search.documents d
+        WHERE d.prefix_vector @@ prefix AND d.facets @> f
+        ORDER BY exact DESC, d.rank DESC NULLS LAST, d.id
+        LIMIT n
+      ) r
+      ORDER BY 3;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+  END IF;
+
+  RETURN QUERY
+    SELECT r.id, 'typo'::text, (row_number() OVER (ORDER BY r.sim DESC, r.rank DESC NULLS LAST, r.id))::int
+    FROM (
+      SELECT d.id,
+             greatest(word_similarity(query, d.name), word_similarity(query, coalesce(d.other_names, ''))) AS sim,
+             d.rank
+      FROM search.documents d
+      WHERE (query <% d.name OR query <% d.other_names) AND d.facets @> f
+      ORDER BY sim DESC, d.rank DESC NULLS LAST, d.id
+      LIMIT n
+    ) r
+    ORDER BY 3;
+END
+$$;
