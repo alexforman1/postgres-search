@@ -190,6 +190,14 @@ describe('search.suggest', () => {
     )
   })
 
+  test('three letters is still under the boundary', async () => {
+    // With a fill, "che" would also offer Honey Nut Cheerios Cereal.
+    assert.deepEqual(
+      (await suggest('che')).map(s => s.name),
+      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings'],
+    )
+  })
+
   test('search.query fills the rest in its own order, listing each name once', async () => {
     assert.deepEqual(
       (await suggest('chee')).map(s => s.name),
