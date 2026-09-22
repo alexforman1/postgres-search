@@ -6,7 +6,7 @@ const TEST_DATABASE_URL =
 
 const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8')
 
-// Rebuilds the search schema in the test database from tests/fixture.sql.
+// Creates the test database if needed, then rebuilds the fixture and the search schema.
 export async function resetDatabase(): Promise<pg.Pool> {
   await createDatabaseIfMissing(TEST_DATABASE_URL)
   const pool = new pg.Pool({ connectionString: TEST_DATABASE_URL })

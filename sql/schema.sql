@@ -6,7 +6,7 @@ CREATE SCHEMA IF NOT EXISTS search;
 -- Lower-cased words, split on anything that is not a letter or digit.
 CREATE OR REPLACE FUNCTION search.tokens(q text)
 RETURNS text[]
-LANGUAGE sql IMMUTABLE
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
 AS $$
   SELECT coalesce(array_agg(t), '{}')
   FROM regexp_split_to_table(lower(coalesce(q, '')), '[^[:alnum:]]+') AS t
@@ -20,14 +20,18 @@ SELECT
   array_to_string(search.tokens(s.name), ' ')        AS name_key,
   s.other_names::text                                AS other_names,
   s.group_key::text                                  AS group_key,
-  ltrim(s.code::text, '0')                           AS code,
+  nullif(ltrim(s.code::text, '0'), '')               AS code,
   coalesce(s.facets::jsonb, '{}')                    AS facets,
   s.rank::real                                       AS rank,
-  to_tsvector('english', coalesce(s.name, '') || ' ' || coalesce(s.other_names, '')) AS search_vector
+  -- search_vector stems words so "cookies" matches "cookie". prefix_vector does not, because a
+  -- partial word such as "chocolat" is longer than the stem of "chocolate" ("chocol").
+  to_tsvector('english', coalesce(s.name, '') || ' ' || coalesce(s.other_names, '')) AS search_vector,
+  to_tsvector('simple', coalesce(s.name, '') || ' ' || coalesce(s.other_names, ''))  AS prefix_vector
 FROM search.source s;
 
 CREATE UNIQUE INDEX IF NOT EXISTS documents_id ON search.documents (id);
 CREATE INDEX IF NOT EXISTS documents_search_vector ON search.documents USING gin (search_vector);
+CREATE INDEX IF NOT EXISTS documents_prefix_vector ON search.documents USING gin (prefix_vector);
 CREATE INDEX IF NOT EXISTS documents_name_trgm ON search.documents USING gin (name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS documents_other_names_trgm ON search.documents USING gin (other_names gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS documents_facets ON search.documents USING gin (facets jsonb_path_ops);
