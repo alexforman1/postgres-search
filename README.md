@@ -22,6 +22,13 @@ npm run load    # 100,000-product sample, about 10 seconds
 npm start       # http://localhost:3000
 ```
 
+The server listens on `PORT` (default 3000). The server and scripts connect to `DATABASE_URL`
+(default `postgres://postgres:postgres@localhost:5432/search_demo`). If port 5432 is taken, run the
+`docker run` line from the `db` script in `package.json` with another host port, such as
+`-p 127.0.0.1:5433:5432`, and point `DATABASE_URL` at it. The loader drops and recreates its
+tables, so it refuses a database not named `search_demo` unless given `--any-database`. After a
+reboot, start the database again with `docker start postgres-search`.
+
 `npm run load -- --full` downloads the whole release (447 MB) instead of using the sample. It
 needs `unzip`.
 
@@ -31,7 +38,8 @@ To try the Jev step, set a TypeSafe API key before `npm start`:
 TYPESAFE_API_KEY=... npm start
 ```
 
-Without a key everything else works the same.
+Without a key everything else works the same. Jev's effect on the demo data has not been measured;
+see [the Jev step](docs/jev.md).
 
 ## Use it with your data
 
