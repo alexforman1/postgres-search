@@ -1,6 +1,7 @@
 // Writes a fixed subset of the loaded products to data/sample.csv.gz.
 //   node scripts/make-sample.ts [rows]
 import { createWriteStream } from 'node:fs'
+import { rename } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
 import { fileURLToPath } from 'node:url'
 import { createGzip } from 'node:zlib'
@@ -9,6 +10,8 @@ import { connect } from '../src/db.ts'
 
 const rows = Number(process.argv[2] ?? 100000)
 if (!Number.isInteger(rows) || rows <= 0) throw new Error('rows must be a positive integer')
+
+const target = fileURLToPath(new URL('../data/sample.csv.gz', import.meta.url))
 
 const pool = connect()
 const client = await pool.connect()
@@ -23,8 +26,9 @@ try {
   await pipeline(
     client.query(copyTo(statement)),
     createGzip({ level: 9 }),
-    createWriteStream(fileURLToPath(new URL('../data/sample.csv.gz', import.meta.url))),
+    createWriteStream(`${target}.part`),
   )
+  await rename(`${target}.part`, target)
 } finally {
   client.release()
   await pool.end()
