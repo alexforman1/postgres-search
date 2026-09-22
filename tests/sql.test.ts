@@ -75,6 +75,7 @@ describe('search.query', () => {
     assert.deepEqual(steps(rows), ['typo'])
     assert.deepEqual(ids(rows).sort(), ['1', '10', '2', '3'])
     assert.deepEqual(ids(await query('stawberry jam')), ['4'])
+    assert.deepEqual(ids(await query('the cheerois')).sort(), ['1', '10', '2', '3'])
   })
 
   test('code step ignores leading zeros on both sides', async () => {
@@ -116,8 +117,9 @@ describe('search.query', () => {
     for (const q of ['', '   ', '!!!', 'the', 'and', 'the and']) assert.deepEqual(await query(q), [])
   })
 
-  test('long input is cut to 32 words', async () => {
-    assert.deepEqual(await query('milk '.repeat(5000)), await query('milk'))
+  test('long input is cut to 256 characters and 32 words', async () => {
+    assert.deepEqual(await query('milk '.repeat(32) + 'chocolate'), await query('milk'))
+    assert.deepEqual(await query('milk' + ' '.repeat(260) + 'chocolate'), await query('milk'))
   })
 
   test('plans are made for each call, not cached', async () => {
@@ -213,5 +215,12 @@ describe('search.refresh', () => {
     await pool.query('SELECT search.refresh()')
     assert.deepEqual(ids(await query('granola')), ['15'])
     assert.ok((await suggest('gr')).some(s => s.name === 'Granola Clusters'))
+  })
+
+  test('facets skip JSON null values', async () => {
+    await pool.query("INSERT INTO fixture_items VALUES (16, 'Plain Oats', NULL, '0123456789', 'Cereal', 1)")
+    await pool.query('SELECT search.refresh()')
+    const { rows } = await pool.query("SELECT facet, value, doc_count::int FROM search.facets('plain oats')")
+    assert.deepEqual(rows, [{ facet: 'category', value: 'Cereal', doc_count: 1 }])
   })
 })

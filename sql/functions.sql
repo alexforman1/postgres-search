@@ -10,11 +10,13 @@ SET pg_trgm.word_similarity_threshold = 0.5
 SET plan_cache_mode = force_custom_plan
 AS $$
 DECLARE
-  -- Long input builds huge text search queries; 32 words is more than any real search.
-  tokens text[]  := (search.tokens(q))[1:32];
+  -- Long input builds huge queries, and a very long word pushes the typo step off its index.
+  -- No real search needs more than 256 characters or 32 words.
+  tokens text[]  := (search.tokens(left(q, 256)))[1:32];
   -- ts_lexize returns an empty array for stop words, which mean nothing on their own.
   kept   text[]  := ARRAY(SELECT t FROM unnest(tokens) AS t WHERE ts_lexize('english_stem', t) IS DISTINCT FROM '{}');
   query  text    := array_to_string(tokens, ' ');
+  typo_q text    := array_to_string(kept, ' ');
   code_q text    := ltrim(query, '0');
   f      jsonb   := coalesce(filters, '{}');
   n      int     := CASE WHEN lim IS NULL THEN NULL ELSE least(greatest(lim, 1), 1000) END;
@@ -77,14 +79,15 @@ BEGIN
     END IF;
   END IF;
 
+  -- Stop words would lower the similarity of every name, so the typo step leaves them out.
   RETURN QUERY
     SELECT r.id, 'typo'::text, (row_number() OVER (ORDER BY r.sim DESC, r.rank DESC NULLS LAST, r.id))::int
     FROM (
       SELECT d.id,
-             greatest(word_similarity(query, d.name), word_similarity(query, coalesce(d.other_names, ''))) AS sim,
+             greatest(word_similarity(typo_q, d.name), word_similarity(typo_q, coalesce(d.other_names, ''))) AS sim,
              d.rank
       FROM search.documents d
-      WHERE (query <% d.name OR query <% d.other_names) AND d.facets @> f
+      WHERE (typo_q <% d.name OR typo_q <% d.other_names) AND d.facets @> f
       ORDER BY sim DESC, d.rank DESC NULLS LAST, d.id
       LIMIT n
     ) r
@@ -100,7 +103,7 @@ LANGUAGE plpgsql STABLE
 SET search_path = search, public, extensions
 AS $$
 DECLARE
-  query text := array_to_string((search.tokens(q))[1:32], ' ');
+  query text := array_to_string(search.tokens(left(q, 256)), ' ');
   n     int  := least(greatest(coalesce(lim, 8), 1), 50);
 BEGIN
   IF query = '' THEN
