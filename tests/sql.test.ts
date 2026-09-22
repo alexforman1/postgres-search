@@ -198,6 +198,12 @@ describe('search.suggest', () => {
     )
   })
 
+  test('several short words are under the boundary too', async () => {
+    // The boundary counts the longest word, not the spaces between words.
+    assert.deepEqual(await suggest('nd s'), [])
+    assert.deepEqual(await suggest('ch s'), [])
+  })
+
   test('search.query fills the rest in its own order, listing each name once', async () => {
     assert.deepEqual(
       (await suggest('chee')).map(s => s.name),

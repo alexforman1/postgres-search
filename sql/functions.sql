@@ -125,8 +125,9 @@ SET search_path = search, public, extensions
 SET plan_cache_mode = force_custom_plan
 AS $$
 DECLARE
-  query  text := array_to_string(search.tokens(left(q, 256)), ' ');
-  n      int  := least(greatest(coalesce(lim, 8), 1), 50);
+  words  text[] := search.tokens(left(q, 256));
+  query  text   := array_to_string(words, ' ');
+  n      int    := least(greatest(coalesce(lim, 8), 1), 50);
   listed int;
 BEGIN
   IF query = '' THEN
@@ -139,9 +140,9 @@ BEGIN
     ORDER BY s.doc_count DESC, s.name_key
     LIMIT n;
   GET DIAGNOSTICS listed = ROW_COUNT;
-  -- Under four characters the fill would run the typo step on a few trigrams, which is slow and
-  -- matches unrelated names ("cng" finds ground beef and ketchup).
-  IF listed >= n OR length(query) < 4 THEN
+  -- When every word is under four characters the fill would run the typo step on a few trigrams,
+  -- which is slow and matches unrelated names ("cng" finds ground beef and ketchup).
+  IF listed >= n OR (SELECT max(length(w)) FROM unnest(words) AS w) < 4 THEN
     RETURN;
   END IF;
 
