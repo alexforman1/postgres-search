@@ -30,9 +30,9 @@ the word step, `strawb` by the prefix step, and `cheerois` by the typo step (Fro
 ## Steps never mix
 
 The word step finds 566 rows for `oreo`. If the typo step also ran, it would add 1,005 more at
-word similarity 0.5 or higher: TREO coconut water first, then Ore-Ida potatoes, 222 names with
-OREGANO (Hunt's tomatoes with basil, garlic and oregano), and rows whose maker has OREGON in its
-name. The typo step runs only when nothing else matched, which is also why its loose threshold is
+word similarity 0.5 or higher. TREO coconut water scores highest; the rest include Ore-Ida
+potatoes, 222 names with OREGANO (Hunt's tomatoes with basil, garlic and oregano), and rows whose
+maker has OREGON in its name. The typo step runs only when nothing else matched, which is also why its loose threshold is
 safe.
 
 The rule has two costs. First, a misspelling that some product also carries hides every correct
@@ -44,10 +44,11 @@ returns misspelled matches after them, so it would show the parmesan products. I
 returns only the records with the fewest typos, which is close to the rule used here and has the
 same cost.
 
-Second, a rare whole word beats a prefix. `grano` finds 13 rows with the whole word GRANO: SACRED
-GRAINS GRANO (filed under Rice) and Italian pastas made from GRANO DURO. The prefix step,
-which would find granola, never runs. On the results page, `chee` lists LANCE, TOAST CHEE first.
-Typeahead avoids this by completing names before it searches words ([typeahead](typeahead.md)).
+Second, a rare whole word beats a prefix. `grano` finds 13 rows with the whole word GRANO, among
+them SACRED GRAINS GRANO (filed under Rice), Italian pastas made from GRANO DURO, and SOLE GRANO
+mixed nuts. The prefix step, which would find granola, never runs. On the results page, `chee`
+lists LANCE, TOAST CHEE first. Typeahead avoids this by completing names before it searches words
+([typeahead](typeahead.md)).
 
 ## Order inside a step
 
