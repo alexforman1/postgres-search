@@ -10,10 +10,11 @@ interface Case {
   expect: string
 }
 
-// Two partial words typed toward one name, and a pattern the intended suggestion matches.
+// What is typed into the search box (the first 4 or 5 letters of a word, or a whole short word),
+// and a pattern the intended suggestion matches.
 interface SuggestCase {
-  q4: string
-  q5: string
+  q: string
+  kind: string
   expect: string
 }
 
@@ -38,7 +39,7 @@ const withJev = Boolean(process.env.TYPESAFE_API_KEY)
 const scores = new Map<string, { plain: Score; jev: Score }>()
 const misses: string[] = []
 const jev = { reranked: 0, skipped: 0, failed: 0 }
-const typed = new Map([4, 5].map(n => [n, { cases: 0, hit1: 0, hit8: 0 }]))
+const typed = new Map<string, { cases: number; hit1: number; hit8: number }>()
 const suggestMisses: string[] = []
 
 const matches = (row: Row, pattern: RegExp) => pattern.test(`${row.name} ${row.other_names ?? ''}`)
@@ -79,14 +80,13 @@ try {
   }
   for (const c of suggestCases) {
     const pattern = new RegExp(c.expect, 'i')
-    for (const [n, q] of [[4, c.q4], [5, c.q5]] as const) {
-      const { rows } = await pool.query<{ name: string }>('SELECT name FROM search.suggest($1, 8)', [q])
-      const score = typed.get(n)!
-      score.cases += 1
-      if (rows.slice(0, 1).some(r => pattern.test(r.name))) score.hit1 += 1
-      if (rows.some(r => pattern.test(r.name))) score.hit8 += 1
-      else suggestMisses.push(`"${q}" (${c.expect}) -> ${rows[0]?.name ?? 'no suggestions'}`)
-    }
+    const { rows } = await pool.query<{ name: string }>('SELECT name FROM search.suggest($1, 8)', [c.q])
+    if (!typed.has(c.kind)) typed.set(c.kind, { cases: 0, hit1: 0, hit8: 0 })
+    const score = typed.get(c.kind)!
+    score.cases += 1
+    if (rows.slice(0, 1).some(r => pattern.test(r.name))) score.hit1 += 1
+    if (rows.some(r => pattern.test(r.name))) score.hit8 += 1
+    else suggestMisses.push(`${c.kind}: "${c.q}" -> ${rows[0]?.name ?? 'no suggestions'}`)
   }
 } finally {
   await pool.end()
@@ -110,7 +110,7 @@ if (withJev) {
 if (misses.length) console.log(`\nnot in the top 10:\n${misses.join('\n')}`)
 
 console.log('\nsuggest\tcases\thit@1\thit@8')
-for (const [n, score] of typed) {
-  console.log([`${n} letters`, score.cases, pct(score.hit1, score.cases), pct(score.hit8, score.cases)].join('\t'))
+for (const [kind, score] of typed) {
+  console.log([kind, score.cases, pct(score.hit1, score.cases), pct(score.hit8, score.cases)].join('\t'))
 }
 if (suggestMisses.length) console.log(`\nnot in the top 8 suggestions:\n${suggestMisses.join('\n')}`)
