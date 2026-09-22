@@ -76,7 +76,8 @@ A misspelling that some product also carries hides the correctly spelled product
 PARMESEAN product, so `parmesean` never shows the 2,734 parmesan rows. Transposed letters can be
 missed; trigram matching scores "dortios" at 0.375 against DORITOS, under the 0.5 cutoff. A typo
 of a very common word is slow: the demo page waits about 1.25 s for "chocolatte". The materialized
-view is stale until refreshed. See the docs for details.
+view is stale until refreshed. [How it works](docs/how-it-works.md#what-it-does-not-do) lists
+each cost.
 
 ## Contributing
 
