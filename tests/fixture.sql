@@ -21,7 +21,9 @@ INSERT INTO fixture_items VALUES
   (11, 'Vanilla Häagen-Dazs Bar',   'Nestle',         '074570000021',   'Frozen',  99),
   (12, 'Whole Milk',                'Organic Valley', '093966000016',   'Dairy',    5),
   (13, 'Oat Rings 16000 Pack',      'Store Brand',    '041190000024',   'Cereal',  35),
-  (14, 'Wheat Thins',               'Nabisco',        '044000032029',   'Snacks',  30);
+  (14, 'Wheat Thins',               'Nabisco',        '044000032029',   'Snacks',  30),
+  (17, 'Lemon/Lime Sparkling Water', 'Fizz Co',       '078000000017',   'Drinks',  12),
+  (18, 'Cran.Apple Juice Drink',    'Orchard Co',     '078000000024',   'Drinks',  14);
 
 CREATE SCHEMA search;
 

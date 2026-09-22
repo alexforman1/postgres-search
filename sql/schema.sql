@@ -25,9 +25,14 @@ SELECT
   s.rank::real                                       AS rank,
   -- search_vector stems words so "cookies" matches "cookie". prefix_vector does not, because a
   -- partial word such as "chocolat" is longer than the stem of "chocolate" ("chocol").
-  to_tsvector('english', coalesce(s.name, '') || ' ' || coalesce(s.other_names, '')) AS search_vector,
-  to_tsvector('simple', coalesce(s.name, '') || ' ' || coalesce(s.other_names, ''))  AS prefix_vector
-FROM search.source s;
+  to_tsvector('english', w.words) AS search_vector,
+  to_tsvector('simple', w.words)  AS prefix_vector
+FROM search.source s
+-- Both vectors index the words search.tokens finds, the same split every query gets. Postgres's
+-- own parser would keep "Lemon/Lime" whole as a file path and "Cran.Apple" as a host name.
+CROSS JOIN LATERAL (
+  SELECT array_to_string(search.tokens(coalesce(s.name, '') || ' ' || coalesce(s.other_names, '')), ' ') AS words
+) w;
 
 CREATE UNIQUE INDEX IF NOT EXISTS documents_id ON search.documents (id);
 CREATE INDEX IF NOT EXISTS documents_search_vector ON search.documents USING gin (search_vector);
