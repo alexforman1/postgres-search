@@ -121,6 +121,8 @@ CREATE OR REPLACE FUNCTION search.suggest(q text, lim int DEFAULT 8)
 RETURNS TABLE (name text, id text, doc_count int)
 LANGUAGE plpgsql STABLE
 SET search_path = search, public, extensions
+-- A cached generic plan cannot use the prefix range on search.names and scans all of it.
+SET plan_cache_mode = force_custom_plan
 AS $$
 DECLARE
   query  text := array_to_string(search.tokens(left(q, 256)), ' ');

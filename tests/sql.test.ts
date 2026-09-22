@@ -202,6 +202,14 @@ describe('search.suggest', () => {
   test('empty input returns nothing', async () => {
     assert.deepEqual(await suggest('  '), [])
   })
+
+  test('plans are made for each call, not cached', async () => {
+    // A cached generic plan cannot use the prefix range on search.names and scans all of it.
+    const { rows } = await pool.query(
+      "SELECT proconfig FROM pg_proc WHERE oid = 'search.suggest(text, int)'::regprocedure",
+    )
+    assert.ok(rows[0].proconfig.includes('plan_cache_mode=force_custom_plan'))
+  })
 })
 
 describe('search.facets', () => {
