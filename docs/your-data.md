@@ -98,6 +98,10 @@ SELECT * FROM search.suggest('che');                                -- name, id,
 SELECT * FROM search.facets('milk');                                -- facet, value, doc_count
 ```
 
+`search.suggest` returns at most 50 names; with `lim => NULL` it returns the default 8.
+`search.query_distinct` collapses at most the first 1000 matches, so it can return fewer rows than
+`lim`, and `lim => NULL` returns up to 50.
+
 Join `search.query` to `search.documents` (or your own table) on `id` to get the rows, and order
 by `pos`:
 
