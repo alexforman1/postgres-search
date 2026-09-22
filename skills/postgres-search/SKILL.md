@@ -64,7 +64,7 @@ trigger-maintained table instead (see https://github.com/alexforman1/postgres-se
 `search.refresh()` must run as the role that owns the materialized views, usually the role that
 ran the migration; the grants above do not include that. Run the refresh as that role, or hand the
 views over with `ALTER MATERIALIZED VIEW search.documents OWNER TO <role>;` and the same for
-search.names.
+`search.names`.
 
 ### 4. Call it
 
