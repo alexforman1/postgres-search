@@ -8,6 +8,9 @@ const facetsBox = document.getElementById('facets')
 let filters = {}
 let active = -1
 let timer
+// Each request takes a number; an answer that arrives after a newer request was made is dropped.
+let suggestId = 0
+let runId = 0
 
 function el(tag, attrs = {}, text) {
   const node = document.createElement(tag)
@@ -32,9 +35,9 @@ input.addEventListener('input', () => {
 async function suggest() {
   const q = input.value.trim()
   if (!q) return closeList()
+  const id = ++suggestId
   const { suggestions } = await get('/suggest', { q })
-  // Drop the answer if the user kept typing while it was in flight.
-  if (q !== input.value.trim()) return
+  if (id !== suggestId || q !== input.value.trim()) return
   list.replaceChildren(...suggestions.map((s, i) => {
     const option = el('li', { id: `option-${i}`, role: 'option', 'aria-selected': 'false' }, s.name)
     option.addEventListener('mousedown', event => {
@@ -50,6 +53,8 @@ async function suggest() {
 }
 
 function closeList() {
+  clearTimeout(timer)
+  suggestId++
   list.hidden = true
   list.replaceChildren()
   active = -1
@@ -73,6 +78,8 @@ input.addEventListener('keydown', event => {
     event.preventDefault()
     highlight(active - 1)
   } else if (event.key === 'Escape') {
+    // Without this, a search input also clears its text on Escape.
+    event.preventDefault()
     closeList()
   } else if (event.key === 'Enter' && active >= 0) {
     event.preventDefault()
@@ -98,17 +105,20 @@ form.addEventListener('submit', event => {
   run()
 })
 
-async function run() {
+// focus names the facet button to focus again after the facets are redrawn.
+async function run(focus) {
   const q = input.value.trim()
   if (!q) return
+  const id = ++runId
   statusLine.textContent = 'Searching...'
   try {
     const params = { q, filters: JSON.stringify(filters) }
     const [found, counted] = await Promise.all([get('/search', params), get('/facets', params)])
+    if (id !== runId) return
     renderResults(found)
-    renderFacets(counted.facets)
+    renderFacets(counted.facets, focus)
   } catch {
-    statusLine.textContent = 'Search failed. See the server log.'
+    if (id === runId) statusLine.textContent = 'Search failed. See the server log.'
   }
 }
 
@@ -126,7 +136,7 @@ function renderResults({ results, jev }) {
   }))
 }
 
-function renderFacets(facets) {
+function renderFacets(facets, focus) {
   facetsBox.replaceChildren(...Object.entries(facets).map(([facet, values]) => {
     const group = el('section')
     group.append(el('h2', {}, facet))
@@ -134,10 +144,12 @@ function renderFacets(facets) {
     for (const { value, count } of values) {
       const pressed = filters[facet] === value
       const button = el('button', { type: 'button', 'aria-pressed': String(pressed) }, `${value} (${count})`)
+      button.dataset.facet = facet
+      button.dataset.value = value
       button.addEventListener('click', () => {
         if (pressed) delete filters[facet]
         else filters[facet] = value
-        run()
+        run({ facet, value })
       })
       const item = el('li')
       item.append(button)
@@ -146,4 +158,10 @@ function renderFacets(facets) {
     group.append(options)
     return group
   }))
+  if (focus) {
+    const buttons = [...facetsBox.querySelectorAll('button')]
+    const again = buttons.find(b => b.dataset.facet === focus.facet && b.dataset.value === focus.value)
+    const target = again ?? input
+    target.focus()
+  }
 }

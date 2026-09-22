@@ -12,7 +12,7 @@ label { flex-basis: 100%; font-weight: 600; }
 .combo { position: relative; flex: 1 1 14rem; }
 input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 0.5rem; font: inherit; }
 button { min-height: 44px; padding: 0 1rem; font: inherit; cursor: pointer; }
-:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+:focus-visible { outline: 2px solid light-dark(#1a56db, #8ab4ff); outline-offset: 2px; }
 
 #suggestions {
   position: absolute; left: 0; right: 0; z-index: 1;

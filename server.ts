@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises'
 import { connect } from './src/db.ts'
 import { rerank, type Candidate } from './src/rerank.ts'
 
-const pool = connect()
+// A stuck query should fail the request, not hang it.
+const pool = connect({ statement_timeout: 5000 })
 const port = Number(process.env.PORT ?? 3000)
 
 const files: Record<string, { path: string; type: string }> = {
@@ -70,6 +71,10 @@ async function facets(q: string, filters: Record<string, string>) {
 
 const server = createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost')
+  if (req.method !== 'GET') {
+    res.writeHead(405, { Allow: 'GET', 'Content-Type': 'text/plain' }).end('method not allowed')
+    return
+  }
   try {
     const file = files[url.pathname]
     if (file) {
