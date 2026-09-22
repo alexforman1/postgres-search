@@ -127,3 +127,33 @@ BEGIN
     LIMIT n;
 END
 $$;
+
+-- Facet counts over every row search.query matched, never a separate text match.
+CREATE OR REPLACE FUNCTION search.facets(q text, filters jsonb DEFAULT '{}', per_facet int DEFAULT 20)
+RETURNS TABLE (facet text, value text, doc_count bigint)
+LANGUAGE sql STABLE
+SET search_path = search, public, extensions
+AS $$
+  SELECT c.facet, c.value, c.doc_count
+  FROM (
+    SELECT kv.key AS facet, kv.value, count(*) AS doc_count,
+           row_number() OVER (PARTITION BY kv.key ORDER BY count(*) DESC, kv.value) AS n
+    FROM search.query(q, filters, NULL) r
+    JOIN search.documents d ON d.id = r.id
+    CROSS JOIN LATERAL jsonb_each_text(d.facets) AS kv
+    GROUP BY kv.key, kv.value
+  ) c
+  WHERE c.n <= per_facet
+  ORDER BY c.facet, c.doc_count DESC, c.value
+$$;
+
+CREATE OR REPLACE FUNCTION search.refresh()
+RETURNS void
+LANGUAGE plpgsql
+SET search_path = search, public, extensions
+AS $$
+BEGIN
+  REFRESH MATERIALIZED VIEW CONCURRENTLY search.documents;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;
+END
+$$;

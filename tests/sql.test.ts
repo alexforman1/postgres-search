@@ -130,3 +130,46 @@ describe('search.suggest', () => {
     assert.deepEqual(await suggest('  '), [])
   })
 })
+
+describe('search.facets', () => {
+  test('counts come from the rows search.query matched', async () => {
+    const { rows } = await pool.query("SELECT facet, value, doc_count::int FROM search.facets('milk')")
+    assert.deepEqual(rows, [
+      { facet: 'brand', value: 'Horizon', doc_count: 2 },
+      { facet: 'brand', value: 'Hershey', doc_count: 1 },
+      { facet: 'brand', value: 'Organic Valley', doc_count: 1 },
+      { facet: 'category', value: 'Dairy', doc_count: 3 },
+      { facet: 'category', value: 'Candy', doc_count: 1 },
+    ])
+  })
+
+  test('filters narrow the counts', async () => {
+    const { rows } = await pool.query(
+      `SELECT facet, value, doc_count::int FROM search.facets('milk', '{"category": "Dairy"}')`,
+    )
+    assert.deepEqual(rows, [
+      { facet: 'brand', value: 'Horizon', doc_count: 2 },
+      { facet: 'brand', value: 'Organic Valley', doc_count: 1 },
+      { facet: 'category', value: 'Dairy', doc_count: 3 },
+    ])
+  })
+
+  test('per_facet keeps the top values of each facet', async () => {
+    const { rows } = await pool.query("SELECT facet, value FROM search.facets('milk', '{}', 1)")
+    assert.deepEqual(rows, [
+      { facet: 'brand', value: 'Horizon' },
+      { facet: 'category', value: 'Dairy' },
+    ])
+  })
+})
+
+describe('search.refresh', () => {
+  test('makes new rows searchable', async () => {
+    await pool.query(
+      "INSERT INTO fixture_items VALUES (13, 'Granola Clusters', 'Nature Valley', '016000123456', 'Cereal', 25)",
+    )
+    assert.deepEqual(await query('granola'), [])
+    await pool.query('SELECT search.refresh()')
+    assert.deepEqual(ids(await query('granola')), ['13'])
+  })
+})
