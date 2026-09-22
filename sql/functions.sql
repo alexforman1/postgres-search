@@ -113,42 +113,48 @@ AS $$
   LIMIT least(greatest(coalesce(lim, 50), 1), 1000)
 $$;
 
--- Typeahead. Under four characters the word step is easily taken over by rare words, so short
--- input is matched against the list of distinct names instead.
+-- Typeahead completes names, so it lists names that start with the input first. Typed input is
+-- usually a partial word, and the word step would answer it with any rare whole word or
+-- abbreviation that happens to match ("pean" finds "Peans" before "Peanut Butter"). Only when
+-- too few names start with the input does search.query fill the rest.
 CREATE OR REPLACE FUNCTION search.suggest(q text, lim int DEFAULT 8)
 RETURNS TABLE (name text, id text, doc_count int)
 LANGUAGE plpgsql STABLE
 SET search_path = search, public, extensions
 AS $$
 DECLARE
-  query text := array_to_string(search.tokens(left(q, 256)), ' ');
-  n     int  := least(greatest(coalesce(lim, 8), 1), 50);
+  query  text := array_to_string(search.tokens(left(q, 256)), ' ');
+  n      int  := least(greatest(coalesce(lim, 8), 1), 50);
+  listed int;
 BEGIN
   IF query = '' THEN
     RETURN;
   END IF;
 
-  IF length(query) < 4 THEN
-    RETURN QUERY
-      SELECT s.name, s.sample_id, s.doc_count FROM search.names s
-      WHERE s.name_key LIKE query || '%'
-      ORDER BY s.doc_count DESC, s.name_key
-      LIMIT n;
+  RETURN QUERY
+    SELECT s.name, s.sample_id, s.doc_count FROM search.names s
+    WHERE s.name_key LIKE query || '%'
+    ORDER BY s.doc_count DESC, s.name_key
+    LIMIT n;
+  GET DIAGNOSTICS listed = ROW_COUNT;
+  IF listed >= n THEN
     RETURN;
   END IF;
 
-  -- Many rows can share a name, so a wide window is collapsed to distinct names.
+  -- Fewer than n rows means every name starting with the input is already listed. Many rows can
+  -- share a name, so a wide window is collapsed to distinct names.
   RETURN QUERY
     SELECT s.name, h.id, s.doc_count
     FROM (
       SELECT DISTINCT ON (d.name_key) d.name_key, r.id, r.pos
       FROM search.query(q, '{}', 1000) r
       JOIN search.documents d ON d.id = r.id
+      WHERE d.name_key NOT LIKE query || '%'
       ORDER BY d.name_key, r.pos
     ) h
     JOIN search.names s ON s.name_key = h.name_key
     ORDER BY h.pos
-    LIMIT n;
+    LIMIT n - listed;
 END
 $$;
 

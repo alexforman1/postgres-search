@@ -160,23 +160,49 @@ async function suggest(q: string) {
 }
 
 describe('search.suggest', () => {
-  test('short input matches the start of distinct names, most common first', async () => {
+  test('names that start with the input come first, most common first', async () => {
     assert.deepEqual(await suggest('wh'), [
       { name: 'Whole Milk', id: '7', doc_count: 2 },
       { name: 'Wheat Thins', id: '14', doc_count: 1 },
     ])
     assert.deepEqual(
-      (await suggest('ch')).map(s => s.name),
-      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Chocolate Milk'],
+      (await suggest('chee')).slice(0, 3).map(s => s.name),
+      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings'],
     )
   })
 
-  test('longer input uses search.query and lists each name once', async () => {
+  test('search.query fills the rest in its own order, listing each name once', async () => {
+    assert.deepEqual((await suggest('ch')).map(s => s.name), [
+      'Cheerios',
+      'Cheerios Cereal',
+      'Cheerioz Oat Rings',
+      'Chocolate Milk',
+      'Milk Chocolate Bar',
+      'Honey Nut Cheerios Cereal',
+    ])
     assert.deepEqual(
       (await suggest('chee')).map(s => s.name),
-      ['Cheerios Cereal', 'Cheerioz Oat Rings', 'Honey Nut Cheerios Cereal', 'Cheerios'],
+      ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Honey Nut Cheerios Cereal'],
     )
     assert.deepEqual((await suggest('milk')).map(s => s.name), ['Milk Chocolate Bar', 'Whole Milk', 'Chocolate Milk'])
+  })
+
+  test('the fill stops at lim', async () => {
+    assert.deepEqual((await pool.query("SELECT name FROM search.suggest('ch', 5)")).rows.map(r => r.name), [
+      'Cheerios',
+      'Cheerios Cereal',
+      'Cheerioz Oat Rings',
+      'Chocolate Milk',
+      'Milk Chocolate Bar',
+    ])
+  })
+
+  test('a name that starts with the input beats a rare whole-word match', async () => {
+    // "Peans" stems to "pean", so the word step alone would offer only the pie.
+    assert.deepEqual(
+      (await suggest('pean')).map(s => s.name),
+      ['Peanut Butter', 'Sweet Potato Pie with Peans'],
+    )
   })
 
   test('empty input returns nothing', async () => {

@@ -23,7 +23,9 @@ INSERT INTO fixture_items VALUES
   (13, 'Oat Rings 16000 Pack',      'Store Brand',    '041190000024',   'Cereal',  35),
   (14, 'Wheat Thins',               'Nabisco',        '044000032029',   'Snacks',  30),
   (17, 'Lemon/Lime Sparkling Water', 'Fizz Co',       '078000000017',   'Drinks',  12),
-  (18, 'Cran.Apple Juice Drink',    'Orchard Co',     '078000000024',   'Drinks',  14);
+  (18, 'Cran.Apple Juice Drink',    'Orchard Co',     '078000000024',   'Drinks',  14),
+  (19, 'Peanut Butter',             'Nutty Farms',    '078000000031',   'Spreads', 40),
+  (20, 'Sweet Potato Pie with Peans', 'Home Bakery',  '078000000048',   'Bakery',   5);
 
 CREATE SCHEMA search;
 
