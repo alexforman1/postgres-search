@@ -38,5 +38,5 @@ works without it.
 - Search behavior changes need a test in `tests/sql.test.ts` that fails without the change.
 - Do not tune the search to `eval/queries.json`. Fix a bad eval case instead of the search.
 - Plain, short English in code, comments, docs, and commit messages. Comment only what the code
-  cannot say. No filler, no marketing words, no em dashes.
+  cannot say. No padding, no marketing words, no em dashes.
 - No new runtime dependencies without a reason in the pull request.
