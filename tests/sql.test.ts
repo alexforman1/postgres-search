@@ -64,6 +64,12 @@ describe('search.query', () => {
     assert.deepEqual(ids(await query('the straw')), ['5', '4'])
   })
 
+  test('prefix step accepts short words next to a longer one, but not alone', async () => {
+    assert.deepEqual(ids(await query('straw j')), ['4'])
+    assert.deepEqual(ids(await query('whole mi')), ['7', '12'])
+    assert.ok(!steps(await query('ch')).includes('prefix'))
+  })
+
   test('typo step runs when nothing else matches', async () => {
     const rows = await query('cheerois')
     assert.deepEqual(steps(rows), ['typo'])
@@ -78,12 +84,21 @@ describe('search.query', () => {
     assert.deepEqual(ids(await query('0016000')), ['2', '1', '3'])
   })
 
+  test('code step does not fall through when it matches', async () => {
+    // Row 13 has "16000" in its name, so the word step would add it if steps mixed.
+    const rows = await query('16000')
+    assert.deepEqual(ids(rows), ['2', '1', '3'])
+    assert.deepEqual(steps(rows), ['code'])
+  })
+
   test('digits that match no code fall through to the text steps', async () => {
     assert.ok(!steps(await query('9999')).includes('code'))
   })
 
   test('filters apply in every step', async () => {
+    assert.deepEqual(await query('0016000', { category: 'Spreads' }), [])
     assert.deepEqual(ids(await query('milk', { category: 'Dairy' })), ['7', '6', '12'])
+    assert.deepEqual(ids(await query('straw', { category: 'Produce' })), ['5'])
     assert.deepEqual(ids(await query('cheerois', { brand: 'Store Brand' })), ['10'])
   })
 
@@ -98,7 +113,19 @@ describe('search.query', () => {
   })
 
   test('empty, punctuation-only, and stop-word queries return nothing', async () => {
-    for (const q of ['', '   ', '!!!', 'the']) assert.deepEqual(await query(q), [])
+    for (const q of ['', '   ', '!!!', 'the', 'and', 'the and']) assert.deepEqual(await query(q), [])
+  })
+
+  test('long input is cut to 32 words', async () => {
+    assert.deepEqual(await query('milk '.repeat(5000)), await query('milk'))
+  })
+
+  test('plans are made for each call, not cached', async () => {
+    // A cached generic plan scans the whole facets index when filters is empty.
+    const { rows } = await pool.query(
+      "SELECT proconfig FROM pg_proc WHERE oid = 'search.query(text, jsonb, int)'::regprocedure",
+    )
+    assert.ok(rows[0].proconfig.includes('plan_cache_mode=force_custom_plan'))
   })
 })
 
@@ -112,7 +139,10 @@ async function suggest(q: string) {
 
 describe('search.suggest', () => {
   test('short input matches the start of distinct names, most common first', async () => {
-    assert.deepEqual(await suggest('wh'), [{ name: 'Whole Milk', id: '7', doc_count: 2 }])
+    assert.deepEqual(await suggest('wh'), [
+      { name: 'Whole Milk', id: '7', doc_count: 2 },
+      { name: 'Wheat Thins', id: '14', doc_count: 1 },
+    ])
     assert.deepEqual(
       (await suggest('ch')).map(s => s.name),
       ['Cheerios', 'Cheerios Cereal', 'Cheerioz Oat Rings', 'Chocolate Milk'],
@@ -124,6 +154,7 @@ describe('search.suggest', () => {
       (await suggest('chee')).map(s => s.name),
       ['Cheerios Cereal', 'Cheerioz Oat Rings', 'Honey Nut Cheerios Cereal', 'Cheerios'],
     )
+    assert.deepEqual((await suggest('milk')).map(s => s.name), ['Milk Chocolate Bar', 'Whole Milk', 'Chocolate Milk'])
   })
 
   test('empty input returns nothing', async () => {
@@ -143,6 +174,15 @@ describe('search.facets', () => {
     ])
   })
 
+  test('counts follow whichever step matched', async () => {
+    const { rows } = await pool.query("SELECT facet, value, doc_count::int FROM search.facets('cheerois')")
+    assert.deepEqual(rows, [
+      { facet: 'brand', value: 'General Mills', doc_count: 3 },
+      { facet: 'brand', value: 'Store Brand', doc_count: 1 },
+      { facet: 'category', value: 'Cereal', doc_count: 4 },
+    ])
+  })
+
   test('filters narrow the counts', async () => {
     const { rows } = await pool.query(
       `SELECT facet, value, doc_count::int FROM search.facets('milk', '{"category": "Dairy"}')`,
@@ -155,21 +195,23 @@ describe('search.facets', () => {
   })
 
   test('per_facet keeps the top values of each facet', async () => {
-    const { rows } = await pool.query("SELECT facet, value FROM search.facets('milk', '{}', 1)")
-    assert.deepEqual(rows, [
+    const top = [
       { facet: 'brand', value: 'Horizon' },
       { facet: 'category', value: 'Dairy' },
-    ])
+    ]
+    assert.deepEqual((await pool.query("SELECT facet, value FROM search.facets('milk', '{}', 1)")).rows, top)
+    assert.deepEqual((await pool.query("SELECT facet, value FROM search.facets('milk', '{}', 0)")).rows, top)
   })
 })
 
 describe('search.refresh', () => {
-  test('makes new rows searchable', async () => {
+  test('makes new rows searchable in both views', async () => {
     await pool.query(
-      "INSERT INTO fixture_items VALUES (13, 'Granola Clusters', 'Nature Valley', '016000123456', 'Cereal', 25)",
+      "INSERT INTO fixture_items VALUES (15, 'Granola Clusters', 'Nature Valley', '016000123456', 'Cereal', 25)",
     )
     assert.deepEqual(await query('granola'), [])
     await pool.query('SELECT search.refresh()')
-    assert.deepEqual(ids(await query('granola')), ['13'])
+    assert.deepEqual(ids(await query('granola')), ['15'])
+    assert.ok((await suggest('gr')).some(s => s.name === 'Granola Clusters'))
   })
 })

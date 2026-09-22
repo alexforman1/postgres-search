@@ -6,18 +6,22 @@ RETURNS TABLE (id text, step text, pos int)
 LANGUAGE plpgsql STABLE
 SET search_path = search, public, extensions
 SET pg_trgm.word_similarity_threshold = 0.5
+-- A cached generic plan scans the whole facets index when filters is empty.
+SET plan_cache_mode = force_custom_plan
 AS $$
 DECLARE
-  tokens text[]  := search.tokens(q);
+  -- Long input builds huge text search queries; 32 words is more than any real search.
+  tokens text[]  := (search.tokens(q))[1:32];
+  -- ts_lexize returns an empty array for stop words, which mean nothing on their own.
+  kept   text[]  := ARRAY(SELECT t FROM unnest(tokens) AS t WHERE ts_lexize('english_stem', t) IS DISTINCT FROM '{}');
   query  text    := array_to_string(tokens, ' ');
   code_q text    := ltrim(query, '0');
   f      jsonb   := coalesce(filters, '{}');
   n      int     := CASE WHEN lim IS NULL THEN NULL ELSE least(greatest(lim, 1), 1000) END;
-  kept   text[];
   words  tsquery;
   prefix tsquery;
 BEGIN
-  IF query = '' THEN
+  IF cardinality(kept) = 0 THEN
     RETURN;
   END IF;
 
@@ -52,11 +56,9 @@ BEGIN
     END IF;
   END IF;
 
-  -- Stop words are dropped, since prefix_vector keeps them. Prefixes of one or two letters match
-  -- too much to be useful.
-  SELECT array_agg(t) INTO kept FROM unnest(tokens) AS t
-  WHERE ts_lexize('english_stem', t) IS DISTINCT FROM '{}';
-  IF (SELECT min(length(t)) FROM unnest(kept) AS t) >= 3 THEN
+  -- prefix_vector keeps stop words, so only kept words go in. At least one word needs three or
+  -- more letters; alone, shorter prefixes match too much to be useful.
+  IF (SELECT max(length(t)) FROM unnest(kept) AS t) >= 3 THEN
     prefix := to_tsquery('simple', array_to_string(ARRAY(SELECT t || ':*' FROM unnest(kept) AS t), ' & '));
   END IF;
 
@@ -98,7 +100,7 @@ LANGUAGE plpgsql STABLE
 SET search_path = search, public, extensions
 AS $$
 DECLARE
-  query text := array_to_string(search.tokens(q), ' ');
+  query text := array_to_string((search.tokens(q))[1:32], ' ');
   n     int  := least(greatest(coalesce(lim, 8), 1), 50);
 BEGIN
   IF query = '' THEN
@@ -114,11 +116,12 @@ BEGIN
     RETURN;
   END IF;
 
+  -- Many rows can share a name, so a wide window is collapsed to distinct names.
   RETURN QUERY
     SELECT s.name, h.id, s.doc_count
     FROM (
       SELECT DISTINCT ON (d.name_key) d.name_key, r.id, r.pos
-      FROM search.query(q, '{}', 80) r
+      FROM search.query(q, '{}', 1000) r
       JOIN search.documents d ON d.id = r.id
       ORDER BY d.name_key, r.pos
     ) h
@@ -141,9 +144,10 @@ AS $$
     FROM search.query(q, filters, NULL) r
     JOIN search.documents d ON d.id = r.id
     CROSS JOIN LATERAL jsonb_each_text(d.facets) AS kv
+    WHERE kv.value IS NOT NULL
     GROUP BY kv.key, kv.value
   ) c
-  WHERE c.n <= per_facet
+  WHERE c.n <= least(greatest(coalesce(per_facet, 20), 1), 1000)
   ORDER BY c.facet, c.doc_count DESC, c.value
 $$;
 
