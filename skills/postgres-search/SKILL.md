@@ -38,6 +38,8 @@ In one migration, in this order:
 3. the contents of `sql/functions.sql`
 
 Use the project's migration tool if it has one; otherwise give the user a single `.sql` file.
+To upgrade an existing install, apply `sql/schema.sql` again before `sql/functions.sql`: it
+creates only what is missing, such as `search.words`, which the newer functions need.
 `CREATE EXTENSION pg_trgm` needs a role allowed to create extensions; on managed hosts, check the
 provider's extension settings.
 

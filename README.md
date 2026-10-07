@@ -36,9 +36,9 @@ Plain Postgres is the fastest and the strictest: it returned nothing for 23 of t
 queries and for every barcode. This SQL returned something for all 100, which finds the right
 product far more often but also returns Shamrock Farms sour cream for "shampoo". Jev is what
 tells the two apart. In one call it judges each
-of the top 10 results, in 161 to 176 ms at the median; in a second call, sent while Postgres is
-still searching, it picks the spelling the user meant from about 9 close words that products use,
-in 159 to 168 ms. The SQL cannot make either judgment: by trigrams, "dortios" is closer to
+of the top 10 results, in 161 to 176 ms at the median in these runs; in a second call, sent while
+Postgres is still searching, it picks the spelling the user meant from about 9 close words that
+products use, in 159 to 168 ms. The SQL cannot make either judgment: by trigrams, "dortios" is closer to
 DORTMUNDER than to DORITOS.
 
 The held-out words were written before any Jev call on them and nothing was tuned on them. The
@@ -48,8 +48,9 @@ spelled words alone, and made no wrong suggestion; a rule that picks the most co
 made 16 wrong ones ([the Jev step](docs/jev.md)).
 
 The Jev step costs $0.087 per 1,000 searches: TypeSafe charges $0.042 per million input tokens,
-and a search uses about 2,100 on average. Typeahead never calls Jev, and any Jev failure leaves the
-Postgres order.
+and a search uses about 2,100 on average. On the 50 hand-written queries it adds 157 to 168 ms to
+the page at the median and 203 to 216 ms at the 90th percentile, over the SQL alone. Typeahead
+never calls Jev, and any Jev failure leaves the Postgres order.
 
 ## Try it
 

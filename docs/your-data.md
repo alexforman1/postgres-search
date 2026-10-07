@@ -40,6 +40,9 @@ Supabase puts it). The database needs a UTF-8 locale (the default for most insta
 `C` locale, letters such as "ä" are not treated as letters when names are split into words, and
 "Häagen-Dazs" becomes "h", "agen" and "dazs".
 
+To upgrade an install, run both files again, `schema.sql` first. It only creates what is missing,
+such as `search.words`, which `search.similar_words` and `search.refresh()` now need.
+
 ## 3. Keep it current
 
 `search.documents` is a materialized view, so it changes only when refreshed:

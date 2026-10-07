@@ -65,7 +65,9 @@ peanut butter cookies, crackers and pretzels rather than peanut butter.
 ## Cost and time
 
 TypeSafe charges $0.042 per million input tokens for `jev-1.13.0`; output tokens are free
-([models](https://docs.typesafe.ai/models)). On the 50 eval queries:
+([models](https://docs.typesafe.ai/models)). On the 50 queries in `eval/queries.json`, over the
+three eval runs (the [comparison](measurements.md#three-searches-compared) runs over 115 queries
+gave 161 to 176 ms and 159 to 168 ms at the median):
 
 | call                 | ran on | input tokens, median | ms, median | ms, p90    |
 |----------------------|-------:|---------------------:|-----------:|-----------:|
