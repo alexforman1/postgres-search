@@ -1,7 +1,8 @@
 # Measurements
 
 Measured on 2026-09-22 against the USDA FoodData Central Branded Foods release of 2025-12-18,
-loaded with `npm run load -- --full`, without Jev. Machine: Intel Core i5-10500H (12 logical CPUs,
+loaded with `npm run load -- --full`, without Jev. `search.words`, `search.similar_words` and the
+[Jev](#jev) numbers were measured on 2026-10-07 on the same machine and load. Machine: Intel Core i5-10500H (12 logical CPUs,
 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker image on a local disk, default
 settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
 
@@ -13,8 +14,10 @@ The load keeps one row per barcode: the newest record, with leading zeros ignore
 |----------------------------------------------|----------------:|
 | products in `search.documents`               | 440,302         |
 | distinct names in `search.names`             | 386,091         |
+| distinct words in `search.words`             | 44,179          |
 | `search.documents`, with / without indexes   | 343 MB / 231 MB |
 | `search.names` with its index                | 87 MB           |
+| `search.words` with its two indexes          | 4.6 MB          |
 | release zip (`npm run load -- --full`)       | 447 MB          |
 | committed sample, `data/sample.csv.gz`       | 4.3 MB          |
 
@@ -27,7 +30,8 @@ Indexes on `search.documents`: `documents_name_trgm` 40 MB, `documents_other_nam
 
 `npm run load` (the 100,000-product sample) took 9.4 s and 9.7 s. `npm run load -- --full`, with
 the zip already downloaded, took 70 s. `SELECT search.refresh()` over 440,302 rows took 29.3 s and
-28.4 s.
+28.4 s. These times are from before `search.words` existed. Refreshing it alone took 2.8 s and
+2.2 s, so the loader and `search.refresh()` now take about that much longer.
 
 ## Query speed
 
@@ -51,11 +55,16 @@ last five, in milliseconds, and the guide's other timings were taken the same wa
 | `search.facets('milk')`                 | word   | 15,770       | 128 to 135     |
 | `search.facets('chocolate')`            | word   | 38,068       | 311 to 335     |
 | `search.facets('chocolatte')`           | typo   | 39,149       | 1,238 to 1,262 |
+| `search.similar_words('parmesean')`     |        |              | 0.7 to 0.9     |
+| `search.similar_words('chocolatte')`    |        |              | 0.9 to 1.1     |
+| `search.similar_words('tortila chips')` |        |              | 2.6 to 5.3     |
 
 ## Evaluation
 
 `npm run eval` scores `eval/queries.json` (50 queries through `search.query_distinct`) and
 `eval/suggest.json` (126 typeahead inputs). A hit is a result that matches the case's pattern.
+With a TypeSafe key it also scores the Jev step, `eval/spelling.json` and `eval/absent.json`
+([Jev](#jev)). The tables here are without Jev.
 
 | kind   | cases | hit@1 | hit@3 | hit@10 |
 |--------|------:|------:|------:|-------:|
@@ -123,9 +132,85 @@ before autoanalyze ran after a reload.
 
 ## Jev
 
-Jev's effect was not measured for this release. With `TYPESAFE_API_KEY` in `.env`, this adds
-`jev hit@1` and `jev hit@3` columns to the first eval table:
+Measured on 2026-10-07 with `jev-1.13.0`, the model every answer reported. Three runs of:
 
 ```sh
-node --env-file=.env scripts/eval.ts
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts
 ```
+
+The Jev calls are network round trips from the machine above to `api.typesafe.ai`, so their times
+depend on where the server runs. The machine was also busier than on 2026-09-22, which makes the
+Postgres times in these runs noisier than the table above.
+
+### Results page
+
+All three runs gave this table. "jev" is the page after keep or sink. "followed" scores the
+plain Postgres results of the suggested spelling where "Did you mean" appeared, and the "jev"
+results everywhere else.
+
+| kind   | cases | hit@1 | hit@3 | hit@10 | jev hit@1 | jev hit@3 | followed hit@1 | followed hit@3 | followed hit@10 |
+|--------|------:|------:|------:|-------:|----------:|----------:|---------------:|---------------:|----------------:|
+| exact  | 20    | 95%   | 95%   | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
+| typo   | 18    | 72%   | 72%   | 72%    | 72%       | 72%       | 100%           | 100%           | 100%            |
+| prefix | 6     | 50%   | 67%   | 83%    | 67%       | 83%       | 67%            | 83%            | 83%             |
+| brand  | 3     | 100%  | 100%  | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
+| code   | 3     | 100%  | 100%  | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
+| all    | 50    | 82%   | 84%   | 88%    | 86%       | 88%       | 96%            | 98%            | 98%             |
+
+"Did you mean" appeared for the same 11 queries in every run: `cherios`, `cheerois`, `pringels`,
+`nutela`, `dortios`, `stawberry jam`, `parmesean`, `worchestershire`, `gaucamole`,
+`tortila chips` and `choclate milk`, each with the intended spelling, at 0.67 to 0.98. The
+no-match line appeared once, for `peanut buter`.
+
+An earlier run, before `search.similar_words` left out words that only finish the typed word, also
+suggested "gatorade" for `gatorad` and "blueberry muff" for `blueb muff`. The second made the
+prefix row's followed hit@10 67%.
+
+### Cost and time
+
+| measure                                   | run 1      | run 2      | run 3      |
+|-------------------------------------------|-----------:|-----------:|-----------:|
+| keep or sink: calls / skipped             | 44 / 6     | 44 / 6     | 44 / 6     |
+| keep or sink: input tokens, median        | 1,827      | 1,827      | 1,827      |
+| keep or sink: ms, median / p90            | 153 / 183  | 165 / 200  | 165 / 209  |
+| spelling: calls / skipped                 | 47 / 3     | 47 / 3     | 47 / 3     |
+| spelling: input tokens, median            | 494        | 494        | 494        |
+| spelling: ms, median / p90                | 161 / 196  | 155 / 196  | 170 / 212  |
+| page time added over Postgres, median / p90 | 157 / 216 | 168 / 203 | 165 / 211 |
+| cost per search                           | $0.000087  | $0.000087  | $0.000087  |
+| cost of the whole run                     | $0.0066    | $0.0066    | $0.0066    |
+
+Cost is input tokens times $0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
+output tokens are free. Cost per search divides the results-page tokens by all 50 queries, skipped
+calls included, which is $0.087 per 1,000 searches and about 2,070 input tokens per search. The whole run also covers the spelling and
+absent sets. No call failed.
+
+Before the spelling question existed, the same eval with only keep or sink gave jev hit@1 86% and
+hit@3 88%, 1,827 input tokens per call, 160 and 164 ms median and 200 ms p90 per call (two runs),
+and $0.000065 per search.
+
+### Spelling
+
+`eval/spelling.json` holds 30 misspellings and 20 correctly spelled words. It was written before
+any Jev call on it, and the 0.6 bar was not changed after it was scored. "offered" counts cases
+where the intended spelling was among Jev's options (every control counts). The frequency rule
+respells a word to its most common close word when that word is used at least ten times as often
+as the typed word.
+
+| kind    | cases | offered | Jev              | frequency rule |
+|---------|------:|--------:|-----------------:|---------------:|
+| typo    | 30    | 97%     | 77%, 83%, 77%    | 73%            |
+| control | 20    | 100%    | 100%             | 60%            |
+
+Jev made no wrong suggestion in any run. Its misses were declines: `jalepeno`, `fettucine`,
+`funyons` and `skittels` in all three runs, `cappucino` in two, `marshmellow` and `vinegarette` in
+one, and `granloa`, whose intended spelling was never offered. The frequency rule made 16 wrong
+suggestions in each run, 8 on misspellings (such as `tostitoes` to "tomatoes") and 8 on controls
+(such as `harissa` to "harris").
+
+### No match
+
+`eval/absent.json` holds 15 household goods. In all three runs the line appeared for 10 of them.
+`laundry detergent` and `paper towels` returned no results, `sunscreen` returned one result so
+keep or sink did not run, and `toothpaste` and `light bulbs` returned products carrying those
+words.

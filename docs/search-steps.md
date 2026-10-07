@@ -42,7 +42,8 @@ one product and none of the 2,734 rows whose name contains PARMESAN. These are 4
 misses in the eval. Algolia's default `typoTolerance` (`true`) ranks exact matches first but still
 returns misspelled matches after them, so it would show the parmesan products. Its `"min"` setting
 returns only the records with the fewest typos, which is close to the rule used here and has the
-same cost.
+same cost. With a TypeSafe key, the [Jev step](jev.md) offers "Did you mean parmesan" for these
+queries; the steps still never mix.
 
 Second, a rare whole word beats a prefix. `grano` finds 13 rows with the whole word GRANO, among
 them SACRED GRAINS GRANO (filed under Rice), Italian pastas made from GRANO DURO, and SOLE GRANO
@@ -104,8 +105,10 @@ it is 0.5.
 `dortios` scores 0.375 against DORITOS, under the threshold, and 0.500 against DORTMUNDER, so the
 typo step returns GREAT LAKES BREWING DORTMUNDER GOLD BEER LAGER MUSTARD. `cheerois` scores 0.556
 against CHEERIOS and is found, but CHEERFUL scores the same, so `rank` decides between them.
-Algolia counts a swap of two letters as one typo, so it would match both. A word-level correction
-step would fix this; it is not in this version.
+Algolia counts a swap of two letters as one typo, so it would match both. The SQL has no
+word-level correction. The [Jev step](jev.md) does one outside the SQL: `search.similar_words`
+offers DORITOS among the close spellings of `dortios`, and Jev picks it for a "Did you mean"
+link.
 
 ## Splitting words
 

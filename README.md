@@ -1,13 +1,38 @@
 # postgres-search
 
 Algolia-style search in plain Postgres: whole words, partial words, typos, barcodes, typeahead,
-and facet counts, all in SQL. An optional step asks [Jev](https://docs.typesafe.ai) to push
-clearly wrong results down the page.
+and facet counts, all in SQL. An optional step asks [Jev](https://docs.typesafe.ai) two questions
+per search: which results are wrong, so they move down the page, and which spelling the user
+meant, so the page can offer "Did you mean". When Jev judges every top result wrong, the page
+says so.
 
 The demo searches the USDA FoodData Central branded foods list. On the full 2025-12-18 release
 (440,302 products), the warm results query takes about 2 ms for `cheerios`, 22 ms for `milk` and
 53 ms for the misspelled `cheerois`; facet counts for `milk` take 128 to 135 ms
 ([measurements](docs/measurements.md)).
+
+## What Jev adds
+
+On 50 hand-written queries against the full release, with `jev-1.13.0`
+([measurements](docs/measurements.md#jev)):
+
+|                                    | right product first | right product in the top 10 |
+|------------------------------------|--------------------:|----------------------------:|
+| Postgres alone                     | 82%                 | 88%                         |
+| with Jev moving wrong results down | 86%                 | 88%                         |
+| following Jev's "Did you mean"     | 96%                 | 98%                         |
+
+All 18 misspelled queries show the right product first once the suggestion is followed, against
+13 without Jev. `parmesean` gets "Did you mean parmesan" and `dortios` gets "doritos", two cases the
+SQL cannot fix. On 50 more words written as a held-out test, Jev fixed 23 to 25 of 30
+misspellings, left all 20 correctly spelled words alone, and made no wrong suggestion; a rule that
+picks the most common close word made 16 wrong ones.
+
+It costs $0.087 per 1,000 searches: TypeSafe charges $0.042 per million input tokens, and a search
+uses about 2,100 on average. It adds 157 to 168 ms to the results page at the median and 203 to
+216 ms at the 90th percentile; the two questions run at the same time, the spelling one while
+Postgres is still searching. Typeahead never calls Jev. Any Jev failure leaves the Postgres order.
+[The Jev step](docs/jev.md) shows both requests, the rules, and the limits.
 
 ## Try it
 
@@ -32,14 +57,14 @@ reboot, start the database again with `docker start postgres-search`.
 `npm run load -- --full` downloads the whole release (447 MB) instead of using the sample. It
 needs `unzip`.
 
-To try the Jev step, set a TypeSafe API key before `npm start`:
+To try the Jev step, set a TypeSafe API key before `npm start`, then search for `parmesean`,
+`dortios` or `shampoo`:
 
 ```sh
 TYPESAFE_API_KEY=... npm start
 ```
 
-Without a key everything else works the same. Jev's effect on the demo data has not been measured;
-see [the Jev step](docs/jev.md).
+Without a key everything else works the same.
 
 ## Use it with your data
 
@@ -58,8 +83,7 @@ npx skills add alexforman1/postgres-search
 prefix, whole words, word prefixes, then typo matching with trigrams. Steps never mix, which keeps
 fuzzy matches out of good results. Facet counts come from the same rows the search returned.
 
-On 50 hand-written queries against the full release, a correct product is first for 82% of them
-and in the top 10 for 88%.
+Without Jev, a correct product is first for 82% of the 50 eval queries and in the top 10 for 88%.
 
 - [How it works](docs/how-it-works.md)
 - [The search steps](docs/search-steps.md)
@@ -72,12 +96,13 @@ and in the top 10 for 88%.
 
 ## Limits
 
-A misspelling that some product also carries hides the correctly spelled products: USDA lists one
-PARMESEAN product, so `parmesean` never shows the 2,734 parmesan rows. Transposed letters can be
-missed; trigram matching scores "dortios" at 0.375 against DORITOS, under the 0.5 cutoff. A typo
-of a very common word is slow: the demo page waits about 1.25 s for "chocolatte". The materialized
-view is stale until refreshed. [How it works](docs/how-it-works.md#what-it-does-not-do) lists
-each cost.
+Without Jev, a misspelling that some product also carries hides the correctly spelled products:
+USDA lists one PARMESEAN product, so `parmesean` never shows the 2,734 parmesan rows. Transposed
+letters can be missed; trigram matching scores "dortios" at 0.375 against DORITOS, under the 0.5
+cutoff. Jev's "Did you mean" covers both, but it respells one word per query and missed 5 to 7 of
+the 30 held-out misspellings. A typo of a very common word is slow: the demo page waits about
+1.25 s for "chocolatte". The materialized views are stale until refreshed.
+[How it works](docs/how-it-works.md#what-it-does-not-do) lists each cost.
 
 ## Contributing
 

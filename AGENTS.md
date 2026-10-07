@@ -24,12 +24,13 @@ works without it.
 
 - `sql/` is the product. `schema.sql` builds the search objects from `search.source`;
   `functions.sql` holds `search.query`, `search.query_distinct`, `search.suggest`,
-  `search.facets`, `search.refresh`.
+  `search.facets`, `search.similar_words`, `search.refresh`.
 - `src/` is the optional Jev step and a database helper.
 - `server.ts` and `public/` are the demo only. Do not grow them into an API.
 - `skills/postgres-search/` is a copy for other projects. When `sql/` changes, copy the two files
-  over (CI compares them). When `src/rerank.ts` or `src/jev.ts` changes, update
-  `skills/postgres-search/rerank.ts` by hand.
+  over (CI compares them). When a file in `src/` other than `db.ts` changes, update
+  `skills/postgres-search/rerank.ts` by hand; it holds `jev.ts`, `tokens.ts`, `rerank.ts` and
+  `spelling.ts` in one file.
 - `docs/` is the guide. Numbers in it come from `docs/measurements.md`; rerun the commands there
   when a change affects speed or results.
 

@@ -26,7 +26,8 @@ Algolia's default (`true`) returns exact and misspelled matches together, fewest
 `"min"` setting returns only the records with the fewest typos, which is close to how the steps
 behave here. The typo step scores trigrams, so there is no per-word length rule like
 `minWordSizefor1Typo`. Algolia counts two swapped letters as one typo; trigram scoring does not,
-so `dortios` misses Doritos ([search steps](search-steps.md)).
+so `dortios` misses Doritos ([search steps](search-steps.md)). The [Jev step](jev.md) offers it as
+"Did you mean doritos".
 
 `queryType` becomes the prefix step. Algolia's default, `prefixLast`, treats the last word as a
 prefix. The prefix step treats every word as a prefix, like `prefixAll`, needs at least one word of
@@ -65,7 +66,7 @@ last, once the new engine has carried all traffic through at least one `search.r
 
 ## What you lose
 
-A swap of two letters is not treated as one typo. Algolia's analytics and dashboards have no
+Without the Jev step, a swap of two letters is not treated as one typo. Algolia's analytics and dashboards have no
 equivalent here, and neither do its synonyms. Algolia scales the search service for you; here
 search load lands on your database, so size it and set a `statement_timeout`.
 
@@ -74,4 +75,5 @@ search load lands on your database, so size it and set a `statement_timeout`.
 One less service to pay for, and no index updates to send to it. No per-record size limit, which
 Algolia sets by plan. Search runs inside your database's transactions and permissions: a query can
 join your own tables, filter by the same rules as the rest of your app, and see a row as soon as
-the refresh that includes it commits.
+the refresh that includes it commits. With a TypeSafe key, the [Jev step](jev.md) adds "Did you
+mean" and moves clearly wrong results down, for about 9 cents per 1,000 searches.

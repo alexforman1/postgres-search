@@ -1,7 +1,7 @@
 {
   "name": "postgres-search",
   "version": "0.1.0",
-  "description": "Algolia-style search in plain Postgres, with an optional Jev step that sinks wrong results.",
+  "description": "Algolia-style search in plain Postgres, with an optional Jev step that sinks wrong results and suggests spellings.",
   "license": "MIT",
   "repository": {
     "type": "git",
