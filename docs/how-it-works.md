@@ -17,14 +17,16 @@ Everything lives in a schema named `search`, so `DROP SCHEMA search CASCADE` rem
   without leading zeros, two text-search vectors, and the indexes.
 - `search.names`: one row per distinct name, with the number of documents that share it.
 - `search.words`: one row per distinct word in names and other names, with the number of
-  documents that use it.
+  documents that use it, its English stem, and the number of documents the word step finds for it.
 - `search.tokens(text)`: splits text into lower-cased words. Names and queries use the same split.
 - `search.query(q, filters, lim)`: the four search steps. Returns `id`, `step`, and `pos`.
 - `search.query_distinct(q, filters, lim)`: the same, with one row per group.
 - `search.suggest(q, lim)`: typeahead over `search.names`.
 - `search.facets(q, filters, per_facet)`: facet counts over the rows `search.query` matched.
+- `search.edits1(w)`: every string one edit from `w` (a letter added, removed or replaced, or two
+  neighbors swapped).
 - `search.similar_words(q, per_word)`: close spellings of each query word from `search.words`,
-  for the Jev step's spelling question.
+  words one edit away first, then trigram neighbors, for the Jev step's spelling question.
 - `search.refresh()`: refreshes the three materialized views.
 
 `sql/schema.sql` creates `search.tokens`, `search.documents`, `search.names` and `search.words`

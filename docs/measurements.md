@@ -3,8 +3,8 @@
 Measured on 2026-09-22 against the USDA FoodData Central Branded Foods release of 2025-12-18,
 loaded with `npm run load -- --full`, without Jev. `search.words`, `search.similar_words` and the
 [Jev](#jev-and-the-three-way-comparison) numbers were measured on 2026-10-07 on the same machine
-and load; the `search.similar_words` times were taken with a load average of about 11 from other
-programs. Machine: Intel Core i5-10500H (12 logical CPUs,
+and load; the `search.similar_words` times were taken with a load average of 3 to 5 from other
+programs. About two thirds of each comes from `search.edits1`, about 2 ms per word. Machine: Intel Core i5-10500H (12 logical CPUs,
 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker image on a local disk, default
 settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
 
@@ -19,7 +19,7 @@ The load keeps one row per barcode: the newest record, with leading zeros ignore
 | distinct words in `search.words`             | 44,179          |
 | `search.documents`, with / without indexes   | 343 MB / 231 MB |
 | `search.names` with its index                | 87 MB           |
-| `search.words` with its two indexes          | 4.6 MB          |
+| `search.words` with its three indexes        | 6.2 MB          |
 | release zip (`npm run load -- --full`)       | 447 MB          |
 | committed sample, `data/sample.csv.gz`       | 4.3 MB          |
 
@@ -32,8 +32,8 @@ Indexes on `search.documents`: `documents_name_trgm` 40 MB, `documents_other_nam
 
 `npm run load` (the 100,000-product sample) took 9.4 s and 9.7 s. `npm run load -- --full`, with
 the zip already downloaded, took 70 s. `SELECT search.refresh()` over 440,302 rows took 29.3 s and
-28.4 s. These times are from before `search.words` existed. Refreshing it alone took 2.8 s and
-2.2 s, so the loader and `search.refresh()` now take about that much longer.
+28.4 s. These times are from before `search.words` existed. Refreshing it alone took 2.7 s and
+2.1 s, so the loader and `search.refresh()` now take about that much longer.
 
 ## Query speed
 
@@ -57,9 +57,10 @@ last five, in milliseconds, and the guide's other timings were taken the same wa
 | `search.facets('milk')`                 | word   | 15,770       | 128 to 135     |
 | `search.facets('chocolate')`            | word   | 38,068       | 311 to 335     |
 | `search.facets('chocolatte')`           | typo   | 39,149       | 1,238 to 1,262 |
-| `search.similar_words('parmesean')`     |        |              | 0.8 to 2.6     |
-| `search.similar_words('chocolatte')`    |        |              | 1.7 to 3.3     |
-| `search.similar_words('tortila chips')` |        |              | 3.3 to 5.8     |
+| `search.similar_words('parmesean')`     |        |              | 9.9 to 20.4    |
+| `search.similar_words('chocolatte')`    |        |              | 7.3 to 11.1    |
+| `search.similar_words('tortila chips')` |        |              | 6.4 to 10.8    |
+| `search.similar_words('skippy peanut butter')` |  |            | 9.0 to 13.1    |
 
 ## Evaluation
 
@@ -142,41 +143,41 @@ JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
 node scripts/report.ts
 ```
 
-`scripts/compare.ts` runs 615 queries (`eval/queries.json`, `eval/spelling.json`,
-`eval/synthetic.json`, `eval/absent.json`) through plain Postgres full-text search, this SQL, and
-this SQL with the Jev step, and writes every query's outcome to `results/`. `scripts/report.ts`
-turns those files into [`results/report.md`](../results/report.md), the full record with every
-group, system and test, and into the figures in `docs/figures/`. The
-[README](../README.md#3-method) gives the method and discusses the results; the numbers below are
-copied from `results/report.md`.
+`scripts/compare.ts` runs 1,588 queries (`eval/queries.json`, `eval/spelling.json`,
+`eval/synthetic.json`, `eval/synthetic-test.json`, `eval/wikipedia.json`, `eval/absent.json`)
+through plain Postgres full-text search, this SQL, and this SQL with the Jev step, and writes every
+query's outcome to `results/`. `scripts/report.ts` turns those files into
+[`results/report.md`](../results/report.md), the full record with every group, system and test,
+and into the figures in `docs/figures/`. The first version of the Jev step, which these runs
+replace, is in `results/v1/` with its own report. The [README](../README.md#3-method) gives the
+method and discusses the results; the numbers below are copied from `results/report.md`.
 
 The Jev calls are network round trips from this machine to `api.typesafe.ai`, so their times
-depend on where the server runs. A browser was running during the runs, with a load average of 5
-to 13, which makes the Postgres times noisier than the table above.
+depend on where the server runs. A browser was running during the runs, with a load average of 3
+to 14, which makes the Postgres times noisier than the table above.
 
-| hit@1, median of five runs | hand-written (50) | held-out (50) | synthetic (500) |
-|----------------------------|------------------:|--------------:|----------------:|
-| plain Postgres full-text search | 52% | 42% | 36% |
-| this SQL | 82% | 64% | 68% |
-| this SQL + Jev keep or sink | 86% | 68% | 73% |
-| this SQL + Jev "Did you mean", one click | 92% | 86% | 77% |
-| this SQL + both, one click | 96% | 90% | 79% |
-| this SQL + Norvig corrector, one click | 82% | 66% | 87% |
+| hit@1, median of five runs | hand-written (50) | synthetic test (500) | Wikipedia (473) |
+|----------------------------|------------------:|---------------------:|----------------:|
+| plain Postgres full-text search | 52% | 37% | 5% |
+| this SQL | 82% | 65% | 42% |
+| this SQL + Jev keep or sink | 86% | 70% | 48% |
+| this SQL + Jev "Did you mean", one click | 90% | 85% | 70% |
+| this SQL + both, one click | 94% | 85% | 71% |
+| this SQL + Norvig corrector, one click | 82% | 86% | 64% |
 
 | ms, five runs pooled | median | p90 | p99 |
 |----------------------|-------:|----:|----:|
-| plain Postgres full-text search | 3 | 21 | 227 |
-| this SQL | 25 | 202 | 667 |
-| this SQL + Jev, whole page | 196 | 314 | 669 |
-| time Jev adds to the page | 166 | 219 | 382 |
-| one keep-or-sink call | 162 | 207 | 362 |
-| one spelling call | 157 | 202 | 331 |
+| plain Postgres full-text search | 2 | 11 | 140 |
+| this SQL | 26 | 231 | 688 |
+| this SQL + Jev, whole page | 201 | 324 | 698 |
+| time Jev adds to the page | 165 | 213 | 332 |
+| one keep-or-sink call | 159 | 203 | 312 |
+| one spelling call | 155 | 199 | 332 |
 
 Cost is input tokens times \$0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
-output tokens are free. On the hand-written queries a search used 1,912 input tokens on average,
-\$0.080 per 1,000 searches; across the four sets it was \$0.077 to \$0.089 per 1,000. One run of
-`scripts/compare.ts`, including a research-only variant of the spelling question, sends about 1.5
-million input tokens and costs \$0.065.
+output tokens are free. On the hand-written queries a search used 2,076 input tokens on average,
+\$0.087 per 1,000 searches; across the six sets it was \$0.087 to \$0.097 per 1,000. One run of
+`scripts/compare.ts` sends about 3.5 million input tokens and costs \$0.149.
 
-Numbers in this file from before 2026-10-07 that concern Jev, and the eval runs made before the
-review fixes of that day, are in the git history; they describe earlier code.
+Numbers in this file from before 2026-10-07 that concern Jev are in the git history; they describe
+earlier code.

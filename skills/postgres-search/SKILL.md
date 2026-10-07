@@ -105,10 +105,10 @@ rules:
 - on any error, timeout (1.5 s), or missing answer, keep the original page;
 - the key never reaches the browser.
 
-On the demo data the step costs about 8 cents per 1,000 searches and adds 166 ms at the median.
-A Norvig-style dictionary corrector fixed more single-edit misspellings than the spelling question
-did; the spelling question was better on misspellings that are themselves words in the index and
-rarely respelled a correct word. Measure it on the project's own queries before relying on the thresholds.
+On the demo data the step costs about 9 cents per 1,000 searches and adds 165 ms at the median.
+With the edit counts and product counts in its options, the spelling question tied a Norvig-style
+dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
+misspellings that are themselves words in the index. Without that evidence it lost; keep it. Measure it on the project's own queries before relying on the thresholds.
 
 ### 6. Verify
 

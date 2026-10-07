@@ -121,7 +121,7 @@ ORDER BY r.pos;
 ## 7. The Jev step
 
 It runs in your server, not in the database. `skills/postgres-search/rerank.ts` holds the HTTP
-call, the keep or sink step and the spelling question in one file of 312 lines, with no
+call, the keep or sink step and the spelling question in one file of 358 lines, with no
 dependency beyond `fetch` (`src/jev.ts`, `src/rerank.ts`, `src/spelling.ts` and `src/tokens.ts`
 are the same code in four files). Port it to your language and keep the key on the server. Change
 the spelling question's `note` to say what your search holds. [The Jev step](jev.md) lists the

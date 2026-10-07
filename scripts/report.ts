@@ -81,29 +81,36 @@ const hasWide = runs.every(run => run.records.every(r => r.wide !== undefined))
 // Which misspelled words are in search.words, read once from the database and kept in known.json
 // beside the runs, so the report rebuilds from the directory alone. A real-word error is a
 // misspelling that some product name also carries.
+// It also records which intended words are stop words, which the search ignores, so no system can
+// find a product for them.
 const known = new Set<string>()
+const stopTargets = new Set<string>()
 {
-  const words = [
-    ...new Set(runs.flatMap(run => run.records).filter(r => r.kind === 'typo' && r.expect).flatMap(r => tokens(r.q))),
-  ].sort()
+  const typos = runs.flatMap(run => run.records).filter(r => r.kind === 'typo' && r.expect)
+  const words = [...new Set(typos.flatMap(r => tokens(r.q)))].sort()
+  const targets = [...new Set(typos.flatMap(r => tokens(r.expect!)))].sort()
   const cache = new URL('known.json', dir)
-  let saved: { checked: string[]; known: string[] } | null = null
+  let saved: { checked: string[]; known: string[]; targets?: string[]; stop?: string[] } | null = null
   try {
     saved = JSON.parse(await readFile(cache, 'utf8'))
   } catch {}
-  if (saved && words.every(w => saved!.checked.includes(w))) {
+  if (saved?.targets && words.every(w => saved!.checked.includes(w)) && targets.every(w => saved!.targets!.includes(w))) {
     for (const w of saved.known) known.add(w)
+    for (const w of saved.stop ?? []) stopTargets.add(w)
   } else {
     const { connect } = await import('../src/db.ts')
     const pool = connect()
     try {
       for (const row of (await pool.query<{ word: string }>('SELECT word FROM search.words WHERE word = ANY($1)', [words])).rows) known.add(row.word)
+      const stop = await pool.query<{ w: string }>(`SELECT w FROM unnest($1::text[]) AS w WHERE ts_lexize('english_stem', w) = '{}'`, [targets])
+      for (const row of stop.rows) stopTargets.add(row.w)
     } finally {
       await pool.end()
     }
-    await writeFile(cache, `${JSON.stringify({ checked: words, known: [...known].sort() })}\n`)
+    await writeFile(cache, `${JSON.stringify({ checked: words, known: [...known].sort(), targets, stop: [...stopTargets].sort() })}\n`)
   }
 }
+const searchable = (r: Rec) => !tokens(r.expect ?? '').some(w => stopTargets.has(w))
 const misspelled = (r: Rec) => tokens(r.q).filter(w => !tokens(r.expect ?? '').includes(w))
 const realWord = (r: Rec) => misspelled(r).length > 0 && misspelled(r).every(w => known.has(w))
 
@@ -216,6 +223,7 @@ const ALL_GROUPS: Group[] = [
   { name: 'wikipedia', take: r => r.set === 'wikipedia' },
   { name: 'wikipedia, real-word errors', take: r => r.set === 'wikipedia' && realWord(r) },
   { name: 'wikipedia, non-word errors', take: r => r.set === 'wikipedia' && !realWord(r) },
+  { name: 'wikipedia, searchable words (post hoc)', take: r => r.set === 'wikipedia' && searchable(r) },
   { name: 'test (synthetic-test and wikipedia)', take: isTest },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
@@ -230,9 +238,9 @@ interface Cell {
   ci: [number, number]
 }
 
-function cell(group: Group, s: SystemId, metric: 'hit1' | 'hit10'): Cell {
-  const counts = runs.map(run => run.records.filter(group.take).filter(r => outcome(r, s)[metric]).length)
-  const n = runs[0].records.filter(group.take).length
+function cell(group: Group, s: SystemId, metric: 'hit1' | 'hit10', from: Run[] = runs): Cell {
+  const counts = from.map(run => run.records.filter(group.take).filter(r => outcome(r, s)[metric]).length)
+  const n = from[0].records.filter(group.take).length
   const k = median(counts)
   return { n, k, lo: Math.min(...counts), hi: Math.max(...counts), ci: wilson(k, n) }
 }
@@ -417,6 +425,34 @@ function correction(rs: Rec[], c: Corrector): Correction {
 }
 
 const span = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `${median(v)} (${Math.min(...v)} to ${Math.max(...v)})`)
+
+// The first version against this one, on the development sets both were run on.
+const v1 = drawFigures ? await loadRuns(new URL('../results/v1/', import.meta.url)).catch(() => [] as Run[]) : []
+if (v1.length) {
+  line('## Version 1 and version 2 on the development sets')
+  line()
+  line(`Version 1 (${v1.length} runs in results/v1) used trigram candidates only, no counts or edits in the options, and a bar of 0.6. Hit@1, median run.`)
+  line()
+  const dev = ['hand-written', 'held-out', 'synthetic', 'out-of-sample (held-out and synthetic)'].map(name => ALL_GROUPS.find(g => g.name === name)!)
+  table(
+    ['group', 'n', 'v1 "Did you mean"', 'v2 "Did you mean"', 'v1 both questions', 'v2 both questions', 'Norvig corrector'],
+    dev.map(g => {
+      const c = (s: SystemId, from: Run[]) => pct(cell(g, s, 'hit1', from).k / cell(g, s, 'hit1', from).n)
+      return [g.name, cell(g, 'sql', 'hit1').n, c('spellingOnly', v1), c('spellingOnly', runs), c('jev', v1), c('jev', runs), c('norvig', runs)]
+    }),
+  )
+  const corr = (from: Run[]) => {
+    const per = from.map(run => correction(run.records.filter(r => r.set === 'synthetic'), 'jev'))
+    return [median(per.map(x => x.fixed)), median(per.map(x => x.wrong)), median(per.map(x => x.missed)), median(per.map(x => x.falseAlarms)), median(per.map(x => x.offered))]
+  }
+  table(
+    ['synthetic development set (300 misspellings, 200 controls)', 'fixed', 'wrong', 'missed', 'false alarms', 'intended word offered'],
+    [
+      ['version 1', ...corr(v1)],
+      ['version 2', ...corr(runs)],
+    ],
+  )
+}
 
 line('## Spelling correction')
 line()
@@ -788,9 +824,17 @@ const figures: Record<string, (theme: Theme) => string> = {}
 figures['accuracy'] = theme => {
   const t = THEME[theme]
   const sets = [
-    { g: GROUPS.find(g => g.name === 'hand-written')!, title: 'Hand-written queries (n = 50, partly in-sample for Jev)' },
-    { g: GROUPS.find(g => g.name === 'held-out')!, title: 'Held-out words (n = 50)' },
-    { g: GROUPS.find(g => g.name === 'synthetic')!, title: 'Synthetic one-edit misspellings and controls (n = 500)' },
+    ...(hasTest
+      ? [
+          { g: GROUPS.find(g => g.name === 'hand-written')!, title: 'Hand-written queries (n = 50, development)' },
+          { g: GROUPS.find(g => g.name === 'synthetic-test')!, title: 'Test: synthetic one-edit misspellings and controls (n = 500)' },
+          { g: GROUPS.find(g => g.name === 'wikipedia')!, title: `Test: real misspellings from Wikipedia (n = ${runs[0].records.filter(r => r.set === 'wikipedia').length})` },
+        ]
+      : [
+          { g: GROUPS.find(g => g.name === 'hand-written')!, title: 'Hand-written queries (n = 50, partly in-sample for Jev)' },
+          { g: GROUPS.find(g => g.name === 'held-out')!, title: 'Held-out words (n = 50)' },
+          { g: GROUPS.find(g => g.name === 'synthetic')!, title: 'Synthetic one-edit misspellings and controls (n = 500)' },
+        ]),
   ]
   const systems: { s: SystemId; jev: boolean }[] = [
     { s: 'plain', jev: false },
@@ -843,7 +887,7 @@ figures['spelling-by-edit'] = theme => {
   const gw = (W - left - right) / groups.length
   const bw = 22
   const y = (v: number) => bottom - v * (bottom - top)
-  let body = text(24, 30, 'Synthetic misspellings fixed, by edit type', { fill: t.text, size: 16, weight: 600 })
+  let body = text(24, 30, `${editSet === 'synthetic-test' ? 'Synthetic test set' : 'Synthetic set'}: misspellings fixed, by edit type`, { fill: t.text, size: 16, weight: 600 })
   body += text(24, 50, 'Share of 75 misspellings per type where the suggestion is the intended word (median of five runs). Labels: Jev.', { fill: t.muted, size: 12 })
   body += legend(CORRECTORS.map((c, i) => ({ label: CORRECTOR_LABEL[c], color: t.series[i] })), left, 72, t)
   for (const v of [0, 0.25, 0.5, 0.75, 1]) {
@@ -1048,7 +1092,7 @@ figures['timeline'] = theme => {
   }
   const rows = [
     { label: 'search, then keep or sink', pg: s, pgLabel: `search ${s.toFixed(0)} ms`, jev: r, jevLabel: `judge ${median(judgments)} results: ${r.toFixed(0)} ms` },
-    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (0.8 to 5.8 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
+    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (6 to 20 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
   ]
   rows.forEach((row, i) => {
     const y = 96 + i * 58
@@ -1076,8 +1120,9 @@ figures['error-types'] = theme => {
   const bottom = 290
   const shown: Corrector[] = ['jev', 'norvig', 'frequency', 'cascade']
   const y = (v: number) => bottom - v * (bottom - top)
-  let body = text(24, 30, 'Misspellings fixed, by kind of error (held-out and synthetic sets)', { fill: t.text, size: 16, weight: 600 })
-  body += text(24, 50, 'A real-word error also appears in some product name, so Norvig\'s corrector keeps it by design. The 18 come from the hand-written held-out set.', { fill: t.muted, size: 12 })
+  const realSource = hasTest ? 'from Wikipedia\'s list of common misspellings' : 'from the hand-written held-out set'
+  let body = text(24, 30, `Misspellings fixed, by kind of error (${scopeName} sets)`, { fill: t.text, size: 16, weight: 600 })
+  body += text(24, 50, `A real-word error also appears in some product name, so Norvig's corrector keeps it by design. The ${errorSplit[0].n} come ${realSource}.`, { fill: t.muted, size: 12 })
   body += legend(shown.map((c, i) => ({ label: CORRECTOR_LABEL[c], color: t.series[i] })), left, 74, t)
   for (const v of [0, 0.25, 0.5, 0.75, 1]) {
     body += lineEl(left, y(v), W - right, y(v), t.grid)

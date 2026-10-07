@@ -20,43 +20,38 @@ Without a key, the demo and the eval skip the step and use the Postgres order. T
 
 ## What it changes
 
-Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 615 queries. The
+Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 1,588 queries.
+The design was frozen before the two test sets were made. The
 [README](../README.md#4-results) gives the method, the statistical tests and the figures, and
 [`results/report.md`](../results/report.md) has every number.
 
-| hit@1, median of five runs | hand-written (50) | held-out (50) | synthetic (500) |
-|----------------------------|------------------:|--------------:|----------------:|
-| this SQL | 82% | 64% | 68% |
-| + keep or sink | 86% | 68% | 73% |
-| + "Did you mean", one click | 92% | 86% | 77% |
-| + both, one click | 96% | 90% | 79% |
+| hit@1, median of five runs | hand-written (50) | synthetic test (500) | Wikipedia (473) |
+|----------------------------|------------------:|---------------------:|----------------:|
+| this SQL | 82% | 65% | 42% |
+| + keep or sink | 86% | 70% | 48% |
+| + "Did you mean", one click | 90% | 85% | 70% |
+| + both, one click | 94% | 85% | 71% |
+| Norvig-style corrector instead, one click | 82% | 86% | 64% |
 
-On the 550 queries nothing was tuned on (held-out and synthetic), keep or sink (72% against 68%)
-and "Did you mean" (78% against 68%) are both significant after Holm's correction. "Did you mean"
-appeared on the same 12 of the 50 hand-written queries in every run, all misspellings, each with
-the intended word, among them `parmesean`, `dortios`, `gaucamole`, `tortila chips` and
-`choclate milk`, which the SQL alone cannot fix.
-
-A Norvig-style dictionary corrector over `search.words` beats the spelling question on
-single-edit non-word misspellings (85% against 78% hit@1 out of sample). The spelling question is
-better where the misspelling is itself a word some product uses, which that corrector keeps by
-design, and on the held-out set it made no wrong suggestion where that corrector respelled
-`hellmanns` and `kelloggs`. On the 220 correctly spelled controls the two tie at 2 respellings
-each; a frequency rule respelled 84.
+On the 973 test queries, keep or sink (59% against 54%) and "Did you mean" (78% against 54%) are
+both significant after Holm's correction, and "Did you mean" beats the dictionary corrector (78%
+against 75%, p ≤ 0.040). The corrector ties it on the synthetic one-edit set, which matches the
+corrector's own error model, and loses on real misspellings, most of all on those that are
+themselves words some product uses (84% against 31% on 32 such cases).
 
 ## Cost and time
 
 TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output tokens are free
-([models](https://docs.typesafe.ai/models)). Five runs pooled, 3,075 queries:
+([models](https://docs.typesafe.ai/models)). Five runs pooled, 7,940 queries:
 
 | call | sent on | ms, median | ms, p90 |
 |------|--------:|-----------:|--------:|
-| keep or sink, 10 results judged | 94% of searches | 162 | 207 |
-| spelling, median 7 options | 88% of searches | 157 | 202 |
+| keep or sink, 10 results judged | 92% of searches | 159 | 203 |
+| spelling, median 8 options | 89% of searches | 155 | 199 |
 
-On the hand-written queries a search used 1,912 input tokens on average, \$0.080 per 1,000
-searches; across the four query sets it was \$0.077 to \$0.089 per 1,000. The two calls run at the
-same time, so the page waits for the slower one: the step adds 166 ms at the median and 219 ms at
+On the hand-written queries a search used 2,076 input tokens on average, \$0.087 per 1,000
+searches; across the six query sets it was \$0.087 to \$0.097 per 1,000. The two calls run at the
+same time, so the page waits for the slower one: the step adds 165 ms at the median and 213 ms at
 the 90th percentile to the Postgres query. These are round trips from one machine; measure from
 your own servers.
 
@@ -125,52 +120,67 @@ These are the cases the question is meant for, from the word step on the USDA da
 
 ## Question 2: did you mean
 
-`search.words` lists every word products use, with the number of products that use it.
-`search.similar_words(q)` returns, for each query word, up to 8 words spelled close to it (trigram
-similarity 0.3 or more), closest first. It skips words under four letters and words with digits,
-whose few trigrams match too much, and stop words, which the search ignores. It offers only words
-that more products use than the typed word, so a common, correctly spelled word usually gets no
-options and no Jev call. And it leaves out words that only finish the typed word, because the
-prefix step already finds those. That last rule came from the eval: `blueb muff` was offered
-"blueberry muff", which finds less than the prefix step did.
+`search.words` lists every word products use: how many products' names hold it, its English stem,
+and how many products the word step finds for it. `search.similar_words(q)` returns, for each query
+word, up to 8 candidates: every word one edit away (`search.edits1`: a letter added, removed or
+replaced, or two neighbors swapped), most found first, then trigram neighbors with similarity 0.3
+or more, closest first. It skips words under four letters, words with digits and stop words. A
+candidate must be found in more products than the typed word, must have a different stem, and must
+not just finish the typed word, which the prefix step finds. Counting what the search finds, not
+how often the word itself appears, keeps possessives such as `hellmanns` from looking misspelled:
+the search finds 85 HELLMANN'S products for it.
 
-`spellings()` in `src/spelling.ts` turns those rows into options: the query as typed, then the
-query with one word changed, every word's closest alternative before any word's second, up to 16
-options. For `parmesean`, the request is:
+`checkSpelling()` in `src/spelling.ts` turns those rows into options, the query as typed and then
+the query with one word changed, every word's closest candidate before any word's second, up to
+16, and tells Jev for each option how many edits separate it from what was typed and how many
+products the search finds for its words. For `parmesean`, the request is:
 
 ```json
 {
   "model": "jev-latest",
   "state": {
     "query": "parmesean",
-    "note": "A user typed `query` into the search box of a grocery and packaged food product search."
+    "note": "A user typed `query` into the search box of a grocery and packaged food product search.",
+    "evidence": "Each option says how many edits separate it from what was typed, where an edit is one letter added, removed or replaced or two neighboring letters swapped, and how many of the catalog's products the search finds for the words it changes. A word the search finds in no product is not a word this catalog uses, so searching it shows nothing."
   },
   "questions": {
     "meant": {
       "type": "choice",
       "instructions": "Which of these searches did the user mean to type? Pick the one that is spelled the way the user intended. The first option is exactly what they typed.",
       "criteria": {
-        "s0": "\"parmesean\"", "s1": "\"parmesan\"", "s2": "\"parmesano\"", "s3": "\"parmela\"",
-        "s4": "\"parm\"", "s5": "\"parma\""
+        "s0": "\"parmesean\", exactly as typed. The search finds parmesean in 1 product.",
+        "s1": "\"parmesan\", 1 edit from what was typed. The search finds parmesan in 2,732 products.",
+        "s2": "\"parmesano\", 2 edits from what was typed. The search finds parmesano in 2 products.",
+        "s3": "\"parmela\", 3 edits from what was typed. The search finds parmela in 17 products.",
+        "s4": "\"parm\", 5 edits from what was typed. The search finds parm in 65 products.",
+        "s5": "\"parma\", 4 edits from what was typed. The search finds parma in 26 products."
       }
     }
   }
 }
 ```
 
-The answer's `probabilities` gives each option a share of 1. A respelling with 0.6 or more becomes
-the suggestion; `parmesan` got 0.71 to 0.79 in five runs. The page shows it as a link and never
-searches it without a click. The `note` tells Jev what the catalog holds; the default says "a
-product search box", and the demo names groceries. Say what your search holds.
+The answer's `probabilities` gives each option a share of 1. The likeliest respelling becomes the
+suggestion when Jev finds it at least twice as likely as the spelling typed and at least 0.3
+likely (`ratio` and `suggestAt` change both). Comparing it with the typed spelling rather than with
+a fixed bar keeps a suggestion when Jev splits the rest among several close words. The page shows
+it as a link and never searches it without a click. The `note` tells Jev what the catalog holds;
+the default says "a product search box", and the demo names groceries. Say what your search holds.
 
 This question needs only the query, so the server sends it while Postgres is still searching. It
 also runs when the search returns one result or none, where question 1 is skipped. A filter click
 repeats the search with the same words, so it does not ask the question again.
 
-The 0.6 bar was set before `eval/spelling.json` was scored. Before that, a probe of 15 queries, 14
-of them from `eval/queries.json`, gave the intended respelling 0.68 or more on all 7
-misspellings, and the query as typed won on the other 8 with 0.60 to 1.00. So the "Did you mean"
-results on `eval/queries.json` are not held out; the `eval/spelling.json` results are.
+### How this design came about
+
+The first version offered only trigram neighbors, showed Jev the bare spellings, and suggested at
+0.6. On 300 synthetic misspellings it fixed 174 and lost to a Norvig-style dictionary corrector,
+which fixed 272. Two causes accounted for most of the gap: 40 intended words were never among the
+options, and 75 were offered but declined, because Jev could not tell a misspelling from a rare
+brand without knowing which spellings the catalog uses. The one-edit candidates, the counts, the
+edits and the twice-as-likely rule fix those; the rule was chosen with `scripts/spelling-rules.ts`
+on the development sets. The design was then frozen and tested on two sets made afterwards. The
+[README](../README.md#4-results) reports both stages.
 
 ## No match
 
@@ -183,9 +193,10 @@ check keeps the line off those pages. The demo shows the line only when there is
 and the results stay on the page.
 
 In the five runs the page said that nothing matches for 12 of the 15 household goods in
-`eval/absent.json`, and for 27 to 32 of the 600 answerable queries, 4 to 6 of them with a match in
-the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for 314 of the
-600. The flag changed between runs on 14 of the 51 queries where it was raised at least once.
+`eval/absent.json`, and for 75 to 78 of the 1,573 answerable queries, 7 or 8 of them with a match
+in the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for 1,001
+of the 1,573. The flag changed between runs on 58 of the 225 queries where it was raised at least
+once.
 
 The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
 and `strawb`. Before the check, the line also appeared for `toothpaste` and `light bulbs`, whose
@@ -213,17 +224,17 @@ inputTokens }`, so the page can show whether Jev ran and how long it took.
 
 ## Limits
 
-- Answers move between identical runs: over five runs, the suggestion changed for 10% of the
-  queries that got one in any run, and a probability by up to 0.18. A respelling near 0.6 can be
-  suggested on one run and not the next.
+- Answers move between identical runs: over five runs, the suggestion changed for 3% of the
+  queries that got one in any run, and the no-match flag for 26% of those where it was raised.
 - One word is respelled per option, so a query with two misspelled words is not fixed.
-- Respellings come from trigrams, which miss some swaps: for `granloa`, granola is not among the 8
-  closest words, so Jev never sees it.
-- Jev declines many single-edit misspellings that a dictionary corrector fixes: of 300 synthetic
-  ones it fixed 172 to 177, guessed wrong on 14 to 18 and declined the rest. Among the held-out
-  words, `marshmellow`, `jalepeno`, `funyons` and `skittels` got no suggestion in any run.
+- A word whose last letter was dropped rarely reaches the options, because a candidate that only
+  finishes the typed word is left to the prefix step; and a one-edit deletion can offer a shorter
+  word for an unfinished one (`strawb` to "straw").
+- On rare brand names Jev tends to choose a common word (`foyster` to "oyster" for foster,
+  `djraft` to "kraft" for draft), where a dictionary corrector picks the closest known word.
 - The no-match line needs question 1, so a page with a single wrong result shows no line.
-- The thresholds were not tuned beyond what is described here. `jev-latest` is an alias that moves
+- The keep-or-sink threshold was not tuned, and the suggestion rule was chosen on the development
+  sets only. `jev-latest` is an alias that moves
   when TypeSafe ships a new release, so pin the versioned model your thresholds were checked
   against with `JEV_MODEL`, as [TypeSafe's models page](https://docs.typesafe.ai/models)
   recommends.
@@ -234,7 +245,7 @@ Put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
 
 ```sh
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts      # the 50 eval queries, under a cent
-JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 615 queries, about $0.065
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 1,588 queries, about $0.15
 node scripts/report.ts                                          # tables and figures from results/
 ```
 
