@@ -64,6 +64,11 @@ test('suggests the respelling Jev picks at or above the bar', async () => {
   assert.equal((calls[0].state as { query: string }).query, 'tortila chips')
 })
 
+test('returns the probability of every option in option order', async () => {
+  const out = await checkSpelling('tortila chips', tortila, answering({ s0: 0.25, s1: 0.7, s2: 0.03 }))
+  assert.deepEqual(out.probabilities, [0.25, 0.7, 0.03, 0])
+})
+
 test('suggests nothing when the spelling as typed wins', async () => {
   const out = await checkSpelling('tortila chips', tortila, answering({ s0: 0.86, s1: 0.14, s2: 0, s3: 0 }))
   assert.equal(out.suggestion, null)

@@ -36,6 +36,12 @@ test('moves candidates below the threshold to the bottom and keeps the rest in o
   assert.equal(out.reranked, true)
 })
 
+test('returns each candidate score in candidate order', async () => {
+  const out = await rerank('oreo', four, { ...answering([0.9, 0.1, 0.8, 0.2]), threshold: 0.3 })
+  assert.deepEqual(out.scores, [0.9, 0.1, 0.8, 0.2])
+  assert.deepEqual((await rerank('oreo', four.slice(0, 1), answering([]))).scores, [])
+})
+
 test('reports the model that answered and the input tokens it billed', async () => {
   const ask = async (): Promise<JevResponse> => ({
     model: 'jev-1.13.0',

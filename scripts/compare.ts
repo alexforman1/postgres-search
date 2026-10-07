@@ -1,52 +1,63 @@
-// Runs three searches on the same queries and reports how often each finds the right product and
-// how long each takes:
+// Runs three searches on the same queries and writes one JSON file of per-query results to
+// results/, which scripts/report.ts turns into tables and figures:
 //   plain    Postgres full-text search as its manual shows it: to_tsvector and plainto_tsquery over
 //            the name and other names, a GIN index, ordered by ts_rank, one row per name
 //   sql      this repo's search.query_distinct
-//   sql+jev  the same with the Jev step, scored as the page shows it and after one click on its
-//            "Did you mean" link
-// The queries are eval/queries.json, eval/spelling.json and eval/absent.json. The first run builds
-// the table baseline.documents from search.source, which takes about half a minute on the full load.
+//   sql+jev  the same with the Jev step, as the page shows it, and after one click on its "Did you
+//            mean" link
+// For every query it also records two spelling correctors that use no model, for comparison: the
+// frequency rule (the most common close word, if used ten times as often) and a Norvig-style
+// corrector (the most common known word within two edits; a known word is kept). And it asks Jev
+// the spelling question over a wider option list, the trigram words plus the corrector's
+// edit-distance words, to separate finding the right word from choosing it. That variant is
+// research only; the page does not use it.
+// The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json and eval/absent.json.
+// The first run builds the table baseline.documents from search.source, which takes about half a
+// minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
-import { readFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import { connect } from '../src/db.ts'
-import { tokens } from '../src/tokens.ts'
-import { page, search, type Row } from '../src/page.ts'
+import { NOTE, page, search, similarWords, type Row } from '../src/page.ts'
+import { checkSpelling, type SimilarWord } from '../src/spelling.ts'
+import { carries, tokens } from '../src/tokens.ts'
 
 if (!process.env.TYPESAFE_API_KEY) throw new Error('set TYPESAFE_API_KEY; the third search needs Jev')
 
+type QuerySet = 'hand-written' | 'held-out' | 'synthetic' | 'absent'
+
 interface Case {
   q: string
-  set: 'hand-written' | 'held-out' | 'absent'
+  set: QuerySet
   kind: string
+  edit?: string
+  expect?: string
   // Null for the absent set, where nothing should match.
   hit: ((row: { name: string; other_names: string | null }) => boolean) | null
 }
 
 const read = async (file: string) => JSON.parse(await readFile(new URL(`../eval/${file}`, import.meta.url), 'utf8'))
-const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '')
-
-// The phrase's words, with spaces and punctuation ignored, starting at the start of a word: "almond
-// milk" finds ALMONDMILK, "hellmanns" finds HELLMANN'S, and "jalapeno" finds JALAPEÑO.
-function carries(text: string, phrase: string): boolean {
-  const words = tokens(fold(text))
-  const target = tokens(fold(phrase)).join('')
-  return words.some((_, i) => words.slice(i).join('').startsWith(target))
-}
+const text = (r: { name: string; other_names: string | null }) => `${r.name} ${r.other_names ?? ''}`
 
 const cases: Case[] = [
   ...(await read('queries.json')).map((c: { q: string; kind: string; expect: string }) => {
     const pattern = new RegExp(c.expect, 'i')
-    return { q: c.q, set: 'hand-written', kind: c.kind, hit: (r: Row) => pattern.test(`${r.name} ${r.other_names ?? ''}`) }
+    return { q: c.q, set: 'hand-written', kind: c.kind, hit: (r: Row) => pattern.test(text(r)) }
   }),
-  ...(await read('spelling.json')).map((c: { q: string; kind: string; expect?: string }) => ({
-    q: c.q,
-    set: 'held-out',
-    kind: c.kind,
-    hit: (r: Row) => carries(`${r.name} ${r.other_names ?? ''}`, c.expect ?? c.q),
-  })),
-  ...(await read('absent.json')).map((c: { q: string }) => ({ q: c.q, set: 'absent', kind: 'absent', hit: null })),
 ]
+for (const [file, set] of [['spelling.json', 'held-out'], ['synthetic.json', 'synthetic']] as const) {
+  for (const c of (await read(file)) as { q: string; kind: string; edit?: string; expect?: string }[]) {
+    const want = c.expect ?? c.q
+    cases.push({ q: c.q, set, kind: c.kind, edit: c.edit, expect: c.expect, hit: r => carries(text(r), want) })
+  }
+}
+for (const c of (await read('absent.json')) as { q: string }[]) cases.push({ q: c.q, set: 'absent', kind: 'absent', hit: null })
+// COMPARE_LIMIT=n runs only every nth query, for a quick check of the script.
+if (process.env.COMPARE_LIMIT) {
+  const every = Math.max(1, Math.floor(cases.length / Number(process.env.COMPARE_LIMIT)))
+  cases.splice(0, cases.length, ...cases.filter((_, i) => i % every === 0))
+}
 
 const pool = connect()
 
@@ -87,110 +98,232 @@ async function plain(q: string): Promise<Row[]> {
   return rows
 }
 
-const SYSTEMS = ['plain', 'sql', 'sql+jev', 'sql+jev, one click'] as const
-type System = (typeof SYSTEMS)[number]
+// The vocabulary the correctors work from: search.words, the same list search.similar_words reads.
+const vocabulary = new Map<string, number>()
+const stopWords = new Set<string>()
 
-interface Score {
-  cases: number
-  hit1: number
-  hit10: number
-  empty: number
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+function edits1(w: string): string[] {
+  const out: string[] = []
+  for (let i = 0; i <= w.length; i++) {
+    const left = w.slice(0, i)
+    const right = w.slice(i)
+    if (right) out.push(left + right.slice(1))
+    if (right.length > 1) out.push(left + right[1] + right[0] + right.slice(2))
+    for (const c of LETTERS) {
+      if (right) out.push(left + c + right.slice(1))
+      out.push(left + c + right)
+    }
+  }
+  return out
 }
 
-const blank = (): Score => ({ cases: 0, hit1: 0, hit10: 0, empty: 0 })
-const scores = new Map<string, Map<System, Score>>()
-const absent = new Map<System, number>(SYSTEMS.map(s => [s, 0]))
-const ms = { plain: [] as number[], sql: [] as number[], jev: [] as number[] }
-const decisions = { rerank: [] as number[], rerankMs: [] as number[], spelling: [] as number[], spellingMs: [] as number[] }
+// The words search.similar_words would look at: four letters or more, no digits, not a stop word.
+const eligible = (w: string) => w.length >= 4 && !/[0-9]/.test(w) && !stopWords.has(w)
 
-function add(group: string, system: System, rows: { name: string; other_names: string | null }[], hit: NonNullable<Case['hit']>) {
-  if (!scores.has(group)) scores.set(group, new Map(SYSTEMS.map(s => [s, blank()])))
-  const s = scores.get(group)!.get(system)!
-  s.cases += 1
-  if (rows.length === 0) s.empty += 1
-  if (rows.slice(0, 1).some(hit)) s.hit1 += 1
-  if (rows.slice(0, 10).some(hit)) s.hit10 += 1
+// Known words within one edit, else within two, more common than the typed word, nearest first and
+// then most common first.
+const editCache = new Map<string, { word: string; distance: number; count: number }[]>()
+function editCandidates(w: string) {
+  const cached = editCache.get(w)
+  if (cached) return cached
+  const own = vocabulary.get(w) ?? 0
+  const found = new Map<string, number>()
+  const one = edits1(w)
+  for (const e of one) if ((vocabulary.get(e) ?? 0) > own && !found.has(e)) found.set(e, 1)
+  if (found.size === 0) {
+    for (const e of one) for (const e2 of edits1(e)) if (e2 !== w && (vocabulary.get(e2) ?? 0) > own && !found.has(e2)) found.set(e2, 2)
+  }
+  const list = [...found]
+    .map(([word, distance]) => ({ word, distance, count: vocabulary.get(word)! }))
+    .sort((a, b) => a.distance - b.distance || b.count - a.count || (a.word < b.word ? -1 : 1))
+  editCache.set(w, list)
+  return list
 }
+
+// Norvig's corrector: a known word stays; otherwise the most common known word one edit away, else
+// two edits away.
+function norvig(q: string): string | null {
+  const words = tokens(q)
+  const fixed = words.map(w => {
+    if (!eligible(w) || vocabulary.has(w)) return w
+    const near = editCandidates(w)
+    if (near.length === 0) return w
+    const d = near[0].distance
+    return near.filter(c => c.distance === d).sort((a, b) => b.count - a.count)[0].word
+  })
+  return fixed.join(' ') === words.join(' ') ? null : fixed.join(' ')
+}
+
+// The rule from scripts/eval.ts: respell a word to its most common close word from
+// search.similar_words when that word is used at least ten times as often.
+function frequencyRule(q: string, similar: SimilarWord[]): string | null {
+  const words = tokens(q)
+  const best = similar
+    .filter(r => words[r.pos - 1] === r.word && r.doc_count >= 10 * Math.max(r.word_count, 1))
+    .sort((a, b) => b.doc_count - a.doc_count)[0]
+  return best ? words.with(best.pos - 1, best.alternative).join(' ') : null
+}
+
+// search.similar_words rows with the corrector's edit-distance words merged in, alternating the two
+// lists for each word, so the spelling question sees both.
+function widerOptions(q: string, similar: SimilarWord[]): SimilarWord[] {
+  const words = tokens(q)
+  const out: SimilarWord[] = []
+  words.forEach((word, i) => {
+    const pos = i + 1
+    if (!eligible(word)) return
+    const trigram = similar.filter(r => r.pos === pos && r.word === word)
+    const edit = editCandidates(word)
+      .slice(0, 8)
+      .map(c => ({ pos, word, word_count: vocabulary.get(word) ?? 0, alternative: c.word, doc_count: c.count }))
+    const seen = new Set<string>()
+    for (let k = 0; k < Math.max(trigram.length, edit.length); k++) {
+      for (const r of [trigram[k], edit[k]]) {
+        if (r && !seen.has(r.alternative)) {
+          seen.add(r.alternative)
+          out.push(r)
+        }
+      }
+    }
+  })
+  return out
+}
+
+interface Scored {
+  n: number
+  hit1: boolean
+  hit10: boolean
+  top: string | null
+}
+
+function score(rows: Row[], hit: Case['hit']): Scored {
+  return {
+    n: rows.length,
+    hit1: hit ? rows.slice(0, 1).some(hit) : false,
+    hit10: hit ? rows.slice(0, 10).some(hit) : false,
+    top: rows[0]?.name ?? null,
+  }
+}
+
+const git = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+const startedAt = new Date().toISOString()
+const loadBefore = os.loadavg()
+const records: unknown[] = []
+const models = new Set<string>()
 
 try {
   await buildBaseline()
+  for (const r of (await pool.query<{ word: string; doc_count: number; stop: boolean }>(
+    `SELECT word, doc_count, ts_lexize('english_stem', word) = '{}' AS stop FROM search.words`,
+  )).rows) {
+    vocabulary.set(r.word, r.doc_count)
+    if (r.stop) stopWords.add(r.word)
+  }
+  const postgres = (await pool.query<{ v: string }>("SELECT current_setting('server_version') AS v")).rows[0].v
+
   // One untimed pass, so every timed query runs on a warm cache.
   for (const c of cases) {
     await plain(c.q)
     await search(pool, c.q)
   }
 
-  for (const c of cases) {
+  const searchCache = new Map<string, Row[]>()
+  const searchOnce = async (q: string) => {
+    if (!searchCache.has(q)) searchCache.set(q, await search(pool, q))
+    return searchCache.get(q)!
+  }
+
+  for (const [i, c] of cases.entries()) {
     let started = performance.now()
     const plainRows = await plain(c.q)
-    ms.plain.push(performance.now() - started)
+    const plainMs = performance.now() - started
     started = performance.now()
     const sqlRows = await search(pool, c.q)
-    ms.sql.push(performance.now() - started)
+    const sqlMs = performance.now() - started
     const p = await page(pool, c.q, { withJev: true })
-    ms.jev.push(p.pageMs)
     const r = p.reranked!
     const sp = p.spelling!
-    if (r.reranked) {
-      decisions.rerank.push(Math.min(p.rows.length, 10))
-      decisions.rerankMs.push(r.ms)
-    }
-    if (sp.ran) {
-      decisions.spelling.push(sp.options.length)
-      decisions.spellingMs.push(sp.ms)
-    }
-    const jevRows = r.results
-    const clickRows = sp.suggestion ? await search(pool, sp.suggestion) : jevRows
+    for (const m of [r.model, sp.model]) if (m) models.add(m)
 
-    if (c.hit === null) {
-      if (plainRows.length === 0) absent.set('plain', absent.get('plain')! + 1)
-      if (sqlRows.length === 0) absent.set('sql', absent.get('sql')! + 1)
-      const told = jevRows.length === 0 || (r.noMatch && !sp.suggestion)
-      if (told) absent.set('sql+jev', absent.get('sql+jev')! + 1)
-      if (told) absent.set('sql+jev, one click', absent.get('sql+jev, one click')! + 1)
-      continue
+    const similar = await similarWords(pool, c.q)
+    const wide = await checkSpelling(c.q, widerOptions(c.q, similar), { note: NOTE })
+    if (wide.model) models.add(wide.model)
+    const suggestions = {
+      jev: sp.suggestion,
+      wide: wide.suggestion,
+      norvig: norvig(c.q),
+      frequency: frequencyRule(c.q, similar),
     }
-    for (const group of [`${c.set}: ${c.kind}`, `${c.set}: all`]) {
-      add(group, 'plain', plainRows, c.hit)
-      add(group, 'sql', sqlRows, c.hit)
-      add(group, 'sql+jev', jevRows, c.hit)
-      add(group, 'sql+jev, one click', clickRows, c.hit)
-    }
+    const followed: Record<string, Scored | null> = {}
+    for (const [name, s] of Object.entries(suggestions)) followed[name] = s ? score(await searchOnce(s), c.hit) : null
+
+    const head = p.rows.slice(0, 10)
+    records.push({
+      q: c.q,
+      set: c.set,
+      kind: c.kind,
+      edit: c.edit,
+      expect: c.expect,
+      step: sqlRows[0]?.step ?? null,
+      plain: { ms: plainMs, ...score(plainRows, c.hit) },
+      sql: { ms: sqlMs, ...score(sqlRows, c.hit) },
+      jev: {
+        pageMs: p.pageMs,
+        searchMs: p.searchMs,
+        ...score(r.results, c.hit),
+        rerank: {
+          ran: r.reranked,
+          ms: r.ms,
+          tokens: r.inputTokens ?? 0,
+          error: r.error ?? null,
+          noMatch: r.noMatch,
+          scores: r.scores,
+          labels: c.hit ? head.map(c.hit) : [],
+        },
+        spelling: {
+          ran: sp.ran,
+          ms: sp.ms,
+          tokens: sp.inputTokens ?? 0,
+          error: sp.error ?? null,
+          options: sp.options,
+          probabilities: sp.probabilities,
+          suggestion: sp.suggestion,
+          p: sp.p,
+        },
+      },
+      wide: {
+        ran: wide.ran,
+        tokens: wide.inputTokens ?? 0,
+        options: wide.options,
+        probabilities: wide.probabilities,
+        suggestion: wide.suggestion,
+      },
+      suggestions,
+      followed,
+    })
+    if ((i + 1) % 50 === 0) console.error(`${i + 1} of ${cases.length}`)
   }
+
+  const meta = {
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    git,
+    models: [...models],
+    postgres,
+    node: process.version,
+    cpu: os.cpus()[0]?.model ?? null,
+    cpus: os.cpus().length,
+    memoryGB: Math.round(os.totalmem() / 2 ** 30),
+    loadBefore,
+    loadAfter: os.loadavg(),
+    products: (await pool.query('SELECT count(*)::int AS n FROM search.documents')).rows[0].n,
+    pricePerMillionInputTokens: 0.042,
+  }
+  await mkdir(new URL('../results/', import.meta.url), { recursive: true })
+  const file = new URL(`../results/compare-${startedAt.replace(/[:.]/g, '-')}.json`, import.meta.url)
+  await writeFile(file, `${JSON.stringify({ meta, records })}\n`)
+  console.log(`wrote ${file.pathname}`)
 } finally {
   await pool.end()
 }
-
-const pct = (n: number, d: number) => `${Math.round((100 * n) / d)}%`
-const at = (values: number[], p: number) => [...values].sort((a, b) => a - b)[Math.floor(p * (values.length - 1))]
-const p50p90 = (values: number[]) => `${Math.round(at(values, 0.5))} / ${Math.round(at(values, 0.9))}`
-
-console.log(['group', 'cases', ...SYSTEMS.map(s => `${s} hit@1`), ...SYSTEMS.map(s => `${s} hit@10`)].join('\t'))
-for (const [group, bySystem] of scores) {
-  const n = bySystem.get('plain')!.cases
-  console.log(
-    [
-      group,
-      n,
-      ...SYSTEMS.map(s => pct(bySystem.get(s)!.hit1, n)),
-      ...SYSTEMS.map(s => pct(bySystem.get(s)!.hit10, n)),
-    ].join('\t'),
-  )
-}
-console.log('\nno results at all:')
-for (const [group, bySystem] of scores) {
-  if (group.endsWith(': all')) console.log(`${group}\t${SYSTEMS.slice(0, 2).map(s => `${s} ${bySystem.get(s)!.empty}`).join('\t')}`)
-}
-const absentCount = cases.filter(c => c.hit === null).length
-console.log(
-  `\nabsent, ${absentCount} queries, page shows nothing or says nothing matches: ` +
-    SYSTEMS.slice(0, 3).map(s => `${s} ${absent.get(s)}`).join(', '),
-)
-console.log(`\nms per query, median / p90, over ${cases.length} queries:`)
-console.log(`plain ${p50p90(ms.plain)}; sql ${p50p90(ms.sql)}; sql+jev page ${p50p90(ms.jev)}`)
-console.log(
-  `jev keep or sink: ${decisions.rerank.length} calls, median ${at(decisions.rerank, 0.5)} judgments each, ms ${p50p90(decisions.rerankMs)}`,
-)
-console.log(
-  `jev spelling: ${decisions.spelling.length} calls, median ${at(decisions.spelling, 0.5)} options each, ms ${p50p90(decisions.spellingMs)}`,
-)

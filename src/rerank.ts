@@ -17,6 +17,8 @@ export interface RerankResult<T> {
   // Jev scored every candidate below the threshold and none carries the typed words. The results
   // stay; the page can say that none of them matches.
   noMatch: boolean
+  // Jev's score for each of the top candidates, in their original order; empty when it did not run.
+  scores: number[]
   ms: number
   error?: string
   model?: string
@@ -47,6 +49,7 @@ export async function rerank<T extends Candidate>(
     sunk: [],
     reranked: false,
     noMatch: false,
+    scores: [],
     ms,
     error,
   })
@@ -71,6 +74,7 @@ export async function rerank<T extends Candidate>(
       sunk,
       reranked: true,
       noMatch: keep.length === 0 && !head.some(c => carriesQuery(c, query)),
+      scores: scores as number[],
       ms: Date.now() - started,
       model: response.model,
       inputTokens: response.usage?.input_tokens,
