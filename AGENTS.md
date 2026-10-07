@@ -7,12 +7,13 @@
     npm run load          # 100,000-product sample; add -- --full for the whole USDA release
     npm start             # demo at http://localhost:3000
     npm run eval          # search and typeahead scores on the full load
+    npm run compare       # plain Postgres vs this SQL vs this SQL with Jev; needs the Jev key
 
 Node 22.18 or later runs the `.ts` files directly. There is no build step.
 
 The Jev step needs a TypeSafe API key. Put `TYPESAFE_API_KEY=...` in `.env` (git ignores it) and
-run `node --env-file=.env server.ts` or `node --env-file=.env scripts/eval.ts`. Everything else
-works without it.
+run `node --env-file=.env server.ts`, `node --env-file=.env scripts/eval.ts` or
+`node --env-file=.env scripts/compare.ts`. Everything else works without it.
 
 ## Checks (all must pass before a pull request)
 

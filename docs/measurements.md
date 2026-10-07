@@ -217,3 +217,57 @@ An earlier run, before `rerank` checked for the typed words, showed it for 12.
 `laundry detergent` and `paper towels` returned no results, `sunscreen` returned one result so
 keep or sink did not run, and `toothpaste` and `light bulbs` returned products carrying those
 words.
+
+## Three searches compared
+
+`scripts/compare.ts` runs three searches over the same products and 115 queries: the 50 in
+`eval/queries.json`, the 50 in `eval/spelling.json` and the 15 in `eval/absent.json`. Measured on
+2026-10-07 with `jev-1.13.0`, three runs of:
+
+```sh
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
+```
+
+- plain: Postgres full-text search as its manual shows it, over the same names as `search.source`:
+  `to_tsvector('english', name || ' ' || other_names)` in the table `baseline.documents` with a
+  GIN index, `plainto_tsquery`, ordered by `ts_rank`, one row per name. The script builds the
+  table on its first run.
+- sql: `search.query_distinct`.
+- sql+jev: the same with the Jev step, scored on the page as shown, and after one click, where a
+  "Did you mean" link appeared, on the plain `search.query_distinct` results of the suggestion.
+
+A hit on `eval/queries.json` uses each case's pattern, as in the eval. On `eval/spelling.json` a
+hit is a result whose name or other names carry the intended words, ignoring spaces,
+punctuation and accents, so "almond milk" finds ALMONDMILK and "jalapeno" finds JALAPEÑO.
+
+| hit@1                          | cases | plain | sql  | sql+jev    | sql+jev, one click |
+|--------------------------------|------:|------:|-----:|-----------:|-------------------:|
+| `eval/queries.json`            | 50    | 52%   | 82%  | 86%        | 96%                |
+| `eval/spelling.json`           | 50    | 42%   | 64%  | 66 to 70%  | 86 to 90%          |
+| `eval/spelling.json`, typos    | 30    | 10%   | 43%  | 43 to 50%  | 77 to 83%          |
+| `eval/spelling.json`, controls | 20    | 90%   | 95%  | 100%       | 100%               |
+
+| hit@10                         | cases | plain | sql  | sql+jev    | sql+jev, one click |
+|--------------------------------|------:|------:|-----:|-----------:|-------------------:|
+| `eval/queries.json`            | 50    | 56%   | 88%  | 88%        | 98%                |
+| `eval/spelling.json`           | 50    | 52%   | 78%  | 78%        | 90 to 92%          |
+| `eval/spelling.json`, typos    | 30    | 23%   | 63%  | 63%        | 83 to 87%          |
+
+Where a cell has one number, all three runs gave it. Plain returned no results at all for 16 of
+the 50 in `eval/queries.json`, among them every barcode, and 12 of the 50 in
+`eval/spelling.json`; sql returned results for all 100. Of the 48 misspellings across the two
+files, plain returned nothing for 23. Of the 15 queries in `eval/absent.json`,
+plain returned nothing for 12 and sql for 2; sql+jev returned nothing or showed the no-match line
+for 12.
+
+| ms per query, median / p90, all 115 | run 1     | run 2     | run 3     |
+|-------------------------------------|----------:|----------:|----------:|
+| plain                               | 4 / 34    | 3 / 15    | 3 / 10    |
+| sql                                 | 28 / 312  | 15 / 141  | 12 / 143  |
+| sql+jev, the whole page             | 231 / 342 | 201 / 309 | 194 / 316 |
+| Jev keep or sink call               | 176 / 216 | 167 / 207 | 161 / 200 |
+| Jev spelling call                   | 168 / 212 | 159 / 207 | 166 / 212 |
+
+The times come from Node over the connection pool, after one untimed pass over every query.
+Run 1 followed the first build of `baseline.documents`. Each run made 102 keep or sink calls, with
+a median of 10 results judged per call, and 112 spelling calls, with a median of 9 options.

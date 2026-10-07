@@ -19,6 +19,7 @@
     "test": "node --test",
     "typecheck": "tsc -p .",
     "eval": "node scripts/eval.ts",
+    "compare": "node scripts/compare.ts",
     "check-skill-sql": "cmp sql/schema.sql skills/postgres-search/sql/schema.sql && cmp sql/functions.sql skills/postgres-search/sql/functions.sql"
   },
   "dependencies": {

@@ -11,29 +11,45 @@ The demo searches the USDA FoodData Central branded foods list. On the full 2025
 53 ms for the misspelled `cheerois`; facet counts for `milk` take 128 to 135 ms
 ([measurements](docs/measurements.md)).
 
-## What Jev adds
+## Plain Postgres, this SQL, and this SQL with Jev
 
-On 50 hand-written queries against the full release, with `jev-1.13.0`
-([measurements](docs/measurements.md#jev)):
+`scripts/compare.ts` runs three searches over the same 440,302 products and the same 115 queries
+([measurements](docs/measurements.md#three-searches-compared)):
 
-|                                    | right product first | right product in the top 10 |
-|------------------------------------|--------------------:|----------------------------:|
-| Postgres alone                     | 82%                 | 88%                         |
-| with Jev moving wrong results down | 86%                 | 88%                         |
-| following Jev's "Did you mean"     | 96%                 | 98%                         |
+- **plain Postgres**: full-text search as the Postgres manual shows it (`to_tsvector`,
+  `plainto_tsquery`, a GIN index, ordered by `ts_rank`), one row per name.
+- **this SQL**: `search.query_distinct`, with its barcode, word, prefix and typo steps.
+- **with Jev**: the same SQL plus the Jev step, `jev-1.13.0`, as the page shows it and after one
+  click on its "Did you mean" link.
 
-All 18 misspelled queries show the right product first once the suggestion is followed, against
-13 without Jev. `parmesean` gets "Did you mean parmesan" and `dortios` gets "doritos", two cases the
-SQL cannot fix. These 50 queries also shaped the spelling step's bar and two of its rules, so the
-table is not a clean test. On 50 more words written as a held-out test, Jev fixed 23 to 25 of 30
-misspellings, left all 20 correctly spelled words alone, and made no wrong suggestion; a rule that
-picks the most common close word made 16 wrong ones.
+|                                                  | plain Postgres | this SQL     | with Jev      | with Jev, one click |
+|--------------------------------------------------|---------------:|-------------:|--------------:|--------------------:|
+| right product first, 50 hand-written queries     | 52%            | 82%          | 86%           | 96%                 |
+| right product first, 50 held-out words           | 42%            | 64%          | 66 to 70%     | 86 to 90%           |
+| right product first, 30 held-out misspellings    | 10%            | 43%          | 43 to 50%     | 77 to 83%           |
+| queries with no results at all, of those 100     | 28             | 0            | 0             | 0                   |
+| household goods shown as having no match, of 15  | 12             | 2            | 12            |                     |
+| time per query, median                           | 3 to 4 ms      | 12 to 28 ms  | 194 to 231 ms |                     |
+| time per query, 90th percentile                  | 10 to 34 ms    | 141 to 312 ms | 309 to 342 ms |                     |
 
-It costs $0.087 per 1,000 searches: TypeSafe charges $0.042 per million input tokens, and a search
-uses about 2,100 on average. It adds 157 to 168 ms to the results page at the median and 203 to
-216 ms at the 90th percentile; the two questions run at the same time, the spelling one while
-Postgres is still searching. Typeahead never calls Jev. Any Jev failure leaves the Postgres order.
-[The Jev step](docs/jev.md) shows both requests, the rules, and the limits.
+Plain Postgres is the fastest and the strictest: it returned nothing for 23 of the 48 misspelled
+queries and for every barcode. This SQL returned something for all 100, which finds the right
+product far more often but also returns Shamrock Farms sour cream for "shampoo". Jev is what
+tells the two apart. In one call it judges each
+of the top 10 results, in 161 to 176 ms at the median; in a second call, sent while Postgres is
+still searching, it picks the spelling the user meant from about 9 close words that products use,
+in 159 to 168 ms. The SQL cannot make either judgment: by trigrams, "dortios" is closer to
+DORTMUNDER than to DORITOS.
+
+The held-out words were written before any Jev call on them and nothing was tuned on them. The
+hand-written queries also shaped the spelling step's bar and two of its rules, so read that row as
+in-sample. On the held-out words, Jev fixed 23 to 25 of 30 misspellings, left all 20 correctly
+spelled words alone, and made no wrong suggestion; a rule that picks the most common close word
+made 16 wrong ones ([the Jev step](docs/jev.md)).
+
+The Jev step costs $0.087 per 1,000 searches: TypeSafe charges $0.042 per million input tokens,
+and a search uses about 2,100 on average. Typeahead never calls Jev, and any Jev failure leaves the
+Postgres order.
 
 ## Try it
 

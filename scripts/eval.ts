@@ -3,9 +3,9 @@
 // eval/spelling.json (the spelling question), and eval/absent.json (the no-match line).
 import { readFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
-import { rerank, type Candidate, type RerankResult } from '../src/rerank.ts'
-import { checkSpelling, type SimilarWord, type SpellingResult } from '../src/spelling.ts'
+import { checkSpelling, type SimilarWord } from '../src/spelling.ts'
 import { tokens } from '../src/tokens.ts'
+import { NOTE, page as pageWith, search as searchWith, similarWords as similarWordsWith, type Row } from './page.ts'
 
 interface Case {
   q: string
@@ -28,10 +28,6 @@ interface SpellingCase {
   expect?: string
 }
 
-interface Row extends Candidate {
-  step: string
-}
-
 interface Score {
   cases: number
   // hits[i] counts the cases with a match in the top CUTOFFS[i] results.
@@ -44,8 +40,6 @@ const JEV_CUTOFFS = [1, 3]
 // Dollars per million input tokens for jev-1.13.0 (https://docs.typesafe.ai/models). Output tokens
 // are free.
 const PRICE_PER_MTOK = 0.042
-// The note server.ts sends with the spelling question.
-const NOTE = 'A user typed `query` into the search box of a grocery and packaged food product search.'
 // The rule Jev is compared with: respell a word to its most common close word when that word is
 // used at least this many times as often as the word typed.
 const FREQUENCY_RATIO = 10
@@ -58,43 +52,9 @@ const absentCases: { q: string }[] = await read('absent.json')
 const withJev = Boolean(process.env.TYPESAFE_API_KEY)
 
 const pool = connect()
-
-async function search(q: string): Promise<Row[]> {
-  const { rows } = await pool.query<Row>(
-    `SELECT d.id, d.name, d.name_key, d.other_names, d.group_key, d.facets, r.step
-       FROM search.query_distinct($1) r JOIN search.documents d ON d.id = r.id
-      ORDER BY r.pos`,
-    [q],
-  )
-  return rows
-}
-
-async function similarWords(q: string): Promise<SimilarWord[]> {
-  return (await pool.query<SimilarWord>('SELECT * FROM search.similar_words($1)', [q])).rows
-}
-
-interface Page {
-  rows: Row[]
-  searchMs: number
-  pageMs: number
-  reranked?: RerankResult<Row>
-  spelling?: SpellingResult
-}
-
-// What the demo page does: the search and then the Jev reorder, and alongside them the close-word
-// lookup and then the spelling question.
-async function page(q: string): Promise<Page> {
-  const started = performance.now()
-  let searchMs = 0
-  const [first, second] = await Promise.all([
-    search(q).then(async rows => {
-      searchMs = performance.now() - started
-      return { rows, reranked: withJev ? await rerank(q, rows) : undefined }
-    }),
-    withJev ? similarWords(q).then(similar => checkSpelling(q, similar, { note: NOTE })) : undefined,
-  ])
-  return { ...first, spelling: second, searchMs, pageMs: performance.now() - started }
-}
+const page = (q: string) => pageWith(pool, q, withJev)
+const search = (q: string) => searchWith(pool, q)
+const similarWords = (q: string) => similarWordsWith(pool, q)
 
 // Respells a word to its most common close word, when that word is used FREQUENCY_RATIO times as
 // often as the word typed.

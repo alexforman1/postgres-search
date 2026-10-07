@@ -20,6 +20,12 @@ Without a key, the demo and the eval skip the step and use the Postgres order. T
 
 ## What it changes
 
+Compared with plain Postgres full-text search and with this repo's SQL alone, on 50 held-out
+words, the right product comes first for 42%, 64%, and, with Jev and one click on "Did you mean",
+86 to 90%. The page takes 194 to 231 ms at the median with Jev, against 12 to 28 ms for the SQL
+alone and 3 to 4 ms for plain full-text search
+([three searches compared](measurements.md#three-searches-compared)).
+
 Measured on 2026-10-07 on the full USDA load (2025-12-18 release) with `jev-1.13.0`, over three
 runs of the eval. This table was the same in all three ([measurements](measurements.md#jev)):
 
