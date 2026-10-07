@@ -105,11 +105,14 @@ is skipped when k < 2 or every candidate is in one group.
 **Did you mean.** For each query word w of four or more letters, without digits and not a stop
 word, `search.similar_words` collects candidates from `search.words`: every word one edit from w (a
 letter added, removed or replaced, or two neighbors swapped; Damerau, 1964), most found first, then
-words with trigram similarity of 0.3 or more, closest first, up to 8 in all. A candidate must be
-found by the search in more products than w, must have a different English stem (the search
-already treats one stem alike, so `hellmanns` is not a misspelling of "hellmann"), and must not
-merely finish w, which the prefix step finds. The options are the query as typed, o₀, then the
-query with one word replaced, each word's closest candidate before any word's second, up to 16.
+words with trigram similarity of 0.3 or more, closest first, up to 8 in all. A candidate must have
+a different English stem from w (the search already treats one stem alike, so `hellmanns` is not
+a misspelling of "hellmann"), and the search must find it in more products than both w and the
+most common word, of another stem, that starts with w. For an unfinished word the prefix step
+shows that word's products, so `strawb` is not offered "straw" while 11,614 strawberry products
+start with it. A word one letter longer than w can be offered (`captai`, "captain"); longer
+completions are left to the prefix step. The options are the query as typed, o₀, then the query
+with one word replaced, each word's closest candidate before any word's second, up to 16.
 Each option tells Jev how many edits separate it from what was typed and how many products the
 search finds for the word it changes, the evidence a dictionary corrector works from. One request
 asks a Choice question over the options and returns a distribution p. The page offers
@@ -150,17 +153,22 @@ owner. All three systems search the same text.
 | hand-written, [`eval/queries.json`](eval/queries.json) | 50: 20 exact, 18 misspelled, 6 prefix, 3 brand, 3 barcode | by hand, before this work | matches the case's regular expression | development |
 | held-out, [`eval/spelling.json`](eval/spelling.json) | 50: 30 misspelled, 20 correctly spelled | by hand | carries the intended word | development |
 | synthetic, [`eval/synthetic.json`](eval/synthetic.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261007 | carries the intended word | development |
-| synthetic test, [`eval/synthetic-test.json`](eval/synthetic-test.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261008, after the design was frozen | carries the intended word | **test** |
-| Wikipedia, [`eval/wikipedia.json`](eval/wikipedia.json) | 473 real misspellings of 307 words | from Wikipedia's list, after the design was frozen | carries the intended word | **test** |
+| synthetic test, [`eval/synthetic-test.json`](eval/synthetic-test.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261008, after version 2 was frozen | carries the intended word | test for version 2; informed 2.1 |
+| Wikipedia, [`eval/wikipedia.json`](eval/wikipedia.json) | 473 real misspellings of 307 words | from Wikipedia's list, after version 2 was frozen | carries the intended word | test for version 2, rescored for 2.1 |
+| synthetic test 2, [`eval/synthetic-test-2.json`](eval/synthetic-test-2.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261009, after version 2.1 was frozen | carries the intended word | **test** |
+| truncation, [`eval/truncation.json`](eval/truncation.json) | 300 words cut short | seed 20261010, after version 2.1 was frozen | carries the full word | **test** |
 | absent, [`eval/absent.json`](eval/absent.json) | 15 household goods | by hand | (none should match) | can a system say no? |
 
-Both synthetic sets come from [`scripts/make-spelling-set.ts`](scripts/make-spelling-set.ts). It
+The three synthetic sets come from [`scripts/make-spelling-set.ts`](scripts/make-spelling-set.ts). It
 samples words uniformly from those of five or more letters, without digits and not stop words,
 that appear in at least 20 product names and in no other eval file. Each of 300 gets one Damerau
 edit at a position other than the first letter, 75 of each type, redrawn up to ten times while the
 result is itself a word in the index, so these are non-word errors in the sense of Kukich (1992).
 Damerau (1964) found that about 80% of non-word misspellings are a single such edit. The next 200
-sampled words are the controls. The two seeds share no word.
+sampled words are the controls. The truncation set uses the same sampling and cuts each word to a
+length from four letters to one letter short of the word, skipping cuts that are themselves words
+in the index; because many sampled words are short, 162 of the 300 lose one letter. Each set leaves
+out every word of the sets made before it.
 
 The Wikipedia set comes from [`scripts/make-wikipedia-set.ts`](scripts/make-wikipedia-set.ts),
 which reads "Lists of common misspellings/For machines" at revision 1199637275 (CC BY-SA 4.0) and
@@ -200,7 +208,13 @@ The work had two stages.
    evidence, and chose the suggestion rule on the development sets with
    [`scripts/spelling-rules.ts`](scripts/spelling-rules.ts). One development run is in
    [`results/dev/`](results/dev/report.md). The design was then frozen in commit `9eb9f3a`, the two
-   test sets were generated and committed in `4f8e718`, and only then did any model see them.
+   test sets were generated and committed in `4f8e718`, and only then did any model see them. Its
+   five runs are in [`results/v2/`](results/v2/report.md).
+3. **Version 2.1.** Version 2's results showed it overriding the prefix step on unfinished words
+   (`strawb`). We added the completion test on the development sets, checked it with one run
+   ([`results/dev21/`](results/dev21/report.md)), froze it in `5fb118e`, and generated two more test
+   sets in `b4b0956` before any model saw them. The version 2 test sets are rescored; one of them,
+   the synthetic test set, showed the fault, so it is not a clean test for this change.
 
 [`scripts/compare.ts`](scripts/compare.ts) runs every query through every system in sequence, after
 one untimed pass so each timed query runs on a warm cache. Five runs per version, model pinned to

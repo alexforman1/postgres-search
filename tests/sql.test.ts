@@ -325,16 +325,12 @@ describe('search.similar_words', () => {
     assert.ok(!(await similarWords('cheeri')).some(r => r.alternative.startsWith('cheeri')))
   })
 
-  test('offers a word one letter longer than the typed word, when nothing else starts with it', async () => {
-    assert.ok((await similarWords('wate')).some(r => r.alternative === 'water'))
-  })
-
-  test('offers only words found in more products than what the prefix step would show', async () => {
-    // "peanu" is the start of "peanut", found in 1 product, so "peans", also in 1, is not offered;
-    // this is the strawb case, which was offered "straw" though strawberries start with it.
-    const rows = await similarWords('peanu')
-    assert.ok(!rows.some(r => r.alternative === 'peans'))
-    assert.ok(rows.some(r => r.alternative === 'peanut'))
+  test('gives no alternatives to an unfinished word: one the search does not find but a product word starts with', async () => {
+    // The prefix step answers these: "wate" finds water, "peanu" peanut butter. Respelling them was
+    // the strawb fault, which was offered "straw" though strawberries start with it.
+    assert.deepEqual(await similarWords('wate'), [])
+    assert.deepEqual(await similarWords('peanu'), [])
+    assert.deepEqual([...new Set((await similarWords('peanu milc')).map(r => r.word))], ['milc'])
   })
 
   test('blocks a one-letter completion when a more common completion has another stem', async () => {

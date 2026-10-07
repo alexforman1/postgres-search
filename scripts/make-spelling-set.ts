@@ -7,6 +7,8 @@
 //   node scripts/make-spelling-set.ts --seed 20261008 --out synthetic-test.json     # test, version 2
 //   node scripts/make-spelling-set.ts --seed 20261009 --out synthetic-test-2.json   # test, version 2.1
 //   node scripts/make-spelling-set.ts --seed 20261010 --out truncation.json --truncate
+//   node scripts/make-spelling-set.ts --seed 20261011 --out synthetic-test-3.json   # test, version 2.2
+//   node scripts/make-spelling-set.ts --seed 20261012 --out truncation-2.json --truncate --min-length 7
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
@@ -22,7 +24,7 @@ const TYPOS = 300
 const CONTROLS = 200
 // A word must appear in this many product names, so the sample holds words, not stray tokens.
 const MIN_DOCS = 20
-const MIN_LENGTH = 5
+const MIN_LENGTH = Number(arg('--min-length', '5'))
 const EDITS = ['deletion', 'insertion', 'substitution', 'transposition'] as const
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -73,6 +75,8 @@ const ORDER = [
   'synthetic-test.json',
   'synthetic-test-2.json',
   'truncation.json',
+  'synthetic-test-3.json',
+  'truncation-2.json',
 ]
 const EXCLUDE = ORDER.includes(OUT) ? ORDER.slice(0, ORDER.indexOf(OUT)) : ORDER
 const used = new Set<string>()

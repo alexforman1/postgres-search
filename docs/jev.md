@@ -125,10 +125,13 @@ and how many products the word step finds for it. `search.similar_words(q)` retu
 word, up to 8 candidates: every word one edit away (`search.edits1`: a letter added, removed or
 replaced, or two neighbors swapped), most found first, then trigram neighbors with similarity 0.3
 or more, closest first. It skips words under four letters, words with digits and stop words. A
-candidate must be found in more products than the typed word, must have a different stem, and must
-not just finish the typed word, which the prefix step finds. Counting what the search finds, not
-how often the word itself appears, keeps possessives such as `hellmanns` from looking misspelled:
-the search finds 85 HELLMANN'S products for it.
+candidate must have a different stem from the typed word and must be found in more products than
+both the typed word and the most common word, of another stem, that starts with the typed word.
+That last test protects unfinished words: for `strawb` the prefix step already shows strawberries,
+found in 11,614 products, so "straw", in 305, is not offered. A word one letter longer than the
+typed one can be offered (`captai`, "captain"); longer completions are left to the prefix step.
+Counting what the search finds, not how often the word itself appears, keeps possessives such as
+`hellmanns` from looking misspelled: the search finds 85 HELLMANN'S products for it.
 
 `checkSpelling()` in `src/spelling.ts` turns those rows into options, the query as typed and then
 the query with one word changed, every word's closest candidate before any word's second, up to
@@ -179,8 +182,13 @@ which fixed 272. Two causes accounted for most of the gap: 40 intended words wer
 options, and 75 were offered but declined, because Jev could not tell a misspelling from a rare
 brand without knowing which spellings the catalog uses. The one-edit candidates, the counts, the
 edits and the twice-as-likely rule fix those; the rule was chosen with `scripts/spelling-rules.ts`
-on the development sets. The design was then frozen and tested on two sets made afterwards. The
-[README](../README.md#4-results) reports both stages.
+on the development sets. That version 2 was frozen and tested on two sets made afterwards.
+
+Version 2 then showed one more fault: on a word cut short it barred the full word as a candidate,
+so Jev chose another nearby word (`strawb`, "straw"; `shee`, "ghee") and pulled the user away
+from the prefix step's right results. Version 2.1 adds the completion test above and allows
+one-letter completions. It was frozen and tested on two more sets made afterwards. The
+[README](../README.md#4-results) reports every stage.
 
 ## No match
 

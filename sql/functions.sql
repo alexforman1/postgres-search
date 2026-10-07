@@ -209,11 +209,11 @@ $$;
 -- words with trigram similarity of 0.3 or more, closest first. Counts are what the word step finds,
 -- so "hersheys" counts the Hershey products and is not offered "hershey". An alternative is offered
 -- only if its stem differs from the typed word's and the search finds it in more products than
--- both the typed word and the most common word, of another stem, that starts with the typed word:
--- for an unfinished word the prefix step shows that word's products, so "strawb" is not offered
--- "straw" while strawberries start with it. A word one letter longer can be offered ("captai",
--- "captain"); longer completions are left to the prefix step. Words under four letters, words
--- with digits and stop words get none.
+-- both the typed word and the most common word, of another stem, that starts with the typed word.
+-- A word the search does not find but that starts some product word gets none: the user is most
+-- likely still typing it, and the prefix step answers ("strawb" finds strawberries, and is not
+-- offered "straw"). Longer completions are left to the prefix step. Words under four letters,
+-- words with digits and stop words get none.
 CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
 RETURNS TABLE (pos int, word text, word_matches int, alternative text, alternative_matches int)
 LANGUAGE sql STABLE
@@ -269,6 +269,7 @@ AS $$
       ) y
       ORDER BY y.alternative, y.kind
     ) x
+    WHERE NOT (c.matches = 0 AND c.completion_stems IS NOT NULL)
   )
   SELECT o.pos, o.word, o.matches, o.alternative, o.alternative_matches
   FROM offered o
