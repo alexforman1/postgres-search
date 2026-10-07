@@ -36,6 +36,14 @@ test('moves candidates below the threshold to the bottom and keeps the rest in o
   assert.equal(out.reranked, true)
 })
 
+test('skips a page the prefix step answered', async () => {
+  const { ask, calls } = answering([0.9, 0.1, 0.8, 0.2])
+  const out = await rerank('ore', four.map(r => ({ ...r, step: 'prefix' })), { ask, threshold: 0.3 })
+  assert.equal(calls.length, 0)
+  assert.equal(out.reranked, false)
+  assert.deepEqual(out.results.map(r => r.id), ['a', 'b', 'c', 'd'])
+})
+
 test('returns each candidate score in candidate order', async () => {
   const out = await rerank('oreo', four, { ...answering([0.9, 0.1, 0.8, 0.2]), threshold: 0.3 })
   assert.deepEqual(out.scores, [0.9, 0.1, 0.8, 0.2])

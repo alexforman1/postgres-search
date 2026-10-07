@@ -79,6 +79,15 @@ describe('search.query', () => {
     assert.deepEqual(steps(rows), ['prefix'])
   })
 
+  test('skips the word step for a word no name uses that starts one', async () => {
+    // "pean" stems like "Peans", so the word step would answer it with the pie alone. No name uses
+    // it, and it starts "peanut", so it is a word still being typed.
+    const rows = await query('pean')
+    assert.deepEqual(ids(rows), ['19', '20'])
+    assert.deepEqual(steps(rows), ['prefix'])
+    assert.deepEqual(steps(await query('peans')), ['word'])
+  })
+
   test('prefix step matches unstemmed words and skips stop words', async () => {
     // "chocolate" is stored stemmed as "chocol", so this partial word only matches unstemmed.
     assert.deepEqual(ids(await query('chocolat')), ['8', '6'])
@@ -331,6 +340,13 @@ describe('search.similar_words', () => {
     assert.deepEqual(await similarWords('wate'), [])
     assert.deepEqual(await similarWords('peanu'), [])
     assert.deepEqual([...new Set((await similarWords('peanu milc')).map(r => r.word))], ['milc'])
+  })
+
+  test('gives no alternatives to a word still being typed, even when its stem finds products', async () => {
+    // "mill" finds General Mills through its stem, but no name uses it and it starts "mills", so it
+    // is not respelled "milk".
+    assert.deepEqual(await similarWords('mill'), [])
+    assert.deepEqual(await similarWords('pean'), [])
   })
 
   test('blocks a one-letter completion when a more common completion has another stem', async () => {

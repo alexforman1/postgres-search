@@ -1,6 +1,8 @@
 -- search.query runs four steps in order and returns the rows of the first step that matches
 -- anything. Later steps never add rows to an earlier step's results. Pass lim => NULL for every
--- matching row (search.facets does this).
+-- matching row (search.facets does this). A word that no name uses but that starts a word some
+-- name uses is still being typed, so the word step is skipped for it: its stem would match other
+-- words ("monke" finds monk) before the prefix step could finish it.
 CREATE OR REPLACE FUNCTION search.query(q text, filters jsonb DEFAULT '{}', lim int DEFAULT 50)
 RETURNS TABLE (id text, step text, pos int)
 LANGUAGE plpgsql STABLE
@@ -43,7 +45,12 @@ BEGIN
   END IF;
 
   words := plainto_tsquery('english', query);
-  IF numnode(words) > 0 THEN
+  IF numnode(words) > 0 AND NOT EXISTS (
+    SELECT 1 FROM unnest(kept) AS t
+    WHERE length(t) >= 3
+      AND NOT EXISTS (SELECT 1 FROM search.words w WHERE w.word = t)
+      AND EXISTS (SELECT 1 FROM search.words w WHERE w.word ~>=~ t AND w.word ~<~ (t || chr(1114111)))
+  ) THEN
     RETURN QUERY
       SELECT r.id, 'word'::text, (row_number() OVER (ORDER BY r.exact DESC, r.rank DESC NULLS LAST, r.id))::int
       FROM (
@@ -269,7 +276,8 @@ AS $$
       ) y
       ORDER BY y.alternative, y.kind
     ) x
-    WHERE NOT (c.matches = 0 AND c.completion_stems IS NOT NULL)
+    -- A word still being typed is left to the prefix step (see search.query).
+    WHERE NOT (c.completion_stems IS NOT NULL AND NOT EXISTS (SELECT 1 FROM search.words s WHERE s.word = c.word))
   )
   SELECT o.pos, o.word, o.matches, o.alternative, o.alternative_matches
   FROM offered o

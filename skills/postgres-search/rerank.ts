@@ -78,6 +78,8 @@ export interface Candidate {
   other_names: string | null
   group_key: string | null
   facets: Record<string, string>
+  // The search step that found the row, when the search reports it.
+  step?: string | null
 }
 
 export interface RerankResult<T> {
@@ -131,6 +133,10 @@ export async function rerank<T extends Candidate>(
   // differ only by noise, so the call is skipped.
   const groups = new Set(head.map(r => r.group_key ?? r.name_key))
   if (head.length < 2 || groups.size < 2) return unchanged(0)
+
+  // The prefix step answers words still being typed. Jev cannot know which completion is meant,
+  // and on those pages it sank more right results than it raised, so the call is skipped.
+  if (head[0].step === 'prefix') return unchanged(0)
 
   const started = Date.now()
   try {
