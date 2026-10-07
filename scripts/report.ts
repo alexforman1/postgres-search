@@ -1107,7 +1107,7 @@ figures['spelling-by-edit'] = theme => {
   const H = 390
   const left = 56
   const right = 20
-  const top = 86
+  const top = 104
   const bottom = 300
   const bars = [
     { label: SYSTEM_LABEL.sql, v: (b: (typeof byEdit)[number]) => b.sql, color: t.muted },

@@ -3,7 +3,7 @@
 Product search inside PostgreSQL: whole words, partial words, typos, barcodes, typeahead and facet
 counts, all in SQL, with an optional second stage that asks [Jev](https://docs.typesafe.ai), a
 hosted model that returns probabilities instead of text, two questions per search. This README is
-also a report on that second stage: how much it helps, how two versions failed and were fixed,
+also a report on that second stage: how much it helps, how three versions failed and were fixed,
 what it costs, and how it compares with Algolia.
 
 [Try it](#try-it) · [Use it with your data](#use-it-with-your-data) · [The guide](#the-guide)
@@ -26,50 +26,53 @@ what it costs, and how it compares with Algolia.
 We compare three ways to search the 440,302 products of the USDA Branded Foods release: PostgreSQL
 full-text search as its manual presents it, this repository's SQL, and this SQL followed by Jev.
 Jev's second question, "which spelling did the user mean?", is also compared with two spelling
-correctors that use no model, among them one in the style of Norvig (2007). The spelling question
-went through four versions. Each change was made on data already seen and frozen in a commit, and
-only then were new test sets generated to score it. The current version, 2.2, was scored on two
-sets made after its freeze: 500 seeded one-edit misspellings and controls, and 300 words of seven
-or more letters cut short as a user types them. Every system ran five times on 3,188 queries with
-the model pinned to `jev-1.13.0`.
+correctors that use no model, among them one in the style of Norvig (2007). The design went through
+five versions. Each change was made on data already seen and frozen in a commit, and only then were
+new test sets generated to score it. The current version, 2.3, was scored on two sets made after its
+freeze: 500 seeded one-edit misspellings and controls, and 300 words of seven or more letters cut
+short as a user types them. Every system ran five times on 3,988 queries with the model pinned to
+`jev-1.13.0`, and version 2.2's code ran once on the two new sets for a paired comparison.
 
-On the 500 misspellings and controls, the right product came first for 35% of queries with plain
-full-text search and 62% with this SQL. Jev's keep-or-sink reorder raised that to 69%, and its "Did
-you mean" link, when followed, to 83%; all three gains hold after Holm's correction (p < 0.0001).
-The dictionary corrector also reached 83%: on errors made to fit its own model, the two tie. On the
-300 words cut short, the corrector respells what the user has not finished typing and finds the
-right product for 30%. "Did you mean" leaves those words to the prefix step and finds it for 76%,
-against 75% for this SQL alone. On real misspellings from Wikipedia's list, a test set for version
-2, Jev leads 70% to 64%, and 84% to 31% on the 32 that are themselves words some product uses.
+On the 500 misspellings and controls, the right product came first for 36% of queries with plain
+full-text search and 66% with this SQL. Jev's keep-or-sink reorder raised that to 70%, and its "Did
+you mean" link, when followed, to 82%; all three gains hold after Holm's correction (p ≤ 0.002).
+The dictionary corrector reached 84%, a difference that is not significant (p = 0.238) on errors
+made to fit the corrector's own model. On the 300 words cut short, version 2.3 finds the right
+product first for 81%, against 75% for version 2.2 on the same queries (24 gained, 5 lost, Holm p =
+0.0005) and 33% for the corrector, which respells what the user has not finished typing. On real
+misspellings from Wikipedia's list, a test set for version 2, Jev leads 70% to 64%, and 84% to 31%
+on the 32 that are themselves words some product uses.
 
-Two failures shaped the design. The first version lost to the corrector (78% to 85%) because it
+Three failures shaped the design. The first version lost to the corrector (78% to 85%) because it
 withheld what the corrector uses: candidates one edit away, and how many products each spelling
 finds. Given both, Jev went from picking the intended word 68% of the time it was offered to 88%.
-Version 2.1 then tried to stop the spelling question overriding the prefix step on unfinished words
+Version 2.1 tried to stop the spelling question overriding the prefix step on unfinished words
 (version 2 offered "straw" for `strawb`, while the prefix step finds 11,646 products for it), and
 failed on a test set made for it: on 300 words cut short it found the right product for 57% in its
-one run, against 81% for this SQL alone. Version 2.2 gives no candidates to a word that finds
-nothing but starts a word in the index.
+one run, against 81% for this SQL alone. Version 2.2 left such words to the prefix step, but a cut
+word whose stem matched other words still went to the word step (`monke` found monk fruit), and the
+reorder sank right results on pages the prefix step answered. Version 2.3 fixes both.
 
-Each Jev call returns all its judgments in one round trip: ten product judgments in 168 ms at the
-median, or a choice among seven spellings in 165 ms. The two calls run at the same time and add
-173 ms to the page. They cost \$0.083 per 1,000 searches on the hand-written queries. The spelling
-probabilities are well calibrated (expected calibration error 0.014; right 97.7% of the time at
-0.9 or more), and the page says that nothing matches for 12 of 15 queries that have no answer in a
-grocery catalog against 107 of 3,173 that do. For this demo's 440,302 records, Algolia's published
-Grow price is \$136 a month for records alone, before any search; at 100,000 searches a month it is
-\$181 to \$381, against \$8.27 for the Jev step.
+Each Jev call returns all its judgments in one round trip: ten product judgments in 169 ms at the
+median, or a choice among seven spellings in 163 ms. The two calls run at the same time and add
+165 ms to the page; a word still being typed makes no call at all. They cost \$0.080 per 1,000
+searches on the hand-written queries. The spelling probabilities are well calibrated (expected
+calibration error 0.012; right 97.7% of the time at 0.9 or more), and the page says that nothing
+matches for 12 of 15 queries that have no answer in a grocery catalog against 123 of 3,973 that
+do. For this demo's 440,302 records, Algolia's published Grow price is \$136 a month for records
+alone, before any search; at 100,000 searches a month it is \$181 to \$381, against \$7.95 for the
+Jev step.
 
 | median of five runs | plain Postgres full-text search | this SQL | this SQL + Jev | this SQL + Norvig corrector |
 |---------------------|--------------------------------:|---------:|---------------:|----------------------------:|
-| right product first, one-edit misspellings and controls, clean test (500) | 35% | 62% | **84%** | 83% |
-| right product first, words cut short, clean test (300) | 12% | **75%** | 74% | 30% |
-| right product first, real misspellings from Wikipedia (473) | 5% | 42% | **70%** | 64% |
+| right product first, one-edit misspellings and controls, clean test (500) | 36% | 66% | 82% | **84%** |
+| right product first, words cut short, clean test (300) | 9% | 80% | **81%** | 33% |
+| right product first, real misspellings from Wikipedia (473) | 5% | 43% | **70%** | 64% |
 | right product first, real-word errors among them (32) | 28% | 31% | **84%** | 31% |
 | says nothing matches, queries with no answer (15) | 12 | 2 | 12 | |
-| says nothing matches, queries with an answer (3,173) | 2,038 | 84 | 107 | |
-| time per search, median | 2 ms | 23 ms | 209 ms | |
-| cost per 1,000 searches, beyond the database | | | \$0.083 | |
+| says nothing matches, queries with an answer (3,973) | 2,555 | 97 | 123 | |
+| time per search, median | 2 ms | 21 ms | 197 ms | |
+| cost per 1,000 searches, beyond the database | | | \$0.080 | |
 
 "This SQL + Jev" asks both questions and follows a "Did you mean" link when one appears.
 
@@ -87,6 +90,12 @@ fuzzy matches out of good results.
 | word | every word, stemmed (`plainto_tsquery('english')`) | GIN on `search_vector` | exact name first, then `rank` |
 | prefix | every word as a prefix (`word:*`) | GIN on `prefix_vector` | exact name first, then `rank` |
 | typo | trigram word similarity of 0.5 or more | GIN trigram on `name` and `other_names` | similarity, then `rank` |
+
+A word that no name uses is one the user may still be typing when the most common word that starts
+with it has another stem. The word step is skipped for it, because its stem would match other
+words first: `monke` would find MONK FRUIT sweetener, and the prefix step finds monkey bread. When
+the completion has the same stem (`imagin`, "imagine"), the word step already finds it and runs as
+usual.
 
 `search.query_distinct` keeps one row per group, `search.suggest` serves typeahead from
 `search.names`, and `search.facets` counts facet values over the same rows `search.query` matched.
@@ -122,23 +131,23 @@ meant. With τ = 0.3, the page shows
 
 each part in Postgres order. The step never sorts by sᵢ: a correct product scores near 1 whether
 it is the best match or a close variant, so sorting would reorder good results on noise. The call
-is skipped when k < 2 or every candidate is in one group.
+is skipped when k < 2, when every candidate is in one group, or when the prefix step found the
+rows. Those pages answer words still being typed, and Jev cannot know which completion is meant.
 
 **Did you mean.** For each query word w of four or more letters, without digits and not a stop
-word, `search.similar_words` collects candidates from `search.words`. A word that the search finds
-in no product but that starts some word in the index is one the user may still be typing, and it
-gets no candidates: the prefix step already shows the products of the words it starts, so
-`strawb` shows strawberries and `captai` shows Captain's products. Any other word gets every word
-one edit from w (a letter added, removed or replaced, or two neighbors swapped; Damerau, 1964),
-most found first, then words with trigram similarity of 0.3 or more, closest first, up to 8 in
-all. A candidate must have a different English stem from w (the search already treats one stem
-alike, so `hellmanns` is not a misspelling of "hellmann"), and the search must find it in more
-products than both w and the most common word, of another stem, that starts with w. The options
-are the query as typed, o₀, then the query with one word replaced, each word's closest candidate
-before any word's second, up to 16.
-Each option tells Jev how many edits separate it from what was typed and how many products the
-search finds for the word it changes, the evidence a dictionary corrector works from. One request
-asks a Choice question over the options and returns a distribution p. The page offers
+word, `search.similar_words` collects candidates from `search.words`. A word the user may still be
+typing, by the rule of section 2.1, gets no candidates: the prefix step already shows the products
+of the words it starts, so `strawb` shows strawberries and `monke` monkey bread. Any other word
+gets every word one edit from w (a letter added, removed or replaced, or two neighbors swapped;
+Damerau, 1964), most found first, then words with trigram similarity of 0.3 or more, closest first,
+up to 8 in all. A candidate must have a different English stem from w (the search already treats
+one stem alike, so `hellmanns` is not a misspelling of "hellmann"), and the search must find it in
+more products than both w and the most common word, of another stem, that starts with w. The
+options are the query as typed, o₀, then the query with one word replaced, each word's closest
+candidate before any word's second, up to 16. Each option tells Jev how many edits separate it from
+what was typed and how many products the search finds for the word it changes, the evidence a
+dictionary corrector works from. One request asks a Choice question over the options and returns a
+distribution p. The page offers
 
 ```math
 o^{*} = \arg\max_{i > 0} \; p(o_i) \quad \text{as a link, if } p(o^{*}) \ge 2\,p(o_0) \text{ and } p(o^{*}) \ge 0.3
@@ -157,7 +166,7 @@ stay on the page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/timeline-dark.svg">
-  <img alt="Timeline of one search at the medians: Postgres takes about 22 ms and the keep-or-sink call about 168 ms on one path; the spelling call takes about 165 ms on the other; the page median is 209 ms." src="docs/figures/timeline-light.svg" width="860">
+  <img alt="Timeline of one search at the medians: Postgres takes about 19 ms and the keep-or-sink call about 169 ms on one path; the spelling call takes about 163 ms on the other; the page median is 197 ms." src="docs/figures/timeline-light.svg" width="860">
 </picture>
 
 ## 3. Method
@@ -180,22 +189,24 @@ owner. All three systems search the same text.
 | Wikipedia, [`eval/wikipedia.json`](eval/wikipedia.json) | 473 real misspellings of 307 words | from Wikipedia's list, after version 2 was frozen | carries the intended word | test for version 2; checked while making 2.2 |
 | synthetic test 2, [`eval/synthetic-test-2.json`](eval/synthetic-test-2.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261009, after version 2.1 was frozen | carries the intended word | test for version 2.1; rescored |
 | truncation, [`eval/truncation.json`](eval/truncation.json) | 300 words cut short | seed 20261010, after version 2.1 was frozen | carries the full word | test for version 2.1; informed 2.2 |
-| synthetic test 3, [`eval/synthetic-test-3.json`](eval/synthetic-test-3.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261011, after version 2.2 was frozen | carries the intended word | **test** |
-| truncation 2, [`eval/truncation-2.json`](eval/truncation-2.json) | 300 words of 7 or more letters cut short | seed 20261012, after version 2.2 was frozen | carries the full word | **test** |
+| synthetic test 3, [`eval/synthetic-test-3.json`](eval/synthetic-test-3.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261011, after version 2.2 was frozen | carries the intended word | test for version 2.2; informed 2.3 |
+| truncation 2, [`eval/truncation-2.json`](eval/truncation-2.json) | 300 words of 7 or more letters cut short | seed 20261012, after version 2.2 was frozen | carries the full word | test for version 2.2; informed 2.3 |
+| synthetic test 4, [`eval/synthetic-test-4.json`](eval/synthetic-test-4.json) | 500: 300 misspelled, 200 correctly spelled | seed 20261013, after version 2.3 was frozen | carries the intended word | **test** |
+| truncation 3, [`eval/truncation-3.json`](eval/truncation-3.json) | 300 words of 7 or more letters cut short | seed 20261014, after version 2.3 was frozen | carries the full word | **test** |
 | absent, [`eval/absent.json`](eval/absent.json) | 15 household goods | by hand | (none should match) | can a system say no? |
 
-The four synthetic sets and the two truncation sets come from
-[`scripts/make-spelling-set.ts`](scripts/make-spelling-set.ts). It
-samples words uniformly from those of five or more letters, without digits and not stop words,
-that appear in at least 20 product names and in no other eval file. Each of 300 gets one Damerau
-edit at a position other than the first letter, 75 of each type, redrawn up to ten times while the
-result is itself a word in the index, so these are non-word errors in the sense of Kukich (1992).
-Damerau (1964) found that about 80% of non-word misspellings are a single such edit. The next 200
-sampled words are the controls. The truncation sets use the same sampling and cut each word to a
-length from four letters to one letter short of the word, skipping cuts that are themselves words
-in the index. In the first, many sampled words are short and 162 of the 300 lose one letter, so the
-second samples words of seven or more letters: 81 lose one letter, 165 two or three, and 54 four or
-more. Each set leaves out every word of the sets made before it.
+The five synthetic sets and the three truncation sets come from
+[`scripts/make-spelling-set.ts`](scripts/make-spelling-set.ts). It samples words uniformly from
+those of five or more letters, without digits and not stop words, that appear in at least 20
+product names and in no other eval file. Each of 300 gets one Damerau edit at a position other than
+the first letter, 75 of each type, redrawn up to ten times while the result is itself a word in the
+index, so these are non-word errors in the sense of Kukich (1992). Damerau (1964) found that about
+80% of non-word misspellings are a single such edit. The next 200 sampled words are the controls.
+The truncation sets use the same sampling and cut each word to a length from four letters to one
+letter short of the word, skipping cuts that are themselves words in the index. In the first, many
+sampled words are short and 162 of the 300 lose one letter, so the later two sample words of seven
+or more letters: in truncation 2, 81 lose one letter, 165 two or three, and 54 four or more; in
+truncation 3, 88, 155 and 57. Each set leaves out every word of the sets made before it.
 
 The Wikipedia set comes from [`scripts/make-wikipedia-set.ts`](scripts/make-wikipedia-set.ts),
 which reads "Lists of common misspellings/For machines" at revision 1199637275 (CC BY-SA 4.0) and
@@ -226,7 +237,7 @@ unknown words and Jev otherwise.
 
 ### 3.4 Protocol
 
-The work had four stages. Each version was frozen in a commit before the sets that test it were
+The work had five stages. Each version was frozen in a commit before the sets that test it were
 generated, and the sets were committed before any model saw them.
 
 1. **Version 1.** The first spelling question offered only trigram neighbors, showed Jev the bare
@@ -248,8 +259,20 @@ generated, and the sets were committed before any model saw them.
    plan was committed before any run file was read. It was changed once in that window: a first
    plan pooled the two new sets for the primary tests, and `341a5f2` split them, because the
    corrector and plain full-text search have no rule for unfinished words and truncation 2 would
-   tilt two of the four comparisons. Five runs in [`results/`](results/report.md). The first
-   records commit `8501272` and the others `341a5f2`; the two differ only in `scripts/report.ts`.
+   tilt two of the four comparisons. Five runs in [`results/v22/`](results/v22/report.md). The
+   first records commit `8501272` and the others `341a5f2`; the two differ only in
+   `scripts/report.ts`.
+5. **Version 2.3.** Version 2.2's runs left two faults on words cut short. A cut word whose stem
+   matches other words was answered by the word step (`monke` found monk fruit), and keep or sink
+   lost more queries than it won on pages the prefix step answered. We changed the search, the
+   candidates and the reorder using the sets already seen: the SQL alone on all of them, and one
+   development run with Jev ([`results/dev23/`](results/dev23/report.md)). That run showed the
+   first rule dropping three Wikipedia suggestions (`essentail`, `minature`, `imagin`), so the rule
+   was narrowed to words whose most common completion has another stem, and checked again without
+   Jev. Frozen in `09c2134`, with the analysis plan; test sets synthetic test 4 and truncation 3 in
+   `463a46e`. Version 2.2's code then ran once on the two new sets
+   ([`results/v22-new/`](results/v22-new/)) for a paired comparison. Five runs in
+   [`results/`](results/report.md).
 
 [`scripts/compare.ts`](scripts/compare.ts) runs every query through every system in sequence, after
 one untimed pass so each timed query runs on a warm cache. Five runs per version, model pinned to
@@ -269,9 +292,12 @@ when runs differ.
 
 Proportions carry 95% Wilson (1927) intervals, computed on the median run, so they do not include
 run-to-run variation. Paired systems are compared with the exact two-sided McNemar (1947) test,
-once per run. Four comparisons on synthetic test 3 are primary and corrected with Holm's (1979)
-method. One more, set before the runs were read, asks whether "Did you mean" loses queries on
-truncation 2 that this SQL gets right; it is reported uncorrected. All other tests are exploratory.
+once per run. For version 2.3, four comparisons on synthetic test 4 are primary and corrected with
+Holm's (1979) method. Two more on truncation 3, set at the freeze, compare version 2.3 with version
+2.2's one run, for this SQL and for both Jev questions, corrected with Holm's method across the
+two. A last one asks whether "Did you mean" loses queries on truncation 3 that this SQL gets
+right; it is reported uncorrected. All other tests are exploratory. Version 2.2's primary tests,
+on synthetic test 3, are in [`results/v22/`](results/v22/report.md).
 Calibration is summarized by the expected calibration error over ten equal-width bins (Guo et al.,
 2017) and the Brier (1950) score.
 
@@ -326,76 +352,87 @@ mean" found the right product for 57% of queries in its one run, against 81% for
 Its wrong suggestions were nearby words common enough to pass the test: `yellowf` to "yellow"
 (meant yellowfin), `orna` to "orca" (meant ornaments).
 
-Version 2.2 gives no candidates to a word that the search finds in no product but that starts some
-word in the index. A word that finds products, such as `straw`, is still checked, and its
-candidates must still beat its completions.
+Version 2.2 gave no candidates to a word that the search finds in no product but that starts some
+word in the index, and on its own new truncation set "Did you mean" took away no more than it
+added (5 gained, 2 lost). Two faults remained there. A cut word that shares a stem with other
+words was answered by the word step before the prefix step could run: `monke` found MONK FRUIT
+sweetener, `hagge` the stuffed grape leaves of Hagg Interests rather than Haggen. On the two
+truncation sets these made up 55 of the misses. And the reorder, asked about pages the prefix step
+had answered, sank right results more often than it raised them: 7 or 8 losses against 1 or 2 wins
+on truncation 2, 7 to 9 against 5 on truncation, and almost none either way on the other sets.
 
-| right product first, "Did you mean" | version 2 | version 2.1, one run | version 2.2 | this SQL | Norvig corrector |
-|-------------------------------------|----------:|---------------------:|------------:|---------:|-----------------:|
-| synthetic development set, last letter cut (16) | 10 | 15 | 16 | 16 | |
-| truncation (300), made for 2.1, informed 2.2 | | 57% | 82% | 81% | 40% |
-| truncation 2 (300), made for 2.2 | | | 76% | 75% | 30% |
+Version 2.3 treats a word as still being typed when no name uses it and the most common word that
+starts with it has another stem (section 2.1). The search skips the word step for it, the spelling
+question gives it no candidates, and the reorder skips any page the prefix step answered. The
+stem condition came from the development run: without it the rule also caught `imagin`, which the
+word step already answers with "imagine", and two misspellings that start misspelled product words
+of the same stem (`essentail`, `minature`), and dropped their suggestions.
 
-On truncation 2, "Did you mean" gets 5 queries right that this SQL gets wrong and loses 2, in every
-run (exact McNemar p = 0.453). A two-sided test cannot show that the two are equal; it shows the
-spelling question added more right answers than it took away. It made 10 or 11 suggestions there, 5
-of them the full word (`seltze` to "seltzer", `kitche` to "kitchen"), where the cut text had
-matched other words through its stem. Its 5 or 6 wrong ones include the 2 losses: `chocolati` to
-"chocolate" (meant chocolatier) and `reduct` to "reduce" (meant reduction). The corrector, which
-respells any word it does not know, found the right product for 30%; on cuts of two or more
-letters, 9%.
+| right product first | version 2 | version 2.1, one run | version 2.2 | version 2.3 | Norvig corrector |
+|---------------------|----------:|---------------------:|------------:|------------:|-----------------:|
+| synthetic development set, last letter cut, "Did you mean" (16) | 10 | 15 | 16 | 16 | |
+| truncation (300), made for 2.1, both questions | | 56% | 82% | 86% | 40% |
+| truncation 2 (300), made for 2.2, both questions | | | 74% | 81% | 30% |
+| truncation 3 (300), made for 2.3, this SQL | | | 72% | 80% | |
+| truncation 3 (300), made for 2.3, both questions | | | 75% | 81% | 33% |
+
+On truncation 3, version 2.2's numbers come from its one run on the set; this SQL is deterministic.
+Query by query, version 2.3's SQL gets 24 right that version 2.2's gets wrong and none the other
+way, and with both Jev questions 24 against 5 (Holm-adjusted p < 0.0001 and 0.0005, worst of five
+runs). The gain is in cuts of two or more letters, 68% to 76% with both questions; on one-letter
+cuts it is 91% to 93%. "Did you mean" now makes no suggestion on truncation 3, so it can neither
+add nor take away anything there, and the reorder runs on the few pages the prefix step did not
+answer: 3 queries gained, none lost. The corrector, which respells any word it does not know, finds
+the right product for 33%; on cuts of two or more letters, 11%.
 
 ### 4.3 Finding the right product, on the test sets
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/accuracy-dark.svg">
-  <img alt="Dot plot of hit@1 with 95% Wilson intervals. Synthetic test 3: plain Postgres 35%, this SQL 62%, Norvig corrector 83%, keep or sink 69%, both Jev questions 84%. Truncation 2: 12%, 75%, 30%, 73%, 74%. Wikipedia, rescored: 5%, 42%, 64%, 48%, 70%." src="docs/figures/accuracy-light.svg" width="860">
+  <img alt="Dot plot of hit@1 with 95% Wilson intervals. Synthetic test 4: plain Postgres 36%, this SQL 66%, Norvig corrector 84%, keep or sink 70%, both Jev questions 82%. Truncation 3: 9%, 80%, 33%, 81%, 81%. Wikipedia, rescored: 5%, 43%, 64%, 48%, 70%." src="docs/figures/accuracy-light.svg" width="860">
 </picture>
 
 Right product first (hit@1), median of five runs, 95% Wilson interval of that run. Synthetic test
-3 and truncation 2 were made after version 2.2 was frozen; the Wikipedia set was made for version
+4 and truncation 3 were made after version 2.3 was frozen; the Wikipedia set was made for version
 2 and is rescored here.
 
-| system | synthetic test 3 (500) | truncation 2 (300) | Wikipedia (473) | Wikipedia, real-word errors (32) |
+| system | synthetic test 4 (500) | truncation 3 (300) | Wikipedia (473) | Wikipedia, real-word errors (32) |
 |--------|-----------------------:|-------------------:|----------------:|---------------------------------:|
-| plain Postgres full-text search | 35% [31, 39] | 12% [9, 16] | 5% [4, 8] | 28% [16, 45] |
-| this SQL | 62% [58, 67] | 75% [70, 80] | 42% [38, 47] | 31% [18, 49] |
-| + keep or sink | 69% [64, 73] | 73% [68, 78] | 48% [44, 52] | 31% [18, 49] |
-| + Did you mean | 83% [79, 86] | **76%** [71, 81] | **70%** [65, 74] | **84%** [68, 93] |
-| + both | **84%** [80, 87] | 74% [69, 79] | **70%** [66, 74] | **84%** [68, 93] |
-| this SQL + Norvig corrector | 83% [79, 86] | 30% [25, 35] | 64% [60, 68] | 31% [18, 49] |
+| plain Postgres full-text search | 36% [32, 41] | 9% [6, 12] | 5% [4, 8] | 28% [16, 45] |
+| this SQL | 66% [62, 70] | 80% [75, 84] | 43% [38, 47] | 31% [18, 49] |
+| + keep or sink | 70% [66, 74] | **81%** [76, 85] | 48% [44, 52] | 31% [18, 49] |
+| + Did you mean | 82% [79, 85] | 80% [75, 84] | **70%** [65, 74] | **84%** [68, 93] |
+| + both | 82% [79, 85] | **81%** [76, 85] | **70%** [66, 74] | **84%** [68, 93] |
+| this SQL + Norvig corrector | **84%** [81, 87] | 33% [28, 39] | 64% [60, 68] | 31% [18, 49] |
 
-On the 300 misspellings of synthetic test 3, this SQL finds the right product first for 46%, keep
-or sink for 55%, "Did you mean" for 80% and the corrector for 80%; on its 200 correctly spelled
-controls, 88%, 90%, 87% and 88%. Right product in the top 10 (hit@10) on synthetic test 3: plain
-39%, this SQL 76%, + keep or sink 76% (it only reorders the top 10), + Did you mean 90%, the
-corrector 90%. On the hand-written development queries the full system reaches 96% (this SQL 82%,
-plain 52%).
+On the 300 misspellings of synthetic test 4, this SQL finds the right product first for 52%, keep
+or sink for 58%, "Did you mean" for 80% and the corrector for 82%; on its 200 correctly spelled
+controls, 88%, 88%, 86% and 88%. Right product in the top 10 (hit@10) on synthetic test 4: plain
+40%, this SQL 78%, + keep or sink 78% (it only reorders the top 10), + Did you mean 91%, the
+corrector 92%. On truncation 3 this SQL has the right product in the top 10 for 93%. On the
+hand-written development queries the full system reaches 96% (this SQL 82%, plain 52%).
 
-Keep or sink costs a little on words cut short. On truncation 2 it gets 1 or 2 queries right that
-this SQL gets wrong, and 7 or 8 the other way (p = 0.039 to 0.180, exploratory). A cut word is
-ambiguous to Jev, so it scores the right products near the threshold and sometimes under it; in
-the first run, FREIHOFER'S for `frei` at 0.28 and MANITOBA HARVEST for `manit` at 0.26.
-
-The sets made for earlier versions, rescored: on version 2's 973 test queries, "Did you mean"
-reaches 78% (77% to 78%) and the corrector 75%, as in version 2 (78% against 75%, Holm p ≤ 0.040 in
-[`results/v2/`](results/v2/report.md)); on synthetic test 2 the two reach 83% each. Version 2.2
-moved neither of version 2's test sets by more than a point.
+Version 2.2's code scores the same on synthetic test 4 as version 2.3 (66%, 70%, 82% and 82%): the
+change touched only words still being typed. On the sets made for earlier versions, rescored,
+"Did you mean" reaches 78% on version 2's 973 test queries (the corrector 75%), 83% on synthetic
+test 2 and 83% on synthetic test 3 (the corrector 83% on both).
 
 ### 4.4 Primary comparisons
 
-On synthetic test 3, exact McNemar with Holm's correction across these four, the largest adjusted
+On synthetic test 4, exact McNemar with Holm's correction across these four, the largest adjusted
 p of the five runs:
 
 | comparison | hit@1 | right only in the first | right only in the second | adjusted p |
 |------------|------:|------------------------:|-------------------------:|-----------:|
-| this SQL vs plain full-text search | 62% vs 35% | 143 | 7 | < 0.0001 |
-| + keep or sink vs this SQL | 69% vs 62% | 34 to 37 | 3 to 4 | < 0.0001 |
-| + Did you mean vs this SQL | 83% vs 62% | 115 to 116 | 14 | < 0.0001 |
-| + Did you mean vs Norvig corrector | 83% vs 83% | 11 to 12 | 11 to 12 | 1.000 |
+| this SQL vs plain full-text search | 66% vs 36% | 161 | 11 | < 0.0001 |
+| + keep or sink vs this SQL | 70% vs 66% | 21 to 23 | 3 to 4 | 0.002 |
+| + Did you mean vs this SQL | 82% vs 66% | 96 to 100 | 16 to 18 | < 0.0001 |
+| + Did you mean vs Norvig corrector | 82% vs 84% | 4 to 6 | 12 to 17 | 0.238 |
 
-Three favor the method and the fourth is a tie: on one-edit errors, the error model the corrector
-assumes, the two find the right product equally often, though not on the same queries.
+Three favor the method. The fourth is not significant, and its direction has moved between test
+sets made the same way, each scored by the version it was made for: 85% to 86% on synthetic test,
+83% to 83% on synthetic tests 2 and 3, and 82% to 84% here. Section 4.5 shows where the queries the
+corrector wins come from.
 
 ### 4.5 Spelling correction against classical correctors
 
@@ -403,64 +440,67 @@ A suggestion is "fixed" when it equals the intended word, "wrong" when it is ano
 "false alarm" when it respells a correctly spelled control. This is stricter than search accuracy:
 "lettuce" for an intended "lettuces" counts as wrong though both searches find lettuce.
 
-| synthetic test 3, median run | Jev | Norvig corrector | frequency rule |
+| synthetic test 4, median run | Jev | Norvig corrector | frequency rule |
 |------------------------------|----:|-----------------:|---------------:|
-| misspellings fixed (300) | 259 (86%) | 271 (90%) | 153 (51%) |
-| wrong suggestions | 14 | 29 | 126 |
-| no suggestion | 27 | 0 | 21 |
-| correct words respelled (200) | 2 (1.0%) | 0 | 77 (38.5%) |
-| precision | 94% | 90% | 43% |
-
-By exact word the corrector fixes 12 more, and Jev makes half as many wrong suggestions. 14 of
-Jev's 27 non-suggestions are words missing their last letter, which version 2.2 leaves to the
-prefix step on purpose. By what the user finds, that choice is right (the second table below).
+| misspellings fixed (300) | 253 (84%) | 274 (91%) | 150 (50%) |
+| wrong suggestions | 22 | 26 | 131 |
+| no suggestion | 25 | 0 | 19 |
+| correct words respelled (200) | 4 (2.0%) | 0 | 72 (36.0%) |
+| precision | 90% | 91% | 42% |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/spelling-by-edit-dark.svg">
-  <img alt="Bar chart of right product first by edit type on synthetic test 3, for this SQL, Did you mean and the Norvig corrector: last letter deleted 71%, 71%, 43%; other deletions 36%, 80%, 80%; insertion 61%, 84%, 84%; substitution 48%, 72%, 79%; transposition 31%, 84%, 83%." src="docs/figures/spelling-by-edit-light.svg" width="860">
+  <img alt="Bar chart of right product first by edit type on synthetic test 4, for this SQL, Did you mean and the Norvig corrector: last letter deleted 100%, 100%, 77%; other deletions 39%, 60%, 63%; insertion 75%, 88%, 91%; substitution 48%, 83%, 85%; transposition 36%, 83%, 87%." src="docs/figures/spelling-by-edit-light.svg" width="860">
 </picture>
 
-| synthetic test 3, fixed | n | Jev | Norvig corrector | frequency rule | intended word offered to Jev |
+| synthetic test 4, fixed | n | Jev | Norvig corrector | frequency rule | intended word offered to Jev |
 |-------------------------|--:|----:|-----------------:|---------------:|-----------------------------:|
-| deletion, last letter | 14 | 0 | 6 (43%) | 1 (7%) | 2 (14%) |
-| deletion, other letter | 61 | 49 (80%) | 50 (82%) | 26 (43%) | 54 (89%) |
-| insertion | 75 | 74 (99%) | 74 (99%) | 41 (55%) | 75 (100%) |
-| substitution | 75 | 63 (84%) | 69 (92%) | 39 (52%) | 74 (99%) |
-| transposition | 75 | 73 (97%) | 72 (96%) | 46 (61%) | 74 (99%) |
+| deletion, last letter | 13 | 0 | 10 (77%) | 0 | 0 |
+| deletion, other letter | 62 | 48 (77%) | 47 (76%) | 27 (44%) | 56 (90%) |
+| insertion | 75 | 73 (97%) | 75 (100%) | 47 (63%) | 75 (100%) |
+| substitution | 75 | 69 (92%) | 71 (95%) | 37 (49%) | 73 (97%) |
+| transposition | 75 | 62 (83%) | 71 (95%) | 39 (52%) | 74 (99%) |
 
-| synthetic test 3, right product first | n | this SQL | + Did you mean | this SQL + Norvig corrector |
+| synthetic test 4, right product first | n | this SQL | + Did you mean | this SQL + Norvig corrector |
 |---------------------------------------|--:|---------:|---------------:|----------------------------:|
-| deletion, last letter | 14 | 10 (71%) | 10 (71%) | 6 (43%) |
-| deletion, other letter | 61 | 22 (36%) | 49 (80%) | 49 (80%) |
-| insertion | 75 | 46 (61%) | 63 (84%) | 63 (84%) |
-| substitution | 75 | 36 (48%) | 54 (72%) | 59 (79%) |
-| transposition | 75 | 23 (31%) | 63 (84%) | 62 (83%) |
+| deletion, last letter | 13 | 13 (100%) | 13 (100%) | 10 (77%) |
+| deletion, other letter | 62 | 24 (39%) | 37 (60%) | 39 (63%) |
+| insertion | 75 | 56 (75%) | 66 (88%) | 68 (91%) |
+| substitution | 75 | 36 (48%) | 62 (83%) | 64 (85%) |
+| transposition | 75 | 27 (36%) | 62 (83%) | 65 (87%) |
 
-The two methods part in two places. A word missing its last letter is also a word being typed. The
-corrector respells all 14, fixes 6, and its other 8 guesses (`fier` to "fire" for fiery, `tabl` to
-"tail" for table) take the user away from what the prefix step had found. Jev leaves them alone and
-gets the same 10 as this SQL. On substitutions Jev is behind, 63 to 69 fixed. In the first run 7 of
-its 12 misses were another word, often more common, chosen over a rarer intended one (`lames` to
-"limes" for lakes, `cokns` to "corns" for coins; the corrector made the same choice on 3 of the 7),
-and 1 had no candidate. The other 4 were declines. Twice the typed spelling found products through
-a stem it shares with other words (`fleshed` finds GOLDEN FLESH potatoes, and Jev kept it at 0.68;
-`boves` finds BOVE'S pasta sauce), and twice no option reached twice the probability of the
-spelling typed (`sanwing`: "sanding" 0.30, as typed 0.22).
+By exact word the corrector fixes 21 more, but most of that gap does not reach the user. On
+transpositions Jev often chose the singular where the intended word was the plural, both one edit
+away (`fingesr` to "finger" for fingers, `hunst` to "hunt" for hunts); the two share a stem, and
+the search finds the same products for either, so 9 more fixes for the corrector become 3 more
+right products. Words missing their last letter are left to the prefix step, which finds all 13,
+where the corrector's respellings find 10.
 
-Over the four sets of misspellings made after a freeze (synthetic test, Wikipedia, synthetic test
-2, synthetic test 3), Jev picked the intended word 1,117 times out of the 1,218 it was offered
-(91.7%).
+Of the 22 queries on which only the corrector finds the right product in some run, 7 are correctly
+spelled controls that Jev respelled: brand or regional spellings close to a common word (`salada`
+to "salad", `salame` to "salami", `smokin` to "smoking", `better` to "butter"). The corrector never
+changes a word that some name uses, so it cannot make that mistake. The other 15 are misspellings,
+several of them lost in only one or two runs. Jev chose another word for some (`romamn` to
+"romain", `ppitas` to "pitas", `sunries` to "sundries"), declined others although the intended word
+was offered (`fridly`, `tacs`, `chuny`), and never saw an option for three. Two of those, `healht`
+and `pria`, start rare misspelled product words (HEALHTY, PRIANO), so version 2.3 treats them as
+still being typed, while "health" and "prima" are one edit away. Jev gets 6 queries right that the
+corrector gets wrong, such as `peserve` (preserve, where the corrector picked "reserve") and `yerb`
+(yerba, where it picked "herb").
+
+Over the five sets of misspellings made after a freeze, Jev picked the intended word 1,369 times
+out of the 1,488 it was offered (92.0%).
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/error-types-dark.svg">
-  <img alt="Bar chart of misspellings fixed on the four sets made after a freeze: real-word errors (n = 32), Jev 72%, Norvig 0%, frequency rule 53%, cascade 72%; non-word errors (n = 1,341), Jev 82%, Norvig 88%, frequency rule 46%, cascade 88%." src="docs/figures/error-types-light.svg" width="860">
+  <img alt="Bar chart of misspellings fixed on the five sets made after a freeze: real-word errors (n = 32), Jev 72%, Norvig 0%, frequency rule 53%, cascade 72%; non-word errors (n = 1,641), Jev 82%, Norvig 88%, frequency rule 47%, cascade 89%." src="docs/figures/error-types-light.svg" width="860">
 </picture>
 
-| four sets, median run | Jev | Norvig corrector | frequency rule |
+| five sets, median run | Jev | Norvig corrector | frequency rule |
 |-----------------------|----:|-----------------:|---------------:|
-| real-word errors fixed (32) | 23 (72%), 2 wrong | 0, by design | 17 (53%), 9 wrong |
-| non-word errors fixed (1,341) | 1,094 (82%), 115 wrong | 1,178 (88%), 159 wrong | 618 (46%), 610 wrong |
-| correct words respelled (600) | 6 (1.0%) | 0 | 219 (36.5%) |
+| real-word errors fixed (32) | 23 (72%), 1 wrong | 0, by design | 17 (53%), 9 wrong |
+| non-word errors fixed (1,641) | 1,346 (82%), 134 wrong | 1,452 (88%), 185 wrong | 765 (47%), 735 wrong |
+| correct words respelled (800) | 10 (1.3%) | 0 | 291 (36.4%) |
 
 The real-word errors all come from the Wikipedia set: a misspelling that is itself a word in some
 product name (`carribean`, `coctail`), which the corrector keeps by design.
@@ -472,48 +512,47 @@ An empty page, or for Jev the no-match line, counts as saying that nothing match
 | queries | plain full-text search | this SQL | this SQL + Jev |
 |---------|-----------------------:|---------:|---------------:|
 | absent (15): says nothing matches | 12 | 2 | 12 |
-| answerable (3,173): says nothing matches | 2,038 | 84 | 107 (106 to 108) |
-| answerable, says so while a match is in the top 10 | 0 | 0 | 8 (7 to 9) |
+| answerable (3,973): says nothing matches | 2,555 | 97 | 123 (121 to 124) |
+| answerable, says so while a match is in the top 10 | 0 | 0 | 8 (8 to 9) |
 
 Plain full-text search says no to absent queries because it says no to most queries: it returned
-nothing for 2,038 of the 3,173 that have an answer. This SQL returns something for almost
+nothing for 2,555 of the 3,973 that have an answer. This SQL returns something for almost
 everything, including Shamrock Farms sour cream for "shampoo". With Jev the page separates the
-two: 12 of 15 absent queries against 107 of 3,173 answerable ones.
+two: 12 of 15 absent queries against 123 of 3,973 answerable ones.
 
 ### 4.7 Calibration
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/reliability-dark.svg">
-  <img alt="Reliability diagram of the spelling choice on the four test sets of misspellings: points run close to the diagonal above 0.5; answers at 0.9 to 1.0 were right 97.7% of the time." src="docs/figures/reliability-light.svg" width="520">
+  <img alt="Reliability diagram of the spelling choice on the five test sets of misspellings: points run close to the diagonal in every bin; answers at 0.9 to 1.0 were right 97.7% of the time." src="docs/figures/reliability-light.svg" width="520">
 </picture>
 
-Over 8,514 spelling answers on the four sets of misspellings made after a freeze (five runs), the
+Over 10,527 spelling answers on the five sets of misspellings made after a freeze (five runs), the
 probability of the option Jev ranked first tracks how often it was right: expected calibration
-error 0.014, Brier score 0.067. Most answers (5,999) fall between 0.9 and 1.0, where Jev was right
-97.7% of the time. From 0.5 up, every bin is within 6 points of its mean probability; in the 232
-answers between 0.3 and 0.5 it is overconfident by about 10 points.
+error 0.012, Brier score 0.067. Most answers (7,398) fall between 0.9 and 1.0, where Jev was right
+97.7% of the time. Every bin from 0.3 up is within 7 points of its mean probability.
 
 | Jev's probability | answers | right |
 |-------------------|--------:|------:|
-| 0.3 to 0.4 | 77 | 26.0% |
-| 0.4 to 0.5 | 155 | 35.5% |
-| 0.5 to 0.6 | 328 | 57.6% |
-| 0.6 to 0.7 | 424 | 59.4% |
-| 0.7 to 0.8 | 564 | 80.1% |
-| 0.8 to 0.9 | 964 | 86.5% |
-| 0.9 to 1.0 | 5,999 | 97.7% |
+| 0.3 to 0.4 | 87 | 36.8% |
+| 0.4 to 0.5 | 197 | 45.2% |
+| 0.5 to 0.6 | 382 | 56.5% |
+| 0.6 to 0.7 | 543 | 61.0% |
+| 0.7 to 0.8 | 713 | 81.3% |
+| 0.8 to 0.9 | 1,203 | 87.4% |
+| 0.9 to 1.0 | 7,398 | 97.7% |
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/threshold-dark.svg">
-  <img alt="Suggestion rates as the floor moves, with the twice-as-likely rule: from 0.2 to 0.3, 81.4% of misspellings fixed and 1.0% of correct words respelled; at 0.9, 65.5% and 0.2%." src="docs/figures/threshold-light.svg" width="860">
+  <img alt="Suggestion rates as the floor moves, with the twice-as-likely rule: from 0.2 to 0.3, 81.8% of misspellings fixed and 1.3% of correct words respelled; at 0.9, 65.8% and 0.2%." src="docs/figures/threshold-light.svg" width="860">
 </picture>
 
 Moving the rule's floor after the fact shows that the twice-as-likely test does most of the work:
-any floor from 0.2 to 0.5 gives 81% of misspellings fixed and 1.0% of correct words respelled; a
+any floor from 0.2 to 0.5 gives 81% of misspellings fixed and 1.3% of correct words respelled; a
 floor of 0.9 would give up a fifth of the fixes to bring false alarms down to 0.2%.
 
 The keep-or-sink scores separate results that carry the query from results that do not with an
-area under the ROC curve of 0.705 over 145,385 scored results. The labels are string matches, which
+area under the ROC curve of 0.731 over 141,825 scored results. The labels are string matches, which
 count a peanut butter cookie as peanut butter, so this is agreement with a noisy label.
 
 <picture>
@@ -523,37 +562,36 @@ count a peanut butter cookie as peanut butter, so this is agreement with a noisy
 
 ### 4.8 Stability
 
-Jev's answers vary between identical runs. Over five runs, "Did you mean" changed for 33 of the
-1,588 queries that got one in any run (2%; 10% in version 1), the no-match line for 83 of 300
-(28%), and the first result after keep or sink for 224 of 3,181 (7%). A cache keyed by query would
+Jev's answers vary between identical runs. Over five runs, "Did you mean" changed for 51 of the
+1,848 queries that got one in any run (3%; 10% in version 1), the no-match line for 95 of 342
+(28%), and the first result after keep or sink for 233 of 3,979 (6%). A cache keyed by query would
 make repeated searches consistent for a user.
 
 ### 4.9 Time
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/latency-dark.svg">
-  <img alt="Cumulative distribution of time per query on a log scale: plain full-text search median 2 ms, this SQL median 23 ms, this SQL with Jev median 209 ms." src="docs/figures/latency-light.svg" width="860">
+  <img alt="Cumulative distribution of time per query on a log scale: plain full-text search median 2 ms, this SQL median 21 ms, this SQL with Jev median 197 ms." src="docs/figures/latency-light.svg" width="860">
 </picture>
 
-Five runs pooled, 15,940 queries per system, milliseconds:
+Five runs pooled, 19,940 queries per system, milliseconds:
 
 | measure | median | p90 | p99 |
 |---------|-------:|----:|----:|
-| plain Postgres full-text search | 2 | 8 | 108 |
-| this SQL | 23 | 222 | 560 |
-| this SQL + Jev, whole page | 209 | 311 | 581 |
-| time Jev adds to the page | 173 | 223 | 347 |
-| one keep-or-sink call (10 results judged) | 168 | 214 | 334 |
-| one spelling call (median 7 options) | 165 | 208 | 321 |
+| plain Postgres full-text search | 2 | 9 | 166 |
+| this SQL | 21 | 204 | 536 |
+| this SQL + Jev, whole page | 197 | 304 | 570 |
+| time Jev adds to the page | 165 | 214 | 336 |
+| one keep-or-sink call (10 results judged) | 169 | 213 | 322 |
+| one spelling call (median 7 options) | 163 | 205 | 318 |
 
 Plain full-text search is the fastest system by a wide margin, and Jev is the slowest. Each Jev
 call returns its whole set of judgments in one round trip, and the two calls run at the same time,
-so the page waits for the slower one. Both calls took 9 to 10 ms longer at the median than in
-version 2's runs, the keep-or-sink call included, which version 2.2 did not change; the difference
-lies in the network or the service. The close-word lookup takes 2 to 22 ms in psql
-([measurements](docs/measurements.md)) and runs beside the search. The spelling call was sent on
-73% of searches; on the sets version 2 also ran, on 86% against 89% then, since words the user may
-still be typing no longer get candidates.
+so the page waits for the slower one. A word still being typed now makes neither call: keep or
+sink was sent on 73% of searches and the spelling question on 68%, and a search on truncation 3
+cost \$0.010 per 1,000 against \$0.093 on synthetic test 4. The close-word lookup takes 2 to 22 ms
+in psql, and the test for a word still being typed adds about 0.1 to 0.25 ms to the search
+([measurements](docs/measurements.md)).
 
 ## 5. Failure analysis
 
@@ -568,46 +606,55 @@ Examples that held in all five runs:
 | leaves a word being typed alone | `fier`, `tabl` | LAY'S FIERY HABANERO..., THE FATHER'S TABLE... | no suggestion; the corrector offers "fire" and "tail" |
 | fixed in version 2.2 | `strawb` | the prefix step finds strawberries | no suggestion; version 2 offered "straw", and the corrector offers "straws" |
 | the corrector fixes, Jev does not | `foyster`, `djraft`, `oliveir` | | oyster, kraft, oliver (meant foster, draft, olivier): a common word chosen over a rare brand |
-| cut text found through a stem | `monke`, `hagge` | SPLENDA MONK FRUIT..., stuffed grape leaves from Hagg Interests | no suggestion: "monkey" is not offered because "monk" finds more products; "haggen" is offered, and Jev keeps the typed spelling, about 0.58 to 0.42 |
-| reorder sinks a right result | `frei` | FREIHOFER'S ORIGINAL HAMBURGER BUNS | Freihofer's scored under 0.3 and sank below QUESO PARA FREIR |
+| fixed in version 2.3 | `monke`, `hagge` | BLUE MONKEY coconut water, HAGGEN tomato sauce | the prefix step answers; version 2.2's word step found monk fruit and the grape leaves of Hagg Interests |
+| fixed in version 2.3 | `frei` | FREIHOFER'S ORIGINAL HAMBURGER BUNS | kept first; version 2.2's reorder sank it below QUESO PARA FREIR |
+| respells a correct word | `salada`, `smokin` | SALADA GREEN TEA, BUTTERFINGER SMOKIN' HOT | suggests "salad" and "smoking"; the corrector keeps a word that some name uses |
+| treated as still being typed | `healht`, `pria` | HEALHTY CHOICE yogurt, cheese tortellini | no suggestion, because each starts a rare misspelled product word; the corrector offers "health" and "prima" |
 | no answer possible | `abotu`, `agian` | | abbott, asian (meant about, again, stop words the search ignores) |
 | no-match line, wrongly | `independant` | CULINARY SECRETS FANCY TOMATO KETCHUP | line shown; all ten results match only through the brand owner Independent Marketing Alliance |
 
-On synthetic test 3 the reorder wins 34 to 37 queries and loses 3 or 4; on truncation 2 it wins 1
-or 2 and loses 7 or 8. Jev's wrong spellings are mostly reasonable common words where the intended
+On synthetic test 4 the reorder wins 21 to 23 queries and loses 3 or 4; on truncation 3 it wins 3
+and loses none. Jev's wrong spellings are mostly reasonable common words where the intended
 word is an uncommon brand; the generator samples brands (koppers, kunzler, sabatino) as often as
 common words.
 
 ## 6. Discussion
 
 The first version gave Jev less information than a 2007 spelling corrector uses, and lost. Given
-the same evidence, edit distance and how often the catalog uses each spelling, it ties the
-corrector on errors made to fit the corrector's assumptions and beats it on errors people made.
-Its advantage concentrates where the decision is a judgment rather than a lookup: a misspelling
-that is itself a word in some product name (84% against 31%), a possessive that only looks
-misspelled, a word the user has not finished typing (76% against 30%), a list of results where
-some are wrong, and a query with no answer at all. Its probabilities are calibrated well enough
-above 0.5 to act on.
+the same evidence, edit distance and how often the catalog uses each spelling, it matches the
+corrector on errors made to fit the corrector's assumptions (85% against 86%, 83% against 83%
+twice, and 82% against 84% on the four synthetic test sets) and beats it on errors people made (70%
+against 64% on Wikipedia's list). Its advantage concentrates where the decision is a judgment
+rather than a lookup: a misspelling that is itself a word in some product name (84% against 31%), a
+possessive that only looks misspelled, a word the user has not finished typing (81% against 33%), a
+list of results where some are wrong, and a query with no answer at all. Its probabilities are
+calibrated well enough to act on.
 
-The lesson for building with a model like this is the one the first version taught, and version
-2.1 taught it again from the other side. The model was not short of judgment; it was short of
-evidence. Version 1 withheld the counts. Version 2 withheld the completions, so for `strawb` Jev
-could only choose among wrong words. The classical method's features belong in the model's input,
-not beside it: the post hoc cascade, which hands unknown words to the corrector and the rest to
-Jev, scores 83% on synthetic test 3, no better than Jev alone at 84%, and 30% on truncation 2,
-where it inherits the corrector's habit of respelling unfinished words.
+The lesson for building with a model like this is the one the first version taught, and the later
+versions taught it again. The model was not short of judgment; it was short of evidence, or it was
+asked the wrong question. Version 1 withheld the counts. Version 2 withheld the completions, so for
+`strawb` Jev could only choose among wrong words. Version 2.2 asked Jev to judge products for a
+word the user had not finished, where no judgment can tell which completion is meant; version 2.3
+stops asking. The classical method's features belong in the model's input, not beside it: the post
+hoc cascade, which hands unknown words to the corrector and the rest to Jev, scores 83% on
+synthetic test 4, a point above Jev alone, and 33% on truncation 3, where it inherits the
+corrector's habit of respelling unfinished words.
 
 The protocol mattered as much as the model. Version 2.1 passed its development checks (15 of 16
-words missing the last letter) and failed on the first set made to test it. Only a set made after
-a freeze can show that kind of failure.
+words missing the last letter) and failed on the first set made to test it. Version 2.3's first
+rule passed the SQL check on every seen set and failed in the development run, on three Wikipedia
+misspellings. Only data the rule has not been fitted to can show that kind of failure.
 
-Three weaknesses remain. On substitutions Jev trails the corrector by 6 fixes in 75, mostly by
-preferring a common word to a rare intended one. A typed word that shares a stem with other words
-finds products through that stem, so the search treats it as found: the prefix step never sees
-`monke` as unfinished, and the spelling question weighs `fleshed` against the products of "flesh".
-Counting the typed word's own products apart from its stem's would separate the two. And keep or
-sink loses a few words cut short, whose right products Jev scores near the threshold. Each needs a
-change made on the sets already seen, a new freeze, and new test sets.
+Three weaknesses remain, each found after scoring. Jev respells some correct brand or regional
+spellings that sit one edit from a common word (`salada`, `smokin`), 4 of 200 controls on
+synthetic test 4 where the corrector respells none. A misspelling that happens to start a rare
+misspelled product word is taken for a word still being typed (`healht`, `pria`); showing Jev the
+completion beside the one-edit word, with how many products each finds, would let it tell
+`healht` (health) from `yellowf` (yellowfin), which no count rule separates. And a word that no
+name uses but that matches others through its stem, with nothing that starts with it (`fleshed`,
+`boves`), still reaches Jev with the stem's count as its own; testing a change there needs
+controls on that path, such as possessives like `hellmanns`, which the synthetic generator never
+produces. Each needs a change made on the sets already seen, a new freeze, and new test sets.
 
 ## 7. Cost, and the comparison with Algolia
 
@@ -631,14 +678,14 @@ Dynamic re-ranking and AI synonyms need Grow Plus; NeuralSearch needs Elevate.
 
 ### 7.2 What this costs
 
-The Jev step is billed by input token, \$0.042 per million, and output tokens are free ([TypeSafe
-models](https://docs.typesafe.ai/models)). A search used 1,969 input tokens on average on the
-hand-written queries, \$0.083 per 1,000 searches, and \$0.077 to \$0.097 per 1,000 across the ten
-query sets; words still being typed skip the spelling call, so truncation 2 costs \$0.079.
-Typeahead runs in Postgres and never calls Jev, so keystrokes cost nothing, and there is no charge
-per record.
+The Jev step is billed by input token, \$0.042 per million, and output tokens are free
+([TypeSafe models](https://docs.typesafe.ai/models)). A search used 1,892 input tokens on average
+on the hand-written queries, \$0.080 per 1,000 searches, and \$0.085 to \$0.095 per 1,000 on the
+sets of misspellings. A word still being typed makes neither call, so the truncation sets cost
+\$0.010 to \$0.013 per 1,000. Typeahead runs in Postgres and never calls Jev, so keystrokes cost
+nothing, and there is no charge per record.
 
-The database is not free. Search runs on it: this SQL took 23 ms at the median and 222 ms at the
+The database is not free. Search runs on it: this SQL took 21 ms at the median and 204 ms at the
 90th percentile here, and a typo of a very common word keeps the page with facets waiting about
 1.25 s ([measurements](docs/measurements.md)). The search objects take 436 MB for 440,302 products.
 The comparison below leaves out database hosting, which depends on what the database already costs.
@@ -648,7 +695,7 @@ For N records, S searches a month and k billed requests per search:
 ```math
 C_{\text{Algolia Grow}} = 0.40 \cdot \frac{\max(0,\, N - 100{,}000)}{1{,}000} + 0.50 \cdot \frac{\max(0,\, kS - 10{,}000)}{1{,}000}
 \qquad
-C_{\text{Jev}} = 0.0000827 \cdot S
+C_{\text{Jev}} = 0.0000795 \cdot S
 ```
 
 k = 5 is an assumption, standing for a user who types five characters into an instant-search box
@@ -656,15 +703,15 @@ before choosing a result.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/cost-dark.svg">
-  <img alt="Monthly cost against searches per month, log scales: for 440,302 records Algolia Grow starts at about $136 a month and the Jev step at under $1; at one million searches Algolia costs $631 to $2,631 and the Jev step $83." src="docs/figures/cost-light.svg" width="860">
+  <img alt="Monthly cost against searches per month, log scales: for 440,302 records Algolia Grow starts at about $136 a month and the Jev step at under $1; at one million searches Algolia costs $631 to $2,631 and the Jev step $79." src="docs/figures/cost-light.svg" width="860">
 </picture>
 
 | searches per month | Algolia Grow, 1 request per search | Algolia Grow, 5 requests per search | this SQL + Jev |
 |-------------------:|-----------------------------------:|------------------------------------:|---------------:|
-| 10,000 | \$136 | \$156 | \$0.83 |
-| 100,000 | \$181 | \$381 | \$8.27 |
-| 1,000,000 | \$631 | \$2,631 | \$83 |
-| 10,000,000 | \$5,131 | \$25,131 | \$827 |
+| 10,000 | \$136 | \$156 | \$0.79 |
+| 100,000 | \$181 | \$381 | \$7.95 |
+| 1,000,000 | \$631 | \$2,631 | \$79 |
+| 10,000,000 | \$5,131 | \$25,131 | \$795 |
 
 For this demo's 440,302 records, Algolia's record charge alone is \$136 a month before any search.
 The author's own Algolia invoices fit the model: close to \$100 a month with 287,000 records and
@@ -680,7 +727,7 @@ close to \$200 with about 500,000, the record charge plus requests.
 None of these was measured here, and each should weigh in a choice between the two:
 
 - **Latency and scaling.** Algolia serves from its own clusters. Here the search load lands on your
-  database, and the Jev step adds 173 ms to the page at the median.
+  database, and the Jev step adds 165 ms to the page at the median.
 - **Tools around search.** Analytics, A/B tests, merchandising rules, and Query Suggestions built
   from search history.
 - **Typo tolerance inside retrieval.** Algolia counts a swap of two letters as one typo while it
@@ -694,9 +741,11 @@ None of these was measured here, and each should weigh in a choice between the t
 - **Development and test.** We wrote the hand-written and held-out sets, and the development sets
   shaped version 2: the candidates, the evidence and the suggestion rule. Each version's test sets
   were made after it was frozen and committed before any model saw them, and nothing was changed
-  after they were scored. Version 2.2 was designed from failures that version 2's and 2.1's test
-  sets exposed, so for it those sets are development data; only synthetic test 3 and truncation 2
-  test it. The weaknesses in section 6, found after scoring, are reported, not fixed.
+  after they were scored. Each version was designed from failures that earlier test sets exposed,
+  so for it those sets are development data; only synthetic test 4 and truncation 3 test version
+  2.3. The weaknesses in section 6, found after scoring, are reported, not fixed.
+- **One baseline run.** The comparison with version 2.2 on the new sets rests on one run of its
+  code. Its SQL is deterministic; its Jev answers vary from run to run as version 2.3's do.
 - **The synthetic error model.** One edit from a word used in at least 20 product names is the
   model a Norvig corrector assumes, which favors that corrector by construction, and the generator
   samples brand names as often as common words. The truncation sets cut words at a length drawn
@@ -709,13 +758,14 @@ None of these was measured here, and each should weigh in a choice between the t
 - **Strict scoring of corrections.** A correction counts only if it equals the intended word.
   Search accuracy is the primary measure.
 - **Labels are string matches.** No person judged relevance.
-- **One machine, one network.** The laptop was also running a browser, with a load average of 2.5
-  to 7.1 during version 2.2's runs, and it reached `api.typesafe.ai` from one location. Postgres
+- **One machine, one network.** The laptop was also running a browser, with a load average of 1.8
+  to 7.3 during version 2.3's runs, and it reached `api.typesafe.ai` from one location. Postgres
   times depend on the hardware and Jev times on the distance to TypeSafe.
 - **Nondeterminism.** Five runs bound the variation reported here.
 - **Post hoc analyses.** The floor sweep, the cascade and the stop-word split were computed after
   the results were seen. Splitting deletions by position was chosen after the version 2.2
-  development run and before its test runs.
+  development run and before its test runs. The reading of version 2.3's losses to the corrector
+  (section 4.5) was done after its runs.
 - **Scope.** The study covers one English grocery catalog and one model version. It has no
   comparison with Algolia's ranking and none with a general-purpose language model doing the same
   judgments.
@@ -731,6 +781,8 @@ node scripts/make-spelling-set.ts --seed 20261009 --out synthetic-test-2.json
 node scripts/make-spelling-set.ts --seed 20261010 --out truncation.json --truncate
 node scripts/make-spelling-set.ts --seed 20261011 --out synthetic-test-3.json
 node scripts/make-spelling-set.ts --seed 20261012 --out truncation-2.json --truncate --min-length 7
+node scripts/make-spelling-set.ts --seed 20261013 --out synthetic-test-4.json
+node scripts/make-spelling-set.ts --seed 20261014 --out truncation-3.json --truncate --min-length 7
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts                 # one run: about 20 minutes, $0.29
 node scripts/report.ts                                                       # results/report.md and docs/figures/*.svg
 node scripts/report.ts results/v2                                            # an earlier version's report
@@ -739,9 +791,10 @@ node scripts/report.ts results/v2                                            # a
 The generators write the same files again on the same load; the Wikipedia generator reads a fixed
 page revision. [`results/`](results/) holds the five runs reported here, one JSON file each, with
 every query's outcome, Jev's scores and probabilities, timings, versions and machine load;
-`results/v1/`, `results/v2/` and `results/v21/` hold the earlier versions' runs, and the `dev`
-folders the development runs. `scripts/report.ts` reads only those files, so every table and figure
-in this README can be rebuilt without a database or a key.
+`results/v1/`, `results/v2/`, `results/v21/` and `results/v22/` hold the earlier versions' runs,
+`results/v22-new/` version 2.2 on version 2.3's test sets, and the `dev` folders the development
+runs. `scripts/report.ts` reads only those files, so every table and figure in this README can be
+rebuilt without a database or a key.
 
 ## Try it
 
@@ -802,11 +855,12 @@ npx skills add alexforman1/postgres-search
 Without Jev, a misspelling that some product also carries hides the correctly spelled products:
 USDA lists one PARMESEAN product, so `parmesean` never shows the 2,734 parmesan rows. Transposed
 letters can be missed; trigram matching scores "dortios" at 0.375 against DORITOS, under the 0.5
-cutoff. Jev's "Did you mean" covers both, but it respells one word per query, and it leaves a word
-that may still be typed to the prefix step, which misses when the cut text shares a stem with other
-words (`monke` finds monk fruit sweetener, not monkey). A typo of a very common word is slow: the
-demo page waits about 1.25 s for "chocolatte". The materialized views are stale until refreshed.
-[How it works](docs/how-it-works.md#what-it-does-not-do) lists each cost.
+cutoff. Jev's "Did you mean" covers both, but it respells one word per query, it respells a few
+correct brand spellings that sit one edit from a common word (`salada` to "salad"), and it leaves a
+misspelling that starts a rare misspelled product word to the prefix step (`healht` finds HEALHTY
+CHOICE). A typo of a very common word is slow: the demo page waits about 1.25 s for "chocolatte".
+The materialized views are stale until refreshed. [How it
+works](docs/how-it-works.md#what-it-does-not-do) lists each cost.
 
 ## References
 

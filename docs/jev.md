@@ -20,41 +20,42 @@ Without a key, the demo and the eval skip the step and use the Postgres order. T
 
 ## What it changes
 
-Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 3,188 queries.
-Version 2.2 of the spelling question was frozen before its two test sets, synthetic test 3 and
-truncation 2, were made. The [README](../README.md#4-results) gives the method, the statistical
-tests and the figures, and [`results/report.md`](../results/report.md) has every number.
+Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 3,988 queries.
+Version 2.3 was frozen before its two test sets, synthetic test 4 and truncation 3, were made. The
+[README](../README.md#4-results) gives the method, the statistical tests and the figures, and
+[`results/report.md`](../results/report.md) has every number.
 
-| hit@1, median of five runs | hand-written (50) | synthetic test 3 (500) | truncation 2 (300) | Wikipedia (473) |
+| hit@1, median of five runs | hand-written (50) | synthetic test 4 (500) | truncation 3 (300) | Wikipedia (473) |
 |----------------------------|------------------:|-----------------------:|-------------------:|----------------:|
-| this SQL | 82% | 62% | 75% | 42% |
-| + keep or sink | 86% | 69% | 73% | 48% |
-| + "Did you mean", one click | 92% | 83% | 76% | 70% |
-| + both, one click | 96% | 84% | 74% | 70% |
-| Norvig-style corrector instead, one click | 82% | 83% | 30% | 64% |
+| this SQL | 82% | 66% | 80% | 43% |
+| + keep or sink | 86% | 70% | 81% | 48% |
+| + "Did you mean", one click | 92% | 82% | 80% | 70% |
+| + both, one click | 96% | 82% | 81% | 70% |
+| Norvig-style corrector instead, one click | 82% | 84% | 33% | 64% |
 
-On synthetic test 3, keep or sink (69% against 62%) and "Did you mean" (83% against 62%) are both
-significant after Holm's correction, and "Did you mean" ties the dictionary corrector (83% each).
-That set matches the corrector's own error model. On words cut short as a user types them, "Did
-you mean" leaves the prefix step's results alone (76% against 75% for this SQL), while the
-corrector respells them and finds the right product for 30%. On real misspellings from Wikipedia,
-a test set for version 2, Jev leads 70% to 64%, and 84% to 31% on the 32 misspellings that are
+On synthetic test 4, keep or sink (70% against 66%) and "Did you mean" (82% against 66%) are both
+significant after Holm's correction; the dictionary corrector's 84% is not significantly different
+(p = 0.238). That set matches the corrector's own error model. On words cut short as a user types
+them, version 2.3 finds the right product for 81%, against 75% for version 2.2 on the same queries,
+while the corrector respells them and finds it for 33%. On real misspellings from Wikipedia, a
+test set for version 2, Jev leads 70% to 64%, and 84% to 31% on the 32 misspellings that are
 themselves words some product uses.
 
 ## Cost and time
 
 TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output tokens are free
-([models](https://docs.typesafe.ai/models)). Five runs pooled, 15,940 queries:
+([models](https://docs.typesafe.ai/models)). Five runs pooled, 19,940 queries:
 
 | call | sent on | ms, median | ms, p90 |
 |------|--------:|-----------:|--------:|
-| keep or sink, 10 results judged | 94% of searches | 168 | 214 |
-| spelling, median 7 options | 73% of searches | 165 | 208 |
+| keep or sink, 10 results judged | 73% of searches | 169 | 213 |
+| spelling, median 7 options | 68% of searches | 163 | 205 |
 
-On the hand-written queries a search used 1,969 input tokens on average, \$0.083 per 1,000
-searches; across the ten query sets it was \$0.077 to \$0.097 per 1,000. The two calls run at the
-same time, so the page waits for the slower one: the step adds 173 ms at the median and 223 ms at
-the 90th percentile to the Postgres query. These are round trips from one machine; measure from
+On the hand-written queries a search used 1,892 input tokens on average, \$0.080 per 1,000
+searches; on the sets of misspellings it was \$0.085 to \$0.095 per 1,000. A word still being typed
+makes neither call, so the truncation sets cost \$0.010 to \$0.013 per 1,000. The two calls run at
+the same time, so the page waits for the slower one: the step adds 165 ms at the median and 214 ms
+at the 90th percentile to the Postgres query. These are round trips from one machine; measure from
 your own servers.
 
 ## Question 1: keep or sink, never sort
@@ -127,9 +128,9 @@ and how many products the word step finds for it. `search.similar_words(q)` retu
 word, up to 8 candidates: every word one edit away (`search.edits1`: a letter added, removed or
 replaced, or two neighbors swapped), most found first, then trigram neighbors with similarity 0.3
 or more, closest first. It skips words under four letters, words with digits and stop words. A
-word that the search finds in no product but that starts some word in the index gets no
-candidates: the user may still be typing it, and the prefix step already shows the products of the
-words it starts (`strawb`, strawberries; `captai`, Captain's). For any other word, a candidate must
+word that no name uses gets no candidates when the most common word that starts with it has
+another stem: the user may still be typing it, and the prefix step shows the products of the words
+it starts (`strawb`, strawberries; `monke`, monkey bread). For any other word, a candidate must
 have a different stem from the typed word and must be found in more products than both the typed
 word and the most common word, of another stem, that starts with the typed word. Counting what the search finds, not how often the word itself appears, keeps possessives such as
 `hellmanns` from looking misspelled: the search finds 85 HELLMANN'S products for it.
@@ -192,8 +193,10 @@ common completion, and allowed one-letter completions. It failed on a test set o
 short, made after it was frozen: it still offered a nearby word for most of them (`yellowf`,
 "yellow"; `orna`, "orca") and found the right product less often than the SQL alone. Version 2.2
 gives no candidates to a word that finds nothing but starts an index word, and leaves it to the
-prefix step. It was frozen and tested on two more sets made afterwards. The
-[README](../README.md#4-results) reports every stage.
+prefix step. Version 2.3 extends that to a word whose stem matches other words when the most common
+word that starts with it has another stem (`monke`, "monkey"), skips the word step for it in
+`search.query`, and skips question 1 on pages the prefix step answered. Each version was frozen
+and tested on two sets made afterwards. The [README](../README.md#4-results) reports every stage.
 
 ## No match
 
@@ -206,9 +209,9 @@ check keeps the line off those pages. The demo shows the line only when there is
 and the results stay on the page.
 
 In the five runs the page said that nothing matches for 12 of the 15 household goods in
-`eval/absent.json`, and for 106 to 108 of the 3,173 answerable queries, 7 to 9 of them with a
+`eval/absent.json`, and for 121 to 124 of the 3,973 answerable queries, 8 or 9 of them with a
 match in the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for
-2,038 of the 3,173. The flag changed between runs on 83 of the 300 queries where it was raised at
+2,555 of the 3,973. The flag changed between runs on 95 of the 342 queries where it was raised at
 least once.
 
 The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
@@ -239,8 +242,13 @@ inputTokens }`, so the page can show whether Jev ran and how long it took.
 
 ## Limits
 
-- Answers move between identical runs: over five runs, the suggestion changed for 2% of the
+- Answers move between identical runs: over five runs, the suggestion changed for 3% of the
   queries that got one in any run, and the no-match flag for 28% of those where it was raised.
+- Some correct brand spellings one edit from a common word are respelled (`salada` to "salad"),
+  4 of 200 controls on synthetic test 4, where a dictionary corrector, which keeps any word a
+  name uses, respells none.
+- A misspelling that starts a rare misspelled product word is taken for a word still being typed
+  and gets no respelling (`healht` starts HEALHTY, while "health" is one edit away).
 - One word is respelled per option, so a query with two misspelled words is not fixed.
 - A word whose last letter was dropped is left to the prefix step, which finds the full word
   unless the cut text is itself a word that some name uses (`straw` finds straws, not
@@ -261,7 +269,7 @@ Put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
 
 ```sh
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts      # the 50 eval queries, under a cent
-JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 3,188 queries, about $0.29
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 3,988 queries, about $0.30
 node scripts/report.ts                                          # tables and figures from results/
 ```
 
