@@ -1,0 +1,2602 @@
+[
+ {
+  "q": "unbrandd",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "unbranded"
+ },
+ {
+  "q": "sdqueez",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "squeez"
+ },
+ {
+  "q": "tayxor",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "taylor"
+ },
+ {
+  "q": "schmitd",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "schmidt"
+ },
+ {
+  "q": "wters",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "waters"
+ },
+ {
+  "q": "prokduct",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "product"
+ },
+ {
+  "q": "tocsty",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "toasty"
+ },
+ {
+  "q": "yumym",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "yummy"
+ },
+ {
+  "q": "linzr",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "linzer"
+ },
+ {
+  "q": "brreath",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "breath"
+ },
+ {
+  "q": "stcwe",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "stowe"
+ },
+ {
+  "q": "deocrated",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "decorated"
+ },
+ {
+  "q": "decos",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "decors"
+ },
+ {
+  "q": "baschman",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "bachman"
+ },
+ {
+  "q": "muelleo",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "mueller"
+ },
+ {
+  "q": "bhakit",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "bhakti"
+ },
+ {
+  "q": "sabo",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sabor"
+ },
+ {
+  "q": "makesr",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "maker"
+ },
+ {
+  "q": "annib",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "annie"
+ },
+ {
+  "q": "caalbrian",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "calabrian"
+ },
+ {
+  "q": "boulde",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "boulder"
+ },
+ {
+  "q": "fsrank",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "frank"
+ },
+ {
+  "q": "nbtalie",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "natalie"
+ },
+ {
+  "q": "provloone",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "provolone"
+ },
+ {
+  "q": "arificially",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "artificially"
+ },
+ {
+  "q": "smityh",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "smith"
+ },
+ {
+  "q": "swegtleaf",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "sweetleaf"
+ },
+ {
+  "q": "calamaat",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "calamata"
+ },
+ {
+  "q": "nake",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "naked"
+ },
+ {
+  "q": "sabadtino",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "sabatino"
+ },
+ {
+  "q": "adthentic",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "authentic"
+ },
+ {
+  "q": "sadrines",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "sardines"
+ },
+ {
+  "q": "gozalez",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "gonzalez"
+ },
+ {
+  "q": "oyscter",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "oyster"
+ },
+ {
+  "q": "miqute",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "minute"
+ },
+ {
+  "q": "colobmian",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "colombian"
+ },
+ {
+  "q": "steamresh",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "steamfresh"
+ },
+ {
+  "q": "seafsonal",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "seasonal"
+ },
+ {
+  "q": "francb",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "france"
+ },
+ {
+  "q": "vitarrzo",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "vitarroz"
+ },
+ {
+  "q": "europan",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "european"
+ },
+ {
+  "q": "creamzsicle",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "creamsicle"
+ },
+ {
+  "q": "hwrtford",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "hartford"
+ },
+ {
+  "q": "virgni",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "virgin"
+ },
+ {
+  "q": "sarks",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sharks"
+ },
+ {
+  "q": "grpillo",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "grillo"
+ },
+ {
+  "q": "tapamio",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "tapatio"
+ },
+ {
+  "q": "unrela",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "unreal"
+ },
+ {
+  "q": "lavsh",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "lavash"
+ },
+ {
+  "q": "kikkkoman",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "kikkoman"
+ },
+ {
+  "q": "henra",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "henry"
+ },
+ {
+  "q": "hadnmade",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "handmade"
+ },
+ {
+  "q": "catleman",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "cattleman"
+ },
+ {
+  "q": "porztland",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "portland"
+ },
+ {
+  "q": "pvtriotic",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "patriotic"
+ },
+ {
+  "q": "caloires",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "calories"
+ },
+ {
+  "q": "brigam",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "brigham"
+ },
+ {
+  "q": "bwuddy",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "buddy"
+ },
+ {
+  "q": "pakrol",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "patrol"
+ },
+ {
+  "q": "blzain",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "blazin"
+ },
+ {
+  "q": "citrn",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "citron"
+ },
+ {
+  "q": "diamoznd",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "diamond"
+ },
+ {
+  "q": "gryve",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "grove"
+ },
+ {
+  "q": "birhc",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "birch"
+ },
+ {
+  "q": "cracoia",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "cracovia"
+ },
+ {
+  "q": "aarmon",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "aaron"
+ },
+ {
+  "q": "nasjya",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "nasoya"
+ },
+ {
+  "q": "breka",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "break"
+ },
+ {
+  "q": "rddi",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "reddi"
+ },
+ {
+  "q": "pyrdamid",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "pyramid"
+ },
+ {
+  "q": "bentu",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "bento"
+ },
+ {
+  "q": "sockyee",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "sockeye"
+ },
+ {
+  "q": "bonni",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "bonnie"
+ },
+ {
+  "q": "miltxon",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "milton"
+ },
+ {
+  "q": "sbonza",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "sconza"
+ },
+ {
+  "q": "sticsk",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "sticks"
+ },
+ {
+  "q": "guarateed",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "guaranteed"
+ },
+ {
+  "q": "homogenizted",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "homogenized"
+ },
+ {
+  "q": "glulen",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "gluten"
+ },
+ {
+  "q": "charbrolied",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "charbroiled"
+ },
+ {
+  "q": "fondan",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "fondant"
+ },
+ {
+  "q": "guayugsa",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "guayusa"
+ },
+ {
+  "q": "dalzour",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "dalfour"
+ },
+ {
+  "q": "fltued",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "fluted"
+ },
+ {
+  "q": "delghts",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "delights"
+ },
+ {
+  "q": "snacjk",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "snack"
+ },
+ {
+  "q": "holidaws",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "holidays"
+ },
+ {
+  "q": "dreamworsk",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "dreamworks"
+ },
+ {
+  "q": "raisnets",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "raisinets"
+ },
+ {
+  "q": "champlaipn",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "champlain"
+ },
+ {
+  "q": "chimlchurri",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "chimichurri"
+ },
+ {
+  "q": "curiosuly",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "curiously"
+ },
+ {
+  "q": "maegood",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "madegood"
+ },
+ {
+  "q": "noature",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "nature"
+ },
+ {
+  "q": "neufchatyl",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "neufchatel"
+ },
+ {
+  "q": "muncyh",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "munchy"
+ },
+ {
+  "q": "laanto",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "lakanto"
+ },
+ {
+  "q": "znweet",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "zweet"
+ },
+ {
+  "q": "frescness",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "freshness"
+ },
+ {
+  "q": "mnior",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "minor"
+ },
+ {
+  "q": "tendrloin",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "tenderloin"
+ },
+ {
+  "q": "grajtin",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "gratin"
+ },
+ {
+  "q": "cusaard",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "custard"
+ },
+ {
+  "q": "laeder",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "leader"
+ },
+ {
+  "q": "peperoncii",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "peperoncini"
+ },
+ {
+  "q": "poleinta",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "polenta"
+ },
+ {
+  "q": "basknt",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "basket"
+ },
+ {
+  "q": "chreibundi",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "cheribundi"
+ },
+ {
+  "q": "snas",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "snaps"
+ },
+ {
+  "q": "muadelaine",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "madelaine"
+ },
+ {
+  "q": "fayxo",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "faygo"
+ },
+ {
+  "q": "shiartaki",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "shirataki"
+ },
+ {
+  "q": "shee",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sheet"
+ },
+ {
+  "q": "weddinrg",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "wedding"
+ },
+ {
+  "q": "stahibush",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "stahlbush"
+ },
+ {
+  "q": "klondiek",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "klondike"
+ },
+ {
+  "q": "sweetsop",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sweetshop"
+ },
+ {
+  "q": "wreapths",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "wreaths"
+ },
+ {
+  "q": "goerze",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "goetze"
+ },
+ {
+  "q": "braeclets",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "bracelets"
+ },
+ {
+  "q": "gaam",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "garam"
+ },
+ {
+  "q": "alnuminum",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "aluminum"
+ },
+ {
+  "q": "stayter",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "starter"
+ },
+ {
+  "q": "dobule",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "double"
+ },
+ {
+  "q": "nmaste",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "namaste"
+ },
+ {
+  "q": "honeycrnisp",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "honeycrisp"
+ },
+ {
+  "q": "orangeage",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "orangeade"
+ },
+ {
+  "q": "firecarcker",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "firecracker"
+ },
+ {
+  "q": "snta",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "santa"
+ },
+ {
+  "q": "snaxpper",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "snapper"
+ },
+ {
+  "q": "breakdrs",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "breakers"
+ },
+ {
+  "q": "velvtey",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "velvety"
+ },
+ {
+  "q": "viginia",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "virginia"
+ },
+ {
+  "q": "sharcwood",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "sharwood"
+ },
+ {
+  "q": "shivoh",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "shiloh"
+ },
+ {
+  "q": "rmoano",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "romano"
+ },
+ {
+  "q": "cirku",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "cirkul"
+ },
+ {
+  "q": "pneaks",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "peaks"
+ },
+ {
+  "q": "tagliatelqe",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "tagliatelle"
+ },
+ {
+  "q": "schawrtz",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "schwartz"
+ },
+ {
+  "q": "brai",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "brain"
+ },
+ {
+  "q": "clawes",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "claws"
+ },
+ {
+  "q": "pimientog",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "pimientos"
+ },
+ {
+  "q": "krsuteaz",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "krusteaz"
+ },
+ {
+  "q": "glucern",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "glucerna"
+ },
+ {
+  "q": "secreot",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "secret"
+ },
+ {
+  "q": "peana",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "prana"
+ },
+ {
+  "q": "shahai",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "shahia"
+ },
+ {
+  "q": "caberet",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "cabernet"
+ },
+ {
+  "q": "soluttions",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "solutions"
+ },
+ {
+  "q": "wiggjy",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "wiggly"
+ },
+ {
+  "q": "plmup",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "plump"
+ },
+ {
+  "q": "patries",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "pastries"
+ },
+ {
+  "q": "ebmpire",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "empire"
+ },
+ {
+  "q": "fraichj",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "fraiche"
+ },
+ {
+  "q": "surmii",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "surimi"
+ },
+ {
+  "q": "badge",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "badger"
+ },
+ {
+  "q": "tradeurs",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "traders"
+ },
+ {
+  "q": "vgasic",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "vlasic"
+ },
+ {
+  "q": "screamni",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "screamin"
+ },
+ {
+  "q": "bakig",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "baking"
+ },
+ {
+  "q": "patzty",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "patty"
+ },
+ {
+  "q": "slraws",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "straws"
+ },
+ {
+  "q": "hibiscsu",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "hibiscus"
+ },
+ {
+  "q": "vaquia",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "vaquita"
+ },
+ {
+  "q": "picfkles",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "pickles"
+ },
+ {
+  "q": "robinshn",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "robinson"
+ },
+ {
+  "q": "pomoodro",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "pomodoro"
+ },
+ {
+  "q": "tasos",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "tassos"
+ },
+ {
+  "q": "dewlta",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "delta"
+ },
+ {
+  "q": "kevig",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "kevin"
+ },
+ {
+  "q": "chnoa",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "chona"
+ },
+ {
+  "q": "funtain",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "fountain"
+ },
+ {
+  "q": "qualrk",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "quark"
+ },
+ {
+  "q": "cheoy",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "chewy"
+ },
+ {
+  "q": "foragre",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "forager"
+ },
+ {
+  "q": "segmens",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "segments"
+ },
+ {
+  "q": "larxge",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "large"
+ },
+ {
+  "q": "bluhh",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "blush"
+ },
+ {
+  "q": "sytle",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "style"
+ },
+ {
+  "q": "farflle",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "farfalle"
+ },
+ {
+  "q": "staczkers",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "stackers"
+ },
+ {
+  "q": "dannne",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "danone"
+ },
+ {
+  "q": "dienr",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "diner"
+ },
+ {
+  "q": "laagne",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "lasagne"
+ },
+ {
+  "q": "cvanada",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "canada"
+ },
+ {
+  "q": "liquud",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "liquid"
+ },
+ {
+  "q": "sonwflake",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "snowflake"
+ },
+ {
+  "q": "picking",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "pickling"
+ },
+ {
+  "q": "houase",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "house"
+ },
+ {
+  "q": "bcena",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "biena"
+ },
+ {
+  "q": "pufcforn",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "puffcorn"
+ },
+ {
+  "q": "spaeribs",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "spareribs"
+ },
+ {
+  "q": "chhevre",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "chevre"
+ },
+ {
+  "q": "eqeal",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "equal"
+ },
+ {
+  "q": "jeryr",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "jerry"
+ },
+ {
+  "q": "busel",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "bushel"
+ },
+ {
+  "q": "sunshhine",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "sunshine"
+ },
+ {
+  "q": "przject",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "project"
+ },
+ {
+  "q": "valely",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "valley"
+ },
+ {
+  "q": "dily",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "dilly"
+ },
+ {
+  "q": "jumpker",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "jumper"
+ },
+ {
+  "q": "maranatqa",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "maranatha"
+ },
+ {
+  "q": "nsasau",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "nassau"
+ },
+ {
+  "q": "burrio",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "burrito"
+ },
+ {
+  "q": "casvcadian",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "cascadian"
+ },
+ {
+  "q": "beance",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "beanee"
+ },
+ {
+  "q": "diecs",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "dices"
+ },
+ {
+  "q": "gali",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "galil"
+ },
+ {
+  "q": "cogmfort",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "comfort"
+ },
+ {
+  "q": "heirlfom",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "heirloom"
+ },
+ {
+  "q": "andouilel",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "andouille"
+ },
+ {
+  "q": "sugarfre",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sugarfree"
+ },
+ {
+  "q": "boorst",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "boost"
+ },
+ {
+  "q": "deliteg",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "delites"
+ },
+ {
+  "q": "squeeez",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "squeeze"
+ },
+ {
+  "q": "nongshi",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "nongshim"
+ },
+ {
+  "q": "snoqualsmie",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "snoqualmie"
+ },
+ {
+  "q": "mecty",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "meaty"
+ },
+ {
+  "q": "micorwavable",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "microwavable"
+ },
+ {
+  "q": "laraba",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "larabar"
+ },
+ {
+  "q": "ripnened",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "ripened"
+ },
+ {
+  "q": "ghirardylli",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "ghirardelli"
+ },
+ {
+  "q": "lettucse",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "lettuces"
+ },
+ {
+  "q": "fermentd",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "fermented"
+ },
+ {
+  "q": "ghewrkins",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "gherkins"
+ },
+ {
+  "q": "ricuja",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "ricura"
+ },
+ {
+  "q": "krasdlae",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "krasdale"
+ },
+ {
+  "q": "debbe",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "debbie"
+ },
+ {
+  "q": "fltorets",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "florets"
+ },
+ {
+  "q": "cpamoy",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "chamoy"
+ },
+ {
+  "q": "maltaw",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "matlaw"
+ },
+ {
+  "q": "blackene",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "blackened"
+ },
+ {
+  "q": "scyoops",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "scoops"
+ },
+ {
+  "q": "pizczz",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "pizazz"
+ },
+ {
+  "q": "coverde",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "covered"
+ },
+ {
+  "q": "stge",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "stage"
+ },
+ {
+  "q": "montxe",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "monte"
+ },
+ {
+  "q": "sclmfani",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "sclafani"
+ },
+ {
+  "q": "joradn",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "jordan"
+ },
+ {
+  "q": "cust",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "crust"
+ },
+ {
+  "q": "archwiay",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "archway"
+ },
+ {
+  "q": "lewel",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "level"
+ },
+ {
+  "q": "sisps",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "ssips"
+ },
+ {
+  "q": "sasy",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "sassy"
+ },
+ {
+  "q": "heayrth",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "hearth"
+ },
+ {
+  "q": "creametts",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "creamette"
+ },
+ {
+  "q": "browneis",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "brownies"
+ },
+ {
+  "q": "melida",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "melinda"
+ },
+ {
+  "q": "erickjson",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "erickson"
+ },
+ {
+  "q": "castelvftrano",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "castelvetrano"
+ },
+ {
+  "q": "earthobund",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "earthbound"
+ },
+ {
+  "q": "jeky",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "jerky"
+ },
+ {
+  "q": "nechco",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "necco"
+ },
+ {
+  "q": "gouchin",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "golchin"
+ },
+ {
+  "q": "lorriane",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "lorraine"
+ },
+ {
+  "q": "targt",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "target"
+ },
+ {
+  "q": "conbfectionary",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "confectionary"
+ },
+ {
+  "q": "buffaro",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "buffalo"
+ },
+ {
+  "q": "clnig",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "cling"
+ },
+ {
+  "q": "ktty",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "kitty"
+ },
+ {
+  "q": "foycus",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "focus"
+ },
+ {
+  "q": "craafish",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "crawfish"
+ },
+ {
+  "q": "bailyes",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "baileys"
+ },
+ {
+  "q": "tendrs",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "tenders"
+ },
+ {
+  "q": "tnoppings",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "toppings"
+ },
+ {
+  "q": "tenddrloins",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "tenderloins"
+ },
+ {
+  "q": "garins",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "grains"
+ },
+ {
+  "q": "beerages",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "beverages"
+ },
+ {
+  "q": "samurpai",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "samurai"
+ },
+ {
+  "q": "barrhls",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "barrels"
+ },
+ {
+  "q": "meiij",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "meiji"
+ },
+ {
+  "q": "tffee",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "toffee"
+ },
+ {
+  "q": "twidsts",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "twists"
+ },
+ {
+  "q": "mepropolitan",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "metropolitan"
+ },
+ {
+  "q": "charelston",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "charleston"
+ },
+ {
+  "q": "blackcurant",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "blackcurrant"
+ },
+ {
+  "q": "sanchevz",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "sanchez"
+ },
+ {
+  "q": "worthingttn",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "worthington"
+ },
+ {
+  "q": "blakcburn",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "blackburn"
+ },
+ {
+  "q": "florentne",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "florentine"
+ },
+ {
+  "q": "hoffmajn",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "hoffman"
+ },
+ {
+  "q": "grabn",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "grain"
+ },
+ {
+  "q": "caivar",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "caviar"
+ },
+ {
+  "q": "purnel",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "purnell"
+ },
+ {
+  "q": "fibelr",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "fiber"
+ },
+ {
+  "q": "worthe",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "worthy"
+ },
+ {
+  "q": "douhg",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "dough"
+ },
+ {
+  "q": "tasy",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "tasty"
+ },
+ {
+  "q": "nsevada",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "nevada"
+ },
+ {
+  "q": "olivoa",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "olivia"
+ },
+ {
+  "q": "giulinao",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "giuliano"
+ },
+ {
+  "q": "pasteuized",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "pasteurized"
+ },
+ {
+  "q": "sadles",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "sales"
+ },
+ {
+  "q": "traditiun",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "tradition"
+ },
+ {
+  "q": "totion",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "totino"
+ },
+ {
+  "q": "glutio",
+  "kind": "typo",
+  "edit": "deletion",
+  "expect": "glutino"
+ },
+ {
+  "q": "snnowmen",
+  "kind": "typo",
+  "edit": "insertion",
+  "expect": "snowmen"
+ },
+ {
+  "q": "macaoons",
+  "kind": "typo",
+  "edit": "substitution",
+  "expect": "macarons"
+ },
+ {
+  "q": "cobunr",
+  "kind": "typo",
+  "edit": "transposition",
+  "expect": "coburn"
+ },
+ {
+  "q": "julienne",
+  "kind": "control"
+ },
+ {
+  "q": "glass",
+  "kind": "control"
+ },
+ {
+  "q": "prime",
+  "kind": "control"
+ },
+ {
+  "q": "mangoes",
+  "kind": "control"
+ },
+ {
+  "q": "neilly",
+  "kind": "control"
+ },
+ {
+  "q": "madagascar",
+  "kind": "control"
+ },
+ {
+  "q": "royale",
+  "kind": "control"
+ },
+ {
+  "q": "filtered",
+  "kind": "control"
+ },
+ {
+  "q": "cherries",
+  "kind": "control"
+ },
+ {
+  "q": "detroit",
+  "kind": "control"
+ },
+ {
+  "q": "smoothie",
+  "kind": "control"
+ },
+ {
+  "q": "crave",
+  "kind": "control"
+ },
+ {
+  "q": "perfectly",
+  "kind": "control"
+ },
+ {
+  "q": "fitness",
+  "kind": "control"
+ },
+ {
+  "q": "bloody",
+  "kind": "control"
+ },
+ {
+  "q": "fiesta",
+  "kind": "control"
+ },
+ {
+  "q": "bauducco",
+  "kind": "control"
+ },
+ {
+  "q": "brother",
+  "kind": "control"
+ },
+ {
+  "q": "ounce",
+  "kind": "control"
+ },
+ {
+  "q": "bloom",
+  "kind": "control"
+ },
+ {
+  "q": "happy",
+  "kind": "control"
+ },
+ {
+  "q": "series",
+  "kind": "control"
+ },
+ {
+  "q": "flavors",
+  "kind": "control"
+ },
+ {
+  "q": "green",
+  "kind": "control"
+ },
+ {
+  "q": "simmering",
+  "kind": "control"
+ },
+ {
+  "q": "tasteeos",
+  "kind": "control"
+ },
+ {
+  "q": "haolam",
+  "kind": "control"
+ },
+ {
+  "q": "marketplace",
+  "kind": "control"
+ },
+ {
+  "q": "vines",
+  "kind": "control"
+ },
+ {
+  "q": "crispbread",
+  "kind": "control"
+ },
+ {
+  "q": "workout",
+  "kind": "control"
+ },
+ {
+  "q": "yoghurt",
+  "kind": "control"
+ },
+ {
+  "q": "crinkles",
+  "kind": "control"
+ },
+ {
+  "q": "shelf",
+  "kind": "control"
+ },
+ {
+  "q": "elbow",
+  "kind": "control"
+ },
+ {
+  "q": "midnight",
+  "kind": "control"
+ },
+ {
+  "q": "wayfare",
+  "kind": "control"
+ },
+ {
+  "q": "artisanal",
+  "kind": "control"
+ },
+ {
+  "q": "cashews",
+  "kind": "control"
+ },
+ {
+  "q": "westpac",
+  "kind": "control"
+ },
+ {
+  "q": "homeland",
+  "kind": "control"
+ },
+ {
+  "q": "powerbar",
+  "kind": "control"
+ },
+ {
+  "q": "genji",
+  "kind": "control"
+ },
+ {
+  "q": "filets",
+  "kind": "control"
+ },
+ {
+  "q": "halibut",
+  "kind": "control"
+ },
+ {
+  "q": "skinner",
+  "kind": "control"
+ },
+ {
+  "q": "almondmilk",
+  "kind": "control"
+ },
+ {
+  "q": "rigatoni",
+  "kind": "control"
+ },
+ {
+  "q": "waves",
+  "kind": "control"
+ },
+ {
+  "q": "treasure",
+  "kind": "control"
+ },
+ {
+  "q": "redneck",
+  "kind": "control"
+ },
+ {
+  "q": "packed",
+  "kind": "control"
+ },
+ {
+  "q": "alaska",
+  "kind": "control"
+ },
+ {
+  "q": "moderna",
+  "kind": "control"
+ },
+ {
+  "q": "teavana",
+  "kind": "control"
+ },
+ {
+  "q": "cross",
+  "kind": "control"
+ },
+ {
+  "q": "dulce",
+  "kind": "control"
+ },
+ {
+  "q": "quest",
+  "kind": "control"
+ },
+ {
+  "q": "provisions",
+  "kind": "control"
+ },
+ {
+  "q": "venison",
+  "kind": "control"
+ },
+ {
+  "q": "casarecce",
+  "kind": "control"
+ },
+ {
+  "q": "isopure",
+  "kind": "control"
+ },
+ {
+  "q": "gifford",
+  "kind": "control"
+ },
+ {
+  "q": "bonne",
+  "kind": "control"
+ },
+ {
+  "q": "genoa",
+  "kind": "control"
+ },
+ {
+  "q": "trader",
+  "kind": "control"
+ },
+ {
+  "q": "south",
+  "kind": "control"
+ },
+ {
+  "q": "schweppes",
+  "kind": "control"
+ },
+ {
+  "q": "fully",
+  "kind": "control"
+ },
+ {
+  "q": "wonder",
+  "kind": "control"
+ },
+ {
+  "q": "loacker",
+  "kind": "control"
+ },
+ {
+  "q": "woeber",
+  "kind": "control"
+ },
+ {
+  "q": "colada",
+  "kind": "control"
+ },
+ {
+  "q": "carla",
+  "kind": "control"
+ },
+ {
+  "q": "rapid",
+  "kind": "control"
+ },
+ {
+  "q": "shoestring",
+  "kind": "control"
+ },
+ {
+  "q": "rosemary",
+  "kind": "control"
+ },
+ {
+  "q": "russa",
+  "kind": "control"
+ },
+ {
+  "q": "cheeze",
+  "kind": "control"
+ },
+ {
+  "q": "ritrovo",
+  "kind": "control"
+ },
+ {
+  "q": "spinach",
+  "kind": "control"
+ },
+ {
+  "q": "wildflower",
+  "kind": "control"
+ },
+ {
+  "q": "galletas",
+  "kind": "control"
+ },
+ {
+  "q": "nougat",
+  "kind": "control"
+ },
+ {
+  "q": "shark",
+  "kind": "control"
+ },
+ {
+  "q": "farmers",
+  "kind": "control"
+ },
+ {
+  "q": "napoli",
+  "kind": "control"
+ },
+ {
+  "q": "stokely",
+  "kind": "control"
+ },
+ {
+  "q": "spuds",
+  "kind": "control"
+ },
+ {
+  "q": "vinegar",
+  "kind": "control"
+ },
+ {
+  "q": "cumin",
+  "kind": "control"
+ },
+ {
+  "q": "marcum",
+  "kind": "control"
+ },
+ {
+  "q": "tombstone",
+  "kind": "control"
+ },
+ {
+  "q": "fancy",
+  "kind": "control"
+ },
+ {
+  "q": "frontier",
+  "kind": "control"
+ },
+ {
+  "q": "vollwerth",
+  "kind": "control"
+ },
+ {
+  "q": "parade",
+  "kind": "control"
+ },
+ {
+  "q": "coolhaus",
+  "kind": "control"
+ },
+ {
+  "q": "george",
+  "kind": "control"
+ },
+ {
+  "q": "shaker",
+  "kind": "control"
+ },
+ {
+  "q": "mantia",
+  "kind": "control"
+ },
+ {
+  "q": "alpha",
+  "kind": "control"
+ },
+ {
+  "q": "plated",
+  "kind": "control"
+ },
+ {
+  "q": "marcos",
+  "kind": "control"
+ },
+ {
+  "q": "character",
+  "kind": "control"
+ },
+ {
+  "q": "chuck",
+  "kind": "control"
+ },
+ {
+  "q": "paesana",
+  "kind": "control"
+ },
+ {
+  "q": "maull",
+  "kind": "control"
+ },
+ {
+  "q": "energizing",
+  "kind": "control"
+ },
+ {
+  "q": "parker",
+  "kind": "control"
+ },
+ {
+  "q": "barber",
+  "kind": "control"
+ },
+ {
+  "q": "multi",
+  "kind": "control"
+ },
+ {
+  "q": "noble",
+  "kind": "control"
+ },
+ {
+  "q": "crafty",
+  "kind": "control"
+ },
+ {
+  "q": "vintage",
+  "kind": "control"
+ },
+ {
+  "q": "pilaf",
+  "kind": "control"
+ },
+ {
+  "q": "indonesian",
+  "kind": "control"
+ },
+ {
+  "q": "overload",
+  "kind": "control"
+ },
+ {
+  "q": "bolner",
+  "kind": "control"
+ },
+ {
+  "q": "doughnuts",
+  "kind": "control"
+ },
+ {
+  "q": "rayge",
+  "kind": "control"
+ },
+ {
+  "q": "truvia",
+  "kind": "control"
+ },
+ {
+  "q": "blondie",
+  "kind": "control"
+ },
+ {
+  "q": "livin",
+  "kind": "control"
+ },
+ {
+  "q": "peppadew",
+  "kind": "control"
+ },
+ {
+  "q": "spritz",
+  "kind": "control"
+ },
+ {
+  "q": "swedish",
+  "kind": "control"
+ },
+ {
+  "q": "wedges",
+  "kind": "control"
+ },
+ {
+  "q": "faraon",
+  "kind": "control"
+ },
+ {
+  "q": "chobani",
+  "kind": "control"
+ },
+ {
+  "q": "nacho",
+  "kind": "control"
+ },
+ {
+  "q": "whipped",
+  "kind": "control"
+ },
+ {
+  "q": "mucho",
+  "kind": "control"
+ },
+ {
+  "q": "replenisher",
+  "kind": "control"
+ },
+ {
+  "q": "fudgy",
+  "kind": "control"
+ },
+ {
+  "q": "westbrae",
+  "kind": "control"
+ },
+ {
+  "q": "nissin",
+  "kind": "control"
+ },
+ {
+  "q": "cascade",
+  "kind": "control"
+ },
+ {
+  "q": "luncheon",
+  "kind": "control"
+ },
+ {
+  "q": "refreshers",
+  "kind": "control"
+ },
+ {
+  "q": "valentine",
+  "kind": "control"
+ },
+ {
+  "q": "merlot",
+  "kind": "control"
+ },
+ {
+  "q": "wellness",
+  "kind": "control"
+ },
+ {
+  "q": "butcher",
+  "kind": "control"
+ },
+ {
+  "q": "turner",
+  "kind": "control"
+ },
+ {
+  "q": "velveeta",
+  "kind": "control"
+ },
+ {
+  "q": "concentrated",
+  "kind": "control"
+ },
+ {
+  "q": "hannaford",
+  "kind": "control"
+ },
+ {
+  "q": "windmill",
+  "kind": "control"
+ },
+ {
+  "q": "criolla",
+  "kind": "control"
+ },
+ {
+  "q": "murry",
+  "kind": "control"
+ },
+ {
+  "q": "breadcrumbs",
+  "kind": "control"
+ },
+ {
+  "q": "place",
+  "kind": "control"
+ },
+ {
+  "q": "biazzo",
+  "kind": "control"
+ },
+ {
+  "q": "pouch",
+  "kind": "control"
+ },
+ {
+  "q": "lopez",
+  "kind": "control"
+ },
+ {
+  "q": "hamburger",
+  "kind": "control"
+ },
+ {
+  "q": "hearts",
+  "kind": "control"
+ },
+ {
+  "q": "tastykake",
+  "kind": "control"
+ },
+ {
+  "q": "finest",
+  "kind": "control"
+ },
+ {
+  "q": "lollipop",
+  "kind": "control"
+ },
+ {
+  "q": "sundae",
+  "kind": "control"
+ },
+ {
+  "q": "dietz",
+  "kind": "control"
+ },
+ {
+  "q": "dehydrated",
+  "kind": "control"
+ },
+ {
+  "q": "unpeeled",
+  "kind": "control"
+ },
+ {
+  "q": "gefilte",
+  "kind": "control"
+ },
+ {
+  "q": "bruschetta",
+  "kind": "control"
+ },
+ {
+  "q": "healthy",
+  "kind": "control"
+ },
+ {
+  "q": "train",
+  "kind": "control"
+ },
+ {
+  "q": "walnut",
+  "kind": "control"
+ },
+ {
+  "q": "snickers",
+  "kind": "control"
+ },
+ {
+  "q": "sweet",
+  "kind": "control"
+ },
+ {
+  "q": "sazon",
+  "kind": "control"
+ },
+ {
+  "q": "heaven",
+  "kind": "control"
+ },
+ {
+  "q": "grillers",
+  "kind": "control"
+ },
+ {
+  "q": "cannoli",
+  "kind": "control"
+ },
+ {
+  "q": "burgers",
+  "kind": "control"
+ },
+ {
+  "q": "collection",
+  "kind": "control"
+ },
+ {
+  "q": "piemaker",
+  "kind": "control"
+ },
+ {
+  "q": "remoulade",
+  "kind": "control"
+ },
+ {
+  "q": "peach",
+  "kind": "control"
+ },
+ {
+  "q": "icing",
+  "kind": "control"
+ },
+ {
+  "q": "bursts",
+  "kind": "control"
+ },
+ {
+  "q": "flipz",
+  "kind": "control"
+ },
+ {
+  "q": "straub",
+  "kind": "control"
+ },
+ {
+  "q": "snappy",
+  "kind": "control"
+ },
+ {
+  "q": "trappey",
+  "kind": "control"
+ },
+ {
+  "q": "shoprite",
+  "kind": "control"
+ },
+ {
+  "q": "snapple",
+  "kind": "control"
+ },
+ {
+  "q": "morningstar",
+  "kind": "control"
+ },
+ {
+  "q": "zesty",
+  "kind": "control"
+ },
+ {
+  "q": "scone",
+  "kind": "control"
+ },
+ {
+  "q": "rainbow",
+  "kind": "control"
+ },
+ {
+  "q": "tutti",
+  "kind": "control"
+ },
+ {
+  "q": "ajvar",
+  "kind": "control"
+ },
+ {
+  "q": "torie",
+  "kind": "control"
+ },
+ {
+  "q": "mineral",
+  "kind": "control"
+ },
+ {
+  "q": "fisher",
+  "kind": "control"
+ },
+ {
+  "q": "honest",
+  "kind": "control"
+ },
+ {
+  "q": "oetker",
+  "kind": "control"
+ }
+]

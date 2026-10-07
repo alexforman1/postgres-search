@@ -1,5 +1,5 @@
 import { askJev, type JevRequest, type JevResponse } from './jev.ts'
-import { tokens } from './tokens.ts'
+import { carries } from './tokens.ts'
 
 export interface Candidate {
   id: string
@@ -80,12 +80,10 @@ export async function rerank<T extends Candidate>(
   }
 }
 
-// The typed words, in order, each at the start of a word of the name or of the other names. Jev
-// judges products, so it scores low every product of a brand typed alone ("general mills") and of
-// an unfinished word ("strawb"); those results still match what was typed.
+// Jev judges products, so it scores low every product of a brand typed alone ("general mills") and
+// of an unfinished word ("strawb"); results that carry the typed words still match what was typed.
 function carriesQuery(c: Candidate, query: string): boolean {
-  const typed = tokens(query).join(' ')
-  return typed !== '' && [c.name, c.other_names ?? ''].some(text => ` ${tokens(text).join(' ')}`.includes(` ${typed}`))
+  return carries(c.name, query) || carries(c.other_names ?? '', query)
 }
 
 function thresholdFromEnv(): number {

@@ -185,8 +185,9 @@ $$;
 
 -- Words that products use and that are spelled close to each query word, closest first. The Jev
 -- step asks which spelling the user meant; this only finds the spellings. Words under four letters
--- and words with digits get none, because their few trigrams match too many words. Words that
--- only finish the typed word are left out: the prefix step already finds them.
+-- and words with digits get none, because their few trigrams match too many words, and so do stop
+-- words, which search.query ignores. Only words that more products use than the typed word are
+-- offered, and not words that only finish it, which the prefix step already finds.
 CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
 RETURNS TABLE (pos int, word text, word_count int, alternative text, doc_count int)
 LANGUAGE sql STABLE
@@ -199,11 +200,11 @@ AS $$
   CROSS JOIN LATERAL (
     SELECT s.word, s.doc_count, similarity(s.word, t.word) AS sim
     FROM search.words s
-    WHERE s.word % t.word AND s.word NOT LIKE t.word || '%'
+    WHERE s.word % t.word AND s.word NOT LIKE t.word || '%' AND s.doc_count > coalesce(own.doc_count, 0)
     ORDER BY sim DESC, s.doc_count DESC, s.word
     LIMIT least(greatest(coalesce(per_word, 8), 1), 50)
   ) a
-  WHERE length(t.word) >= 4 AND t.word !~ '[0-9]'
+  WHERE length(t.word) >= 4 AND t.word !~ '[0-9]' AND ts_lexize('english_stem', t.word) IS DISTINCT FROM '{}'
   ORDER BY t.pos, a.sim DESC, a.doc_count DESC, a.word
 $$;
 

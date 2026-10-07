@@ -1,14 +1,11 @@
 import { createServer } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { connect } from './src/db.ts'
-import { rerank, type Candidate } from './src/rerank.ts'
-import { checkSpelling, type SimilarWord } from './src/spelling.ts'
+import { page } from './src/page.ts'
 
 // A stuck query should fail the request, not hang it.
 const pool = connect({ statement_timeout: 5000 })
 const port = Number(process.env.PORT ?? 3000)
-// Tells the spelling question what the demo searches. scripts/eval.ts sends the same note.
-const NOTE = 'A user typed `query` into the search box of a grocery and packaged food product search.'
 
 const files: Record<string, { path: string; type: string }> = {
   '/': { path: 'public/index.html', type: 'text/html; charset=utf-8' },
@@ -17,10 +14,6 @@ const files: Record<string, { path: string; type: string }> = {
 }
 
 class BadRequest extends Error {}
-
-interface Row extends Candidate {
-  step: string
-}
 
 // Filters arrive as a JSON object of facet name to value.
 function parseFilters(raw: string | null): Record<string, string> {
@@ -39,36 +32,20 @@ function parseFilters(raw: string | null): Record<string, string> {
 }
 
 async function search(q: string, filters: Record<string, string>) {
-  const found = pool.query<Row>(
-    `SELECT d.id, d.name, d.name_key, d.other_names, d.group_key, d.facets, r.step
-       FROM search.query_distinct($1, $2::jsonb) r
-       JOIN search.documents d ON d.id = r.id
-      ORDER BY r.pos`,
-    [q, JSON.stringify(filters)],
-  )
-  if (!process.env.TYPESAFE_API_KEY) {
-    const { rows } = await found
-    return { jev: { ran: false, ms: 0, error: 'no TYPESAFE_API_KEY' }, results: rows.map(r => ({ ...r, sunk: false })) }
+  const p = await page(pool, q, { filters, withJev: Boolean(process.env.TYPESAFE_API_KEY) })
+  if (!p.reranked) {
+    return { jev: { ran: false, ms: 0, error: 'no TYPESAFE_API_KEY' }, results: p.rows.map(r => ({ ...r, sunk: false })) }
   }
-  // The spelling question needs only the query, so it runs while the search does.
-  const [out, spelling] = await Promise.all([
-    found.then(({ rows }) => rerank(q, rows)),
-    pool
-      .query<SimilarWord>('SELECT * FROM search.similar_words($1)', [q])
-      .then(({ rows }) => rows, err => {
-        console.error('similar_words failed:', err.message)
-        return []
-      })
-      .then(similar => checkSpelling(q, similar, { note: NOTE })),
-  ])
+  const out = p.reranked
+  const suggestion = p.spelling?.suggestion ?? null
   const sunk = new Set(out.sunk.map(r => r.id))
   return {
     jev: {
-      ran: out.reranked || spelling.ran,
-      ms: Math.max(out.ms, spelling.ms),
-      error: out.error ?? spelling.error,
-      suggestion: spelling.suggestion,
-      noMatch: out.noMatch && !spelling.suggestion,
+      ran: out.reranked || Boolean(p.spelling?.ran),
+      ms: Math.max(out.ms, p.spelling?.ms ?? 0),
+      error: out.error ?? p.spelling?.error,
+      suggestion,
+      noMatch: out.noMatch && !suggestion,
     },
     results: out.results.map(r => ({ ...r, sunk: sunk.has(r.id) })),
   }

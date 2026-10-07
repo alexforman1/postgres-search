@@ -29,9 +29,9 @@ run `node --env-file=.env server.ts`, `node --env-file=.env scripts/eval.ts` or
 - `src/` is the optional Jev step and a database helper.
 - `server.ts` and `public/` are the demo only. Do not grow them into an API.
 - `skills/postgres-search/` is a copy for other projects. When `sql/` changes, copy the two files
-  over (CI compares them). When a file in `src/` other than `db.ts` changes, update
-  `skills/postgres-search/rerank.ts` by hand; it holds `jev.ts`, `tokens.ts`, `rerank.ts` and
-  `spelling.ts` in one file.
+  over (CI compares them). When `src/jev.ts`, `tokens.ts`, `rerank.ts` or `spelling.ts`
+  changes, update `skills/postgres-search/rerank.ts` by hand; it holds those four in one file.
+  `src/page.ts` is the demo's page, shared by `server.ts` and the scripts.
 - `docs/` is the guide. Numbers in it come from `docs/measurements.md`; rerun the commands there
   when a change affects speed or results.
 

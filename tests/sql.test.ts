@@ -291,6 +291,15 @@ describe('search.similar_words', () => {
     assert.deepEqual((await similarWords('cheerois', 1)).map(r => r.alternative), ['cheerios'])
   })
 
+  test('leaves out stop words, which search.query ignores', async () => {
+    assert.deepEqual(await similarWords('with'), [])
+  })
+
+  test('offers only words that more products use than the typed word', async () => {
+    assert.deepEqual(await similarWords('cheerios'), [])
+    assert.deepEqual((await similarWords('cheerioz')).map(r => r.alternative), ['cheerios'])
+  })
+
   test('leaves out words that only finish the typed word, which the prefix step finds', async () => {
     assert.ok(!(await similarWords('cheeri')).some(r => r.alternative.startsWith('cheeri')))
   })

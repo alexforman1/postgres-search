@@ -11,7 +11,7 @@
 import { readFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
-import { page, search, type Row } from './page.ts'
+import { page, search, type Row } from '../src/page.ts'
 
 if (!process.env.TYPESAFE_API_KEY) throw new Error('set TYPESAFE_API_KEY; the third search needs Jev')
 
@@ -127,7 +127,7 @@ try {
     started = performance.now()
     const sqlRows = await search(pool, c.q)
     ms.sql.push(performance.now() - started)
-    const p = await page(pool, c.q, true)
+    const p = await page(pool, c.q, { withJev: true })
     ms.jev.push(p.pageMs)
     const r = p.reranked!
     const sp = p.spelling!

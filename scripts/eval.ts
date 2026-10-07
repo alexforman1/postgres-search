@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { checkSpelling, type SimilarWord } from '../src/spelling.ts'
 import { tokens } from '../src/tokens.ts'
-import { NOTE, page as pageWith, search as searchWith, similarWords as similarWordsWith, type Row } from './page.ts'
+import { NOTE, page as pageWith, search as searchWith, similarWords as similarWordsWith, type Row } from '../src/page.ts'
 
 interface Case {
   q: string
@@ -52,7 +52,7 @@ const absentCases: { q: string }[] = await read('absent.json')
 const withJev = Boolean(process.env.TYPESAFE_API_KEY)
 
 const pool = connect()
-const page = (q: string) => pageWith(pool, q, withJev)
+const page = (q: string) => pageWith(pool, q, { withJev })
 const search = (q: string) => searchWith(pool, q)
 const similarWords = (q: string) => similarWordsWith(pool, q)
 

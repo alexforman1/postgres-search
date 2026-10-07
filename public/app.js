@@ -143,7 +143,8 @@ function renderResults({ results, jev }) {
     if (r.sunk) item.append(el('span', { class: 'sunk' }, 'Moved down by Jev'))
     return item
   }))
-  // A suggestion is only a link: the page never searches it without a click.
+  // A suggestion is only a link: the page never searches it without a click. Following it is a
+  // new query, so it starts without filters, as typing one does.
   notice.replaceChildren()
   if (jev.suggestion) {
     const link = el('button', { type: 'button', class: 'link' }, jev.suggestion)

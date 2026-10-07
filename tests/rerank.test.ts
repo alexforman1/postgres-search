@@ -68,6 +68,19 @@ test('never says nothing matches when a candidate carries the typed words', asyn
   assert.equal(unfinished.noMatch, false)
 })
 
+test('the typed words may differ in accents and spacing from the candidate', async () => {
+  const pepper = await rerank('jalapeno', [candidate('a', 'JALAPEÑO PEPPERS'), candidate('b', 'Salsa')], {
+    ...answering([0.1, 0.1]),
+    threshold: 0.3,
+  })
+  assert.equal(pepper.noMatch, false)
+  const joined = await rerank('almond milk', [candidate('a', 'ALMONDMILK, UNSWEETENED'), candidate('b', 'Milk')], {
+    ...answering([0.1, 0.1]),
+    threshold: 0.3,
+  })
+  assert.equal(joined.noMatch, false)
+})
+
 test('never says nothing matches when Jev did not answer', async () => {
   const skipped = await rerank('oreo', four.slice(0, 1), answering([]))
   assert.equal(skipped.noMatch, false)
