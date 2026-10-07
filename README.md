@@ -2,7 +2,7 @@
 
 Product search inside PostgreSQL: whole words, partial words, typos, barcodes, typeahead and facet
 counts, all in SQL, with an optional second stage that asks [Jev](https://docs.typesafe.ai), a
-hosted model that returns calibrated probabilities, two questions per search. This README is also
+hosted model that returns probabilities instead of text, two questions per search. This README is also
 a report on how much that second stage helps, where it does not, what it costs, and how it compares
 with Algolia.
 
@@ -30,8 +30,9 @@ from a fixed seed before any model saw them. Each system ran five times with the
 `jev-1.13.0`.
 
 On the 550 queries nothing was tuned on, the right product came first for 37% of queries with
-plain full-text search, 68% with this SQL, 72% after Jev's keep-or-sink reorder (p = 0.0002), and
-78% when the user also follows Jev's "Did you mean" link (p < 0.0001, Holm-corrected). The two Jev
+plain full-text search and 68% with this SQL. Jev's keep-or-sink reorder raised that to 72%
+(p = 0.0002, Holm-corrected), its "Did you mean" link alone to 78% when followed (p < 0.0001), and
+the two together to 80%. The two Jev
 questions take 162 ms and 157 ms at the median, run at the same time, and add 166 ms to the page.
 They cost \$0.080 per 1,000 searches on the hand-written queries.
 
@@ -40,12 +41,15 @@ dictionary corrector in the style of Norvig (2007), working from the index's own
 fixed 91% to Jev's 59%, and it costs nothing. Jev's value lies in judgments that rules cannot make well:
 
 - **Which results are wrong.** The reorder is significant on 550 queries.
-- **When not to respell.** Jev made no wrong suggestion on the held-out set and respelled 0.9% of
-  correct words, where a frequency rule respelled 38%.
+- **When not to respell.** On the held-out set Jev's suggestions were all correct (precision
+  100%), against 79% for the dictionary corrector, which changed `hellmanns` to "hellmann" and
+  `kelloggs` to "kellogg". On the 220 correctly spelled controls the two tie, at 2 each; a
+  frequency rule respelled 84.
 - **Saying that nothing matches.** For 12 of 15 queries that have no answer in a grocery catalog,
   Jev says nothing matches; it says so for 30 of 600 queries that do have one.
-- **Calibrated probabilities.** Expected calibration error is 0.049; when Jev gave 0.9 or more, it
-  was right 96.6% of the time.
+- **Probabilities that can be thresholded.** When Jev gave a spelling 0.9 or more, it was right
+  96.6% of the time, and raising the bar trades fixes for false alarms in a steady way. Below 0.7
+  it is overconfident by 10 to 20 points.
 
 For the 440,302 records of this demo, Algolia's published Grow price comes to \$136 a month for
 records alone. The same search with Jev costs \$8.03 a month at 100,000 searches, before database
@@ -151,7 +155,8 @@ digits and not stop words, that appear in at least 20 product names and in no ot
 Each of 300 gets one Damerau edit at a position other than the first letter, 75 of each type
 (deletion, insertion, substitution, transposition). A result that is itself a word in the index is
 redrawn, up to ten times, before the generator moves to the next word, so these are non-word
-errors. Damerau (1964) found that about 80% of non-word misspellings are a single such edit. The
+errors in the sense of Kukich (1992): the misspelling is not a word in the vocabulary. Damerau
+(1964) found that about 80% of non-word misspellings are a single such edit. The
 next 200 sampled words are the correctly spelled controls. Real-word errors, misspellings that
 some product also carries (`parmesean`, `cinamon`), appear only in the two hand-written sets.
 
@@ -303,8 +308,10 @@ icing decorations) and one returns a single result, where the keep-or-sink quest
 </picture>
 
 Over 2,424 spelling answers (held-out and synthetic, five runs), the probability of the option Jev
-ranked first tracks how often that option was right: expected calibration error 0.049, Brier score
-0.122.
+ranked first is well calibrated at the top and overconfident in the middle: answers between 0.3
+and 0.7 were right 10 to 20 points less often than their probability. The expected calibration
+error is 0.049 and the Brier score 0.122; the error is low mainly because 1,041 of the answers fall
+between 0.9 and 1.0, where Jev was right 96.6% of the time.
 
 | Jev's probability | answers | right |
 |-------------------|--------:|------:|
@@ -314,9 +321,9 @@ ranked first tracks how often that option was right: expected calibration error 
 | 0.8 to 0.9 | 419 | 89.3% |
 | 0.9 to 1.0 | 1,041 | 96.6% |
 
-Because the probabilities mean what they say, the bar is a knob with predictable effects. The
-sweep below was computed after the fact, from the recorded probabilities, and the page still uses
-0.6.
+The bar still behaves predictably: raising it lowers both the fixes and the false alarms, steadily.
+The sweep below was computed after the fact, from the recorded probabilities, and the page still
+uses 0.6.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/threshold-dark.svg">
@@ -399,9 +406,10 @@ generator samples brand names (squeez, sabatino, matlaw) as often as common word
 
 The measurements support a narrower claim than "a model makes search better". Jev helps where the
 decision is a judgment about meaning and a wrong answer is costly. It moved wrong results down a
-list; it declined to respell correct words, including possessives and brands that a frequency rule
-mangled (`fritos` to "frito", `harissa` to "harris"); it told answerable queries from unanswerable
-ones; and its probabilities were calibrated well enough to set a bar by. It did not beat a
+list. It declined to respell possessive brand names that the dictionary corrector changed
+(`hellmanns`, `kelloggs`), and many more that a frequency rule mangled (`fritos` to "frito",
+`harissa` to "harris"). It told answerable queries from unanswerable ones. And its probabilities,
+though overconfident in the middle, were reliable enough at the top to set a bar by. It did not beat a
 dictionary corrector at the problem that corrector was designed for, a single edit away from a
 common word, and the synthetic set is made of exactly that problem.
 

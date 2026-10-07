@@ -40,8 +40,9 @@ the intended word, among them `parmesean`, `dortios`, `gaucamole`, `tortila chip
 A Norvig-style dictionary corrector over `search.words` beats the spelling question on
 single-edit non-word misspellings (85% against 78% hit@1 out of sample). The spelling question is
 better where the misspelling is itself a word some product uses, which that corrector keeps by
-design, and it rarely respells a correct word: 2 of 220 controls, where a frequency rule respelled
-84.
+design, and on the held-out set it made no wrong suggestion where that corrector respelled
+`hellmanns` and `kelloggs`. On the 220 correctly spelled controls the two tie at 2 respellings
+each; a frequency rule respelled 84.
 
 ## Cost and time
 
