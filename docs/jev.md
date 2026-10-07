@@ -151,9 +151,11 @@ These are the cases the question is meant for, from the word step on the USDA da
 `search.words` lists every word products use, with the number of products that use it.
 `search.similar_words(q)` returns, for each query word, up to 8 words spelled close to it (trigram
 similarity 0.3 or more), closest first. It skips words under four letters and words with digits,
-whose few trigrams match too much, and it leaves out words that only finish the typed word,
-because the prefix step already finds those. That last rule came from the eval: `blueb muff` was
-offered "blueberry muff", which finds less than the prefix step did.
+whose few trigrams match too much, and stop words, which the search ignores. It offers only words
+that more products use than the typed word, so a common, correctly spelled word usually gets no
+options and no Jev call. And it leaves out words that only finish the typed word, because the
+prefix step already finds those. That last rule came from the eval: `blueb muff` was offered
+"blueberry muff", which finds less than the prefix step did.
 
 `spellings()` in `src/spelling.ts` turns those rows into options: the query as typed, then the
 query with one word changed, every word's closest alternative before any word's second, up to 16
@@ -172,8 +174,7 @@ options. For `parmesean`, the request is:
       "instructions": "Which of these searches did the user mean to type? Pick the one that is spelled the way the user intended. The first option is exactly what they typed.",
       "criteria": {
         "s0": "\"parmesean\"", "s1": "\"parmesan\"", "s2": "\"parmesano\"", "s3": "\"parmela\"",
-        "s4": "\"parm\"", "s5": "\"parmeasn\"", "s6": "\"parmezen\"", "s7": "\"parma\"",
-        "s8": "\"parmaesan\""
+        "s4": "\"parm\"", "s5": "\"parma\""
       }
     }
   }
@@ -186,7 +187,8 @@ searches it without a click. The `note` tells Jev what the catalog holds; the de
 product search box", and the demo names groceries. Say what your search holds.
 
 This question needs only the query, so the server sends it while Postgres is still searching. It
-also runs when the search returns one result or none, where question 1 is skipped.
+also runs when the search returns one result or none, where question 1 is skipped. A filter click
+repeats the search with the same words, so it does not ask the question again.
 
 The 0.6 bar was set before `eval/spelling.json` was scored. Before that, a probe of 15 queries, 14
 of them from `eval/queries.json`, gave the intended respelling 0.68 or more on all 7
@@ -196,7 +198,9 @@ results on `eval/queries.json` are not held out; the `eval/spelling.json` result
 ## No match
 
 `rerank` returns `noMatch` when Jev scores every top result below the threshold and none of them
-holds the typed words, in order and each at the start of a word, in its name or other names. Jev
+holds the typed words, in order and from the start of a word, in its name or other names. The
+check ignores accents and the spaces and punctuation between words, so "almond milk" is found in
+ALMONDMILK and "jalapeno" in JALAPEÑO. Jev
 judges products, so for a brand typed alone (`general mills`) or an unfinished word (`strawb`) it
 scores every product low; the typed-words check keeps the line off those pages. The demo shows the
 line only when there is no suggestion, and the results stay on the page.
