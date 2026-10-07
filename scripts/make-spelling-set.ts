@@ -9,6 +9,8 @@
 //   node scripts/make-spelling-set.ts --seed 20261010 --out truncation.json --truncate
 //   node scripts/make-spelling-set.ts --seed 20261011 --out synthetic-test-3.json   # test, version 2.2
 //   node scripts/make-spelling-set.ts --seed 20261012 --out truncation-2.json --truncate --min-length 7
+//   node scripts/make-spelling-set.ts --seed 20261013 --out synthetic-test-4.json   # test, version 2.3
+//   node scripts/make-spelling-set.ts --seed 20261014 --out truncation-3.json --truncate --min-length 7
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
@@ -77,6 +79,8 @@ const ORDER = [
   'truncation.json',
   'synthetic-test-3.json',
   'truncation-2.json',
+  'synthetic-test-4.json',
+  'truncation-3.json',
 ]
 const EXCLUDE = ORDER.includes(OUT) ? ORDER.slice(0, ORDER.indexOf(OUT)) : ORDER
 const used = new Set<string>()

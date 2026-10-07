@@ -28,6 +28,8 @@ interface Rec {
     | 'truncation'
     | 'synthetic-test-3'
     | 'truncation-2'
+    | 'synthetic-test-4'
+    | 'truncation-3'
     | 'absent'
   kind: string
   edit?: string
@@ -216,7 +218,8 @@ const outcome = (r: Rec, s: SystemId): Scored => {
 const DETERMINISTIC: SystemId[] = ['plain', 'sql', 'norvig', 'frequency']
 
 type Group = { name: string; take: (r: Rec) => boolean }
-const isTest = (r: Rec) => r.set === 'synthetic-test' || r.set === 'wikipedia' || r.set === 'synthetic-test-2' || r.set === 'synthetic-test-3'
+const isTest = (r: Rec) =>
+  r.set === 'synthetic-test' || r.set === 'wikipedia' || r.set === 'synthetic-test-2' || r.set === 'synthetic-test-3' || r.set === 'synthetic-test-4'
 const ALL_GROUPS: Group[] = [
   { name: 'hand-written', take: r => r.set === 'hand-written' },
   { name: 'hand-written, misspelled', take: r => r.set === 'hand-written' && r.kind === 'typo' },
@@ -247,6 +250,12 @@ const ALL_GROUPS: Group[] = [
   { name: 'truncation-2', take: r => r.set === 'truncation-2' },
   { name: 'truncation-2, one letter cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length === 1 },
   { name: 'truncation-2, two or more letters cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length >= 2 },
+  { name: 'synthetic-test-4', take: r => r.set === 'synthetic-test-4' },
+  { name: 'synthetic-test-4, misspelled', take: r => r.set === 'synthetic-test-4' && r.kind === 'typo' },
+  { name: 'synthetic-test-4, correctly spelled', take: r => r.set === 'synthetic-test-4' && r.kind === 'control' },
+  { name: 'truncation-3', take: r => r.set === 'truncation-3' },
+  { name: 'truncation-3, one letter cut', take: r => r.set === 'truncation-3' && (r.expect ?? '').length - r.q.length === 1 },
+  { name: 'truncation-3, two or more letters cut', take: r => r.set === 'truncation-3' && (r.expect ?? '').length - r.q.length >= 2 },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
 const hasTest = runs[0].records.some(isTest)
@@ -335,6 +344,7 @@ const PRIMARY: [SystemId, SystemId][] = [
 // held-out and synthetic sets. Words cut short get their own test below: the Norvig corrector and
 // plain full-text search have no rule for them, so they would tilt two of these four.
 const outOfSample =
+  GROUPS.find(g => g.name === 'synthetic-test-4') ??
   GROUPS.find(g => g.name === 'synthetic-test-3') ??
   GROUPS.find(g => g.name === 'synthetic-test-2') ??
   GROUPS.find(g => g.name.startsWith(hasTest ? 'test' : 'out-of-sample'))!
@@ -368,7 +378,7 @@ table(
 )
 // Set before version 2.2's runs were read: on words cut short, does the spelling step lose
 // queries that the prefix step gets right?
-const cutGroup = GROUPS.find(g => g.name === 'truncation-2')
+const cutGroup = GROUPS.find(g => g.name === 'truncation-3') ?? GROUPS.find(g => g.name === 'truncation-2')
 if (cutGroup) {
   const tests = runs.map(run => {
     const rs = run.records.filter(cutGroup.take)
@@ -379,7 +389,7 @@ if (cutGroup) {
   const n = runs[0].records.filter(cutGroup.take).length
   line('### Words cut short')
   line()
-  line(`On the ${n} queries of truncation-2, exact McNemar per run, not part of the Holm family.`)
+  line(`On the ${n} queries of ${cutGroup.name}, exact McNemar per run, not part of the Holm family.`)
   line()
   table(
     ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'p, range over runs'],
@@ -395,6 +405,51 @@ if (cutGroup) {
       ],
     ],
     ['l', 'l'],
+  )
+}
+// Set before version 2.3's runs were read: the previous version, run once on the sets made for
+// this one (results/v22-new), against this version, query by query. Holm's correction across the
+// two comparisons on words cut short.
+const previous = drawFigures ? await loadRuns(new URL('../results/v22-new/', import.meta.url)).catch(() => [] as Run[]) : []
+if (previous.length && runs[0].records.some(r => r.set === 'truncation-3')) {
+  const prev = new Map(previous[0].records.map(r => [`${r.set}|${r.q}`, r]))
+  const paired = (group: Group, s: SystemId) =>
+    runs.map(run => {
+      const rs = run.records.filter(group.take).filter(r => prev.has(`${r.set}|${r.q}`))
+      return mcnemar(rs.map(r => outcome(r, s).hit1), rs.map(r => outcome(prev.get(`${r.set}|${r.q}`)!, s).hit1))
+    })
+  const sp = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `${Math.min(...v)} to ${Math.max(...v)}`)
+  const cut = GROUPS.find(g => g.name === 'truncation-3')!
+  const claims = (['sql', 'jev'] as SystemId[]).map(s => ({ s, tests: paired(cut, s) }))
+  // Holm over the two, run by run; the table shows the worst run.
+  const adjusted = runs.map((_, i) => {
+    const ps = claims.map(c => c.tests[i].p)
+    const [lo, hi] = ps[0] <= ps[1] ? [0, 1] : [1, 0]
+    const a = Math.min(1, 2 * ps[lo])
+    const out = [0, 0]
+    out[lo] = a
+    out[hi] = Math.max(a, Math.min(1, ps[hi]))
+    return out
+  })
+  line('## Version 2.3 against version 2.2')
+  line()
+  line(`Version 2.2's code, run once on the sets made for version 2.3 (results/v22-new), against this version's ${runs.length} runs. Hit@1; for this version the median run.`)
+  line()
+  const SYS: SystemId[] = ['sql', 'rerank', 'spellingOnly', 'jev']
+  table(
+    ['group', 'n', ...SYS.map(s => `${SYSTEM_LABEL[s]}: v2.2 / this version`)],
+    GROUPS.filter(g => /^(synthetic-test-4|truncation-3)/.test(g.name)).map(g => [
+      g.name,
+      cell(g, 'sql', 'hit1').n,
+      ...SYS.map(s => `${pct(cell(g, s, 'hit1', previous).k / cell(g, s, 'hit1', previous).n)} / ${pct(cell(g, s, 'hit1').k / cell(g, s, 'hit1').n)}`),
+    ]),
+  )
+  line(`On the ${cut.name} queries, exact McNemar of this version against version 2.2, Holm's correction across these two, the worst of the ${runs.length} runs.`)
+  line()
+  table(
+    ['system', 'right only in this version', 'right only in version 2.2', 'Holm-adjusted p, worst run'],
+    claims.map((c, j) => [SYSTEM_LABEL[c.s], sp(c.tests.map(t => t.onlyA)), sp(c.tests.map(t => t.onlyB)), fmtP(Math.max(...adjusted.map(a => a[j])))]),
+    ['l'],
   )
 }
 line('## Paired tests (exact McNemar, hit@1, exploratory)')
@@ -448,11 +503,13 @@ const CORRECTOR_LABEL: Record<Corrector, string> = {
 }
 const CORRECTORS: Corrector[] = (['jev', 'norvig', 'frequency', 'wide'] as Corrector[]).filter(c => c !== 'wide' || hasWide)
 const suggestionOf = (r: Rec, c: Corrector) => (c === 'cascade' ? (r.suggestions.norvig ?? r.suggestions.jev) : (r.suggestions[c] ?? null))
-const spellingSets = (['held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'synthetic-test-3'] as const).filter(set => runs[0].records.some(r => r.set === set))
+const spellingSets = (['held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'synthetic-test-3', 'synthetic-test-4'] as const).filter(set => runs[0].records.some(r => r.set === set))
 // Analyses of the spelling question use the test sets when present.
 const spellingScope = (r: Rec) => (hasTest ? isTest(r) : r.set === 'held-out' || r.set === 'synthetic')
 const scopeName = hasTest
-  ? runs[0].records.some(r => r.set === 'synthetic-test-3')
+  ? runs[0].records.some(r => r.set === 'synthetic-test-4')
+    ? 'synthetic-test, wikipedia, synthetic-test-2, synthetic-test-3 and synthetic-test-4'
+    : runs[0].records.some(r => r.set === 'synthetic-test-3')
     ? 'synthetic-test, wikipedia, synthetic-test-2 and synthetic-test-3'
     : runs[0].records.some(r => r.set === 'synthetic-test-2')
       ? 'synthetic-test, wikipedia and synthetic-test-2'
@@ -494,7 +551,10 @@ const span = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `
 const earlier = drawFigures
   ? (
       await Promise.all(
-        ['v1', 'v2', 'v21'].map(async name => ({ name: name === 'v21' ? 'v2.1' : name, runs: await loadRuns(new URL(`../results/${name}/`, import.meta.url)).catch(() => [] as Run[]) })),
+        ['v1', 'v2', 'v21', 'v22'].map(async name => ({
+          name: name.length === 3 ? `v${name[1]}.${name[2]}` : name,
+          runs: await loadRuns(new URL(`../results/${name}/`, import.meta.url)).catch(() => [] as Run[]),
+        })),
       )
     ).filter(e => e.runs.length)
   : []
@@ -503,10 +563,12 @@ if (earlier.length) {
   line('## Versions compared')
   line()
   line(
-    'Version 1 (results/v1) offered trigram neighbors only, with bare spellings and a bar of 0.6. Version 2 (results/v2) added one-edit candidates, product counts, edit counts and the twice-as-likely rule. Version 2.1 (results/v21, one run) added the completion test. Hit@1, median run; a set a version was not run on is blank.',
+    'Version 1 (results/v1) offered trigram neighbors only, with bare spellings and a bar of 0.6. Version 2 (results/v2) added one-edit candidates, product counts, edit counts and the twice-as-likely rule. Version 2.1 (results/v21, one run) added the completion test. Version 2.2 (results/v22) gave no candidates to a word that finds nothing but starts an index word. Hit@1, median run; a set a version was not run on is blank.',
   )
   line()
-  const groups = ['hand-written', 'held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'truncation'].map(name => ALL_GROUPS.find(g => g.name === name)!)
+  const groups = ['hand-written', 'held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'truncation', 'synthetic-test-3', 'truncation-2'].map(
+    name => ALL_GROUPS.find(g => g.name === name)!,
+  )
   const has = (from: Run[], g: Group) => from[0].records.some(g.take)
   for (const [s, label] of [['spellingOnly', '"Did you mean"'], ['jev', 'both questions']] as [SystemId, string][]) {
     table(
@@ -549,6 +611,9 @@ if (runs[0].records.some(r => r.set === 'truncation')) {
   line('A suggestion is right when it is the full word.')
   line()
   const rows = [
+    'truncation-3',
+    'truncation-3, one letter cut',
+    'truncation-3, two or more letters cut',
     'truncation-2',
     'truncation-2, one letter cut',
     'truncation-2, two or more letters cut',
@@ -598,7 +663,9 @@ for (const set of spellingSets) {
   table(['corrector', 'fixed', 'wrong', 'missed', 'false alarms', 'precision', 'offered'], rows)
 }
 
-const editSet = runs[0].records.some(r => r.set === 'synthetic-test-3')
+const editSet = runs[0].records.some(r => r.set === 'synthetic-test-4')
+  ? 'synthetic-test-4'
+  : runs[0].records.some(r => r.set === 'synthetic-test-3')
   ? 'synthetic-test-3'
   : runs[0].records.some(r => r.set === 'synthetic-test-2')
   ? 'synthetic-test-2'
@@ -965,7 +1032,13 @@ const figures: Record<string, (theme: Theme) => string> = {}
 figures['accuracy'] = theme => {
   const t = THEME[theme]
   const sets = [
-    ...(runs[0].records.some(r => r.set === 'synthetic-test-3')
+    ...(runs[0].records.some(r => r.set === 'synthetic-test-4')
+      ? [
+          { g: GROUPS.find(g => g.name === 'synthetic-test-4')!, title: 'Clean test: synthetic one-edit misspellings and controls (n = 500)' },
+          { g: GROUPS.find(g => g.name === 'truncation-3')!, title: 'Clean test: words cut short as a user types them (n = 300)' },
+          { g: GROUPS.find(g => g.name === 'wikipedia')!, title: `Rescored: real misspellings from Wikipedia (n = ${runs[0].records.filter(r => r.set === 'wikipedia').length})` },
+        ]
+      : runs[0].records.some(r => r.set === 'synthetic-test-3')
       ? [
           { g: GROUPS.find(g => g.name === 'synthetic-test-3')!, title: 'Clean test: synthetic one-edit misspellings and controls (n = 500)' },
           { g: GROUPS.find(g => g.name === 'truncation-2')!, title: 'Clean test: words cut short as a user types them (n = 300)' },

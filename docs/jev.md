@@ -221,7 +221,9 @@ Question 1 is skipped when fewer than 2 results come back, or when all of the to
 group. The group is `group_key`, or the normalized name when `group_key` is null. Rows in one group
 are the same thing, such as pack sizes of one product, so their scores would differ only by noise.
 The demo sends rows from `search.query_distinct`, which already has one row per group, so on the
-demo only the first rule applies.
+demo only the first rule applies. It is also skipped when the prefix step found the rows. Those
+pages answer words still being typed, and Jev cannot know which completion is meant: in version
+2.2's runs it sank more right results than it raised on them.
 
 Question 2 is skipped when no query word has a close spelling: every word is under four letters,
 has a digit, or matches nothing in `search.words`.
@@ -241,8 +243,9 @@ inputTokens }`, so the page can show whether Jev ran and how long it took.
   queries that got one in any run, and the no-match flag for 28% of those where it was raised.
 - One word is respelled per option, so a query with two misspelled words is not fixed.
 - A word whose last letter was dropped is left to the prefix step, which finds the full word
-  unless the cut text is itself a word, or has the stem of one: `monke` finds MONK FRUIT
-  sweeteners through the word step, and the prefix step never runs.
+  unless the cut text is itself a word that some name uses (`straw` finds straws, not
+  strawberries), or the most common completion is not the one meant (`cata` finds Catawba, not
+  Catalina).
 - On rare brand names Jev tends to choose a common word (`foyster` to "oyster" for foster,
   `djraft` to "kraft" for draft), where a dictionary corrector picks the closest known word.
 - The no-match line needs question 1, so a page with a single wrong result shows no line.

@@ -15,7 +15,10 @@ Each step runs only when every step before it returned nothing.
    It matches codes that start with those digits. Leading zeros are removed on both sides, so a
    12-digit UPC finds the same barcode stored as a 14-digit GTIN.
 2. `word`: `search_vector @@ plainto_tsquery('english', query)`. Every word, stemmed, must appear
-   in `name` or `other_names`.
+   in `name` or `other_names`. The step is skipped when a query word of 3 or more letters is used
+   by no name but starts a word that some name uses: the user is probably still typing it, and its
+   stem would match other words first. `monke` would find MONK FRUIT sweetener here; the prefix
+   step finds monkey bread.
 3. `prefix`: stop words are dropped, and at least one remaining word must have 3 or more
    characters. Every remaining word becomes a prefix (`straw:* & j:*`) matched against
    `prefix_vector`. That vector is not stemmed, because a partial word such as "chocolat" is

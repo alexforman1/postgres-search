@@ -10,8 +10,8 @@
 // corrector (the most common known word within two edits; a known word is kept).
 // The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
 // when present, the later sets eval/synthetic-test.json, eval/wikipedia.json,
-// eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json and
-// eval/truncation-2.json.
+// eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json,
+// eval/truncation-2.json, eval/synthetic-test-4.json and eval/truncation-3.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -35,6 +35,8 @@ type QuerySet =
   | 'truncation'
   | 'synthetic-test-3'
   | 'truncation-2'
+  | 'synthetic-test-4'
+  | 'truncation-3'
   | 'absent'
 
 interface Case {
@@ -66,6 +68,8 @@ for (const [file, set] of [
   ['truncation.json', 'truncation'],
   ['synthetic-test-3.json', 'synthetic-test-3'],
   ['truncation-2.json', 'truncation-2'],
+  ['synthetic-test-4.json', 'synthetic-test-4'],
+  ['truncation-3.json', 'truncation-3'],
 ] as const) {
   if (!(await exists(file))) continue
   const data = await read(file)

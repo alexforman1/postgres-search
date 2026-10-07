@@ -93,7 +93,7 @@ project's server language. It asks two questions per search, each in one request
 rules:
 - keep or sink: one Noul question per candidate for the top 10; move candidates below the
   threshold (default 0.3) to the bottom of the 10; never sort by score; skip the call when fewer
-  than 2 results or all share one group;
+  than 2 results, all share one group, or the prefix step found them (the `step` column);
 - spelling: one Choice question over the query as typed and the respellings built from
   `search.similar_words`, each option stating its edits from what was typed and how many products
   the search finds for its words; send it while the search runs, since it needs only the query;
@@ -109,9 +109,10 @@ On the demo data the step costs about 9 cents per 1,000 searches and adds 173 ms
 With the edit counts and product counts in its options, the spelling question tied a Norvig-style
 dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
 misspellings that are themselves words in the index. Without that evidence it lost; keep it.
-`search.similar_words` gives no candidates to a word that finds nothing but starts an index word,
-so a word the user is still typing stays with the prefix step; a version without that rule found
-the right product less often than the SQL alone on such words. Measure it on the project's own
+A word that no name uses but that starts a word some name uses is one the user may still be
+typing: `search.query` skips the word step for it and `search.similar_words` gives it no
+candidates, so the prefix step answers it. A version without that rule found the right product
+less often than the SQL alone on such words. Measure it on the project's own
 queries before relying on the thresholds.
 
 ### 6. Verify
