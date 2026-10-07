@@ -2,6 +2,7 @@ const form = document.getElementById('search-form')
 const input = document.getElementById('q')
 const list = document.getElementById('suggestions')
 const statusLine = document.getElementById('status')
+const notice = document.getElementById('notice')
 const resultsList = document.getElementById('results')
 const facetsBox = document.getElementById('facets')
 
@@ -118,6 +119,7 @@ async function run(focus) {
   if (!q) return
   const id = ++runId
   statusLine.textContent = 'Searching...'
+  notice.hidden = true
   try {
     const params = { q, filters: JSON.stringify(filters) }
     const [found, counted] = await Promise.all([get('/search', params), get('/facets', params)])
@@ -141,6 +143,17 @@ function renderResults({ results, jev }) {
     if (r.sunk) item.append(el('span', { class: 'sunk' }, 'Moved down by Jev'))
     return item
   }))
+  // A suggestion is only a link: the page never searches it without a click. Following it is a
+  // new query, so it starts without filters, as typing one does.
+  notice.replaceChildren()
+  if (jev.suggestion) {
+    const link = el('button', { type: 'button', class: 'link' }, jev.suggestion)
+    link.addEventListener('click', () => choose(jev.suggestion))
+    notice.append('Did you mean ', link, '?')
+  } else if (jev.noMatch) {
+    notice.textContent = 'Jev judged that none of these results is what was searched for.'
+  }
+  notice.hidden = !notice.hasChildNodes()
 }
 
 function renderFacets(facets, focus) {

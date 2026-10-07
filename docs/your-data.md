@@ -40,6 +40,9 @@ Supabase puts it). The database needs a UTF-8 locale (the default for most insta
 `C` locale, letters such as "ä" are not treated as letters when names are split into words, and
 "Häagen-Dazs" becomes "h", "agen" and "dazs".
 
+To upgrade an install, run both files again, `schema.sql` first. It only creates what is missing,
+such as `search.words`, which `search.similar_words` and `search.refresh()` now need.
+
 ## 3. Keep it current
 
 `search.documents` is a materialized view, so it changes only when refreshed:
@@ -50,24 +53,27 @@ SELECT search.refresh();
 
 Run it after each import, or on a schedule (`pg_cron`, a cron job, your job runner). It refreshes
 concurrently, so searches keep working during the refresh. On the 440,302-product USDA demo
-(2025-12-18 release) it takes about 29 seconds ([measurements](measurements.md)). It must run as
-the role that owns the two materialized views, usually the one that ran `schema.sql`; the grants
+(2025-12-18 release) it took about 29 seconds before `search.words` existed, and refreshing
+`search.words` adds 2.2 to 2.8 seconds ([measurements](measurements.md)). It must run as
+the role that owns the three materialized views, usually the one that ran `schema.sql`; the grants
 below do not let another role refresh them. To refresh as another role, hand the views over with
-`ALTER MATERIALIZED VIEW search.documents OWNER TO <role>` and the same for `search.names`.
+`ALTER MATERIALIZED VIEW search.documents OWNER TO <role>` and the same for `search.names` and
+`search.words`.
 
 If your data changes constantly, replace the materialized view with a table of the same columns
 and indexes, filled by triggers on your source tables that compute `name_key`, `code` and the two
 vectors the way `schema.sql` does. `search.query`, `search.suggest` and `search.facets` read it
-the same way. Dropping the materialized view also drops `search.names`, so recreate that from
-`schema.sql`. `search.refresh()` then fails with `"documents" is not a materialized view`;
-run `REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;` instead. Typeahead lags until it runs.
+the same way. Dropping the materialized view also drops `search.names` and `search.words`, so
+recreate them from `schema.sql`. `search.refresh()` then fails with `"documents" is not a
+materialized view`; run `REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;` and the same for
+`search.words` instead. Typeahead and the Jev step's spelling question lag until they run.
 
 ## 4. Changing the view
 
 Materialized views depend on `search.source`. To change its columns:
 
 ```sql
-DROP MATERIALIZED VIEW search.documents CASCADE;  -- also drops search.names
+DROP MATERIALIZED VIEW search.documents CASCADE;  -- also drops search.names and search.words
 -- recreate search.source, then run sql/schema.sql again
 ```
 
@@ -84,7 +90,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA search TO app_user;
 ```
 
 The functions run with the caller's privileges, so the `SELECT` grant also lets that role read
-`search.documents` and `search.names` directly. `lim` is clamped to 1000, but `lim => NULL`
+`search.documents`, `search.names` and `search.words` directly. `lim` is clamped to 1000, but `lim => NULL`
 returns every match. Grant to the role your server connects as, never to a browser-facing role
 such as Supabase's `anon`.
 
@@ -96,6 +102,7 @@ SELECT * FROM search.query('milk', '{"category": "Dairy"}', 20);    -- filtered,
 SELECT * FROM search.query_distinct('milk');                        -- one row per group_key
 SELECT * FROM search.suggest('che');                                -- name, id, doc_count
 SELECT * FROM search.facets('milk');                                -- facet, value, doc_count
+SELECT * FROM search.similar_words('parmesean');                    -- for the Jev step only
 ```
 
 `search.suggest` returns at most 50 names; with `lim => NULL` it returns the default 8.
@@ -114,6 +121,8 @@ ORDER BY r.pos;
 ## 7. The Jev step
 
 It runs in your server, not in the database. `skills/postgres-search/rerank.ts` holds the HTTP
-call and the keep/sink step in one file of 126 lines, with no dependency beyond `fetch`
-(`src/jev.ts` and `src/rerank.ts` are the same code in two files). Port it to your language and
-keep the key on the server. [The Jev step](jev.md) lists the rules a port must keep.
+call, the keep or sink step and the spelling question in one file of 358 lines, with no
+dependency beyond `fetch` (`src/jev.ts`, `src/rerank.ts`, `src/spelling.ts` and `src/tokens.ts`
+are the same code in four files). Port it to your language and keep the key on the server. Change
+the spelling question's `note` to say what your search holds. [The Jev step](jev.md) lists the
+rules a port must keep.

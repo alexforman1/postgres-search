@@ -1,18 +1,64 @@
 # The Jev step
 
 [Jev](https://docs.typesafe.ai) is a hosted model from TypeSafe. It answers typed questions about
-a piece of state. This step uses its Noul question type, whose answer is a probability between 0
-(no) and 1 (yes). Get a key from https://console.typesafe.ai and set `TYPESAFE_API_KEY` where the
-server runs. Without a key, the demo and the eval skip the step and use the Postgres order.
+a piece of state and returns probabilities, not text. The Jev step asks it two questions on each
+search:
 
-The step lives in `src/rerank.ts`, with the HTTP call in `src/jev.ts`. It runs on the results page
-only, after `search.query_distinct`. `JEV_MODEL` sets the model (default `jev-latest`) and
-`JEV_THRESHOLD` the threshold (default 0.3).
+1. **Is each of the top 10 results what the user meant?** One Noul (yes or no) question per
+   result. Results Jev rejects move to the bottom of the 10.
+2. **Which spelling did the user mean?** One Choice question over the query as typed and close
+   respellings that products use. A respelling Jev picks becomes a "Did you mean" link.
 
-## The request
+When Jev rejects every top result and nothing better is spelled close by, the page also says that
+none of the results matches.
 
-One `POST https://api.typesafe.ai/v1/systemone` per search, with the top 10 results as candidates
-and one Noul question per candidate. For `crackers` with two candidates, the body is:
+Get a key from https://console.typesafe.ai and set `TYPESAFE_API_KEY` where the server runs.
+Without a key, the demo and the eval skip the step and use the Postgres order. The code is in
+`src/rerank.ts` (question 1), `src/spelling.ts` (question 2) and `src/jev.ts` (the HTTP call).
+`JEV_MODEL` sets the model (default `jev-latest`) and `JEV_THRESHOLD` the keep or sink threshold
+(default 0.3).
+
+## What it changes
+
+Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 1,588 queries.
+The design was frozen before the two test sets were made. The
+[README](../README.md#4-results) gives the method, the statistical tests and the figures, and
+[`results/report.md`](../results/report.md) has every number.
+
+| hit@1, median of five runs | hand-written (50) | synthetic test (500) | Wikipedia (473) |
+|----------------------------|------------------:|---------------------:|----------------:|
+| this SQL | 82% | 65% | 42% |
+| + keep or sink | 86% | 70% | 48% |
+| + "Did you mean", one click | 90% | 85% | 70% |
+| + both, one click | 94% | 85% | 71% |
+| Norvig-style corrector instead, one click | 82% | 86% | 64% |
+
+On the 973 test queries, keep or sink (59% against 54%) and "Did you mean" (78% against 54%) are
+both significant after Holm's correction, and "Did you mean" beats the dictionary corrector (78%
+against 75%, p ≤ 0.040). The corrector ties it on the synthetic one-edit set, which matches the
+corrector's own error model, and loses on real misspellings, most of all on those that are
+themselves words some product uses (84% against 31% on 32 such cases).
+
+## Cost and time
+
+TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output tokens are free
+([models](https://docs.typesafe.ai/models)). Five runs pooled, 7,940 queries:
+
+| call | sent on | ms, median | ms, p90 |
+|------|--------:|-----------:|--------:|
+| keep or sink, 10 results judged | 92% of searches | 159 | 203 |
+| spelling, median 8 options | 89% of searches | 155 | 199 |
+
+On the hand-written queries a search used 2,076 input tokens on average, \$0.087 per 1,000
+searches; across the six query sets it was \$0.087 to \$0.097 per 1,000. The two calls run at the
+same time, so the page waits for the slower one: the step adds 165 ms at the median and 213 ms at
+the 90th percentile to the Postgres query. These are round trips from one machine; measure from
+your own servers.
+
+## Question 1: keep or sink, never sort
+
+One `POST https://api.typesafe.ai/v1/systemone` with the top 10 results as candidates and one Noul
+question per candidate. For `crackers` with two candidates, the body is:
 
 ```json
 {
@@ -49,22 +95,22 @@ and one Noul question per candidate. For `crackers` with two candidates, the bod
 }
 ```
 
-The answer holds `answers.c0.noul` and `answers.c1.noul`.
+The answer holds `answers.c0.noul` and `answers.c1.noul`. Candidates at or above the threshold
+keep their order. Candidates below it move to the bottom of the 10, also in their original order.
+Results past the 10th are not touched. The step never sorts by score: a correct product scores
+near 1 whether it is the best match or a close variant, so sorting would reorder good results on
+noise. Jev can only move a candidate down within the top 10.
 
-## Keep or sink, never sort
+A Choice question over the results does not work here, because several results are usually right
+at once. Asked to choose among the top 10 for `oreo`, Jev gave 0.99 to one Oreo product and almost
+nothing to nine other Oreo products, so a rule that sinks low choices would sink real matches.
+For `crackers` it chose "none of these" at 0.52 over a list of crackers. One Noul per result asks
+about each result on its own, which is the question a product search needs.
 
-Candidates at or above the threshold keep their order. Candidates below it move to the bottom of
-the 10, also in their original order. Results past the 10th are not touched. The step never sorts
-by score: a correct product scores near 1 whether it is the best match or a close variant, so
-sorting would reorder good results on noise. The Postgres order stays in charge: Jev can only move
-a candidate down within the top 10.
-
-These are the cases it is meant for. All come from the word step on the USDA data (2025-12-18
-release), as the top 10 of `search.query_distinct(q, '{}', 10)` joined to `search.documents`:
+These are the cases the question is meant for, from the word step on the USDA data:
 
 - `pepper`: 7 of the top 10 are drinks from Dr. Pepper/Seven Up, Inc., matched through the owner
-  name. Position 1 is a product named only SODA. Sunkist, 7UP and Canada Dry are also there.
-  Pepper itself appears only as a flavor: salt and pepper nuts and a roasted red pepper hummus.
+  name. Position 1 is a product named only SODA.
 - `cream`: sour cream and onion or cheddar and sour cream potato chips hold positions 1, 3, 7, 9
   and 10.
 - `crackers`: position 1 is a product named CRACKERS, which is Barnum's Animals, filed under
@@ -72,34 +118,141 @@ release), as the top 10 of `search.query_distinct(q, '{}', 10)` joined to `searc
 - `apple`: position 2 is SKITTLES ORIGINAL (one flavor is green apple), and position 5 is a gummy
   bear mix that includes apple.
 
-What Jev does with these cases was not measured for this release, because no key was available.
-To measure it, put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
+## Question 2: did you mean
 
-```sh
-node --env-file=.env scripts/eval.ts
+`search.words` lists every word products use: how many products' names hold it, its English stem,
+and how many products the word step finds for it. `search.similar_words(q)` returns, for each query
+word, up to 8 candidates: every word one edit away (`search.edits1`: a letter added, removed or
+replaced, or two neighbors swapped), most found first, then trigram neighbors with similarity 0.3
+or more, closest first. It skips words under four letters, words with digits and stop words. A
+candidate must be found in more products than the typed word, must have a different stem, and must
+not just finish the typed word, which the prefix step finds. Counting what the search finds, not
+how often the word itself appears, keeps possessives such as `hellmanns` from looking misspelled:
+the search finds 85 HELLMANN'S products for it.
+
+`checkSpelling()` in `src/spelling.ts` turns those rows into options, the query as typed and then
+the query with one word changed, every word's closest candidate before any word's second, up to
+16, and tells Jev for each option how many edits separate it from what was typed and how many
+products the search finds for its words. For `parmesean`, the request is:
+
+```json
+{
+  "model": "jev-latest",
+  "state": {
+    "query": "parmesean",
+    "note": "A user typed `query` into the search box of a grocery and packaged food product search.",
+    "evidence": "Each option says how many edits separate it from what was typed, where an edit is one letter added, removed or replaced or two neighboring letters swapped, and how many of the catalog's products the search finds for the words it changes. A word the search finds in no product is not a word this catalog uses, so searching it shows nothing."
+  },
+  "questions": {
+    "meant": {
+      "type": "choice",
+      "instructions": "Which of these searches did the user mean to type? Pick the one that is spelled the way the user intended. The first option is exactly what they typed.",
+      "criteria": {
+        "s0": "\"parmesean\", exactly as typed. The search finds parmesean in 1 product.",
+        "s1": "\"parmesan\", 1 edit from what was typed. The search finds parmesan in 2,732 products.",
+        "s2": "\"parmesano\", 2 edits from what was typed. The search finds parmesano in 2 products.",
+        "s3": "\"parmela\", 3 edits from what was typed. The search finds parmela in 17 products.",
+        "s4": "\"parm\", 5 edits from what was typed. The search finds parm in 65 products.",
+        "s5": "\"parma\", 4 edits from what was typed. The search finds parma in 26 products."
+      }
+    }
+  }
+}
 ```
 
-With a key, the eval adds `jev hit@1` and `jev hit@3` columns and a count of calls that reranked,
-were skipped, or failed. Jev's hit@10 always equals the plain hit@10, because it only reorders the
-top 10. The 0.3 default was not calibrated on this data; rerun the eval with other `JEV_THRESHOLD`
-values to choose one. `jev-latest` is an alias that moves when TypeSafe ships a new release, so
-once a threshold is tuned, pin the versioned model it was tuned against with `JEV_MODEL`, as
-[TypeSafe's models page](https://docs.typesafe.ai/models) recommends.
+The answer's `probabilities` gives each option a share of 1. The likeliest respelling becomes the
+suggestion when Jev finds it at least twice as likely as the spelling typed and at least 0.3
+likely (`ratio` and `suggestAt` change both). Comparing it with the typed spelling rather than with
+a fixed bar keeps a suggestion when Jev splits the rest among several close words. The page shows
+it as a link and never searches it without a click. The `note` tells Jev what the catalog holds;
+the default says "a product search box", and the demo names groceries. Say what your search holds.
 
-## When the call is skipped
+This question needs only the query, so the server sends it while Postgres is still searching. It
+also runs when the search returns one result or none, where question 1 is skipped. A filter click
+repeats the search with the same words, so it does not ask the question again.
 
-The call is skipped when fewer than 2 results come back, or when all of the top 10 share one
+### How this design came about
+
+The first version offered only trigram neighbors, showed Jev the bare spellings, and suggested at
+0.6. On 300 synthetic misspellings it fixed 174 and lost to a Norvig-style dictionary corrector,
+which fixed 272. Two causes accounted for most of the gap: 40 intended words were never among the
+options, and 75 were offered but declined, because Jev could not tell a misspelling from a rare
+brand without knowing which spellings the catalog uses. The one-edit candidates, the counts, the
+edits and the twice-as-likely rule fix those; the rule was chosen with `scripts/spelling-rules.ts`
+on the development sets. The design was then frozen and tested on two sets made afterwards. The
+[README](../README.md#4-results) reports both stages.
+
+## No match
+
+`rerank` returns `noMatch` when Jev scores every top result below the threshold and none of them
+holds the typed words, in order and from the start of a word, in its name or other names. The
+check ignores accents and the spaces and punctuation between words, so "almond milk" is found in
+ALMONDMILK and "jalapeno" in JALAPEÑO. Jev judges products, so for a brand typed alone
+(`general mills`) or an unfinished word (`strawb`) it scores every product low; the typed-words
+check keeps the line off those pages. The demo shows the line only when there is no suggestion,
+and the results stay on the page.
+
+In the five runs the page said that nothing matches for 12 of the 15 household goods in
+`eval/absent.json`, and for 75 to 78 of the 1,573 answerable queries, 7 or 8 of them with a match
+in the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for 1,001
+of the 1,573. The flag changed between runs on 58 of the 225 queries where it was raised at least
+once.
+
+The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
+and `strawb`. Before the check, the line also appeared for `toothpaste` and `light bulbs`, whose
+results carry those words.
+
+## When a call is skipped
+
+Question 1 is skipped when fewer than 2 results come back, or when all of the top 10 share one
 group. The group is `group_key`, or the normalized name when `group_key` is null. Rows in one group
-are the same thing, such as pack sizes of one product, so their scores would differ only by
-noise. The demo sends rows from `search.query_distinct`, which already has one row per group, so
-on the demo only the first rule applies.
+are the same thing, such as pack sizes of one product, so their scores would differ only by noise.
+The demo sends rows from `search.query_distinct`, which already has one row per group, so on the
+demo only the first rule applies.
+
+Question 2 is skipped when no query word has a close spelling: every word is under four letters,
+has a digit, or matches nothing in `search.words`.
 
 ## Fail open
 
-Every failure keeps the Postgres order: a missing key, a network error, a non-2xx response, the
-1.5-second timeout, a threshold that is not a number, or an answer without a numeric score for
-every candidate. There is one request and no retry. `rerank` returns `{ results, sunk, reranked,
-ms, error }`, so the page can show whether Jev ran and how long it took.
+Every failure leaves the page as Postgres made it: a missing key, a network error, a non-2xx
+response, the 1.5-second timeout, a threshold that is not a number, an answer without a score for
+every candidate, or a spelling answer without probabilities. Each question is one request with no
+retry. `rerank` returns `{ results, sunk, reranked, noMatch, scores, ms, error, model, inputTokens }`
+and `checkSpelling` returns `{ suggestion, p, ran, ms, options, probabilities, error, model,
+inputTokens }`, so the page can show whether Jev ran and how long it took.
+
+## Limits
+
+- Answers move between identical runs: over five runs, the suggestion changed for 3% of the
+  queries that got one in any run, and the no-match flag for 26% of those where it was raised.
+- One word is respelled per option, so a query with two misspelled words is not fixed.
+- A word whose last letter was dropped rarely reaches the options, because a candidate that only
+  finishes the typed word is left to the prefix step; and a one-edit deletion can offer a shorter
+  word for an unfinished one (`strawb` to "straw").
+- On rare brand names Jev tends to choose a common word (`foyster` to "oyster" for foster,
+  `djraft` to "kraft" for draft), where a dictionary corrector picks the closest known word.
+- The no-match line needs question 1, so a page with a single wrong result shows no line.
+- The keep-or-sink threshold was not tuned, and the suggestion rule was chosen on the development
+  sets only. `jev-latest` is an alias that moves
+  when TypeSafe ships a new release, so pin the versioned model your thresholds were checked
+  against with `JEV_MODEL`, as [TypeSafe's models page](https://docs.typesafe.ai/models)
+  recommends.
+
+## Measure it yourself
+
+Put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
+
+```sh
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts      # the 50 eval queries, under a cent
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 1,588 queries, about $0.15
+node scripts/report.ts                                          # tables and figures from results/
+```
+
+The eval adds the Jev columns, the cost and time lines, the suggestions it made, and the spelling
+and absent tables. The comparison writes one file per run to `results/`, and the report builds
+`results/report.md` and the figures from every file there.
 
 To use the step in another server language, port `skills/postgres-search/rerank.ts`, which holds
-both files in one. Keep the key on the server.
+all of `src/jev.ts`, `src/rerank.ts`, `src/spelling.ts` and `src/tokens.ts` in one file. Keep the
+key on the server.

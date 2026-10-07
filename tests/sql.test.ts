@@ -238,6 +238,99 @@ describe('search.suggest', () => {
   })
 })
 
+describe('search.words', () => {
+  test('counts each word once per product, and the products the word step finds for it', async () => {
+    const { rows } = await pool.query(
+      "SELECT word, doc_count, stem, match_count FROM search.words WHERE word IN ('cheerios', 'cheerioz', 'hershey', 'mills') ORDER BY word",
+    )
+    assert.deepEqual(rows, [
+      { word: 'cheerios', doc_count: 3, stem: 'cheerio', match_count: 3 },
+      { word: 'cheerioz', doc_count: 1, stem: 'cheerioz', match_count: 1 },
+      { word: 'hershey', doc_count: 1, stem: 'hershey', match_count: 1 },
+      { word: 'mills', doc_count: 3, stem: 'mill', match_count: 3 },
+    ])
+  })
+})
+
+interface Similar {
+  pos: number
+  word: string
+  word_matches: number
+  alternative: string
+  alternative_matches: number
+}
+
+async function similarWords(q: string, perWord?: number) {
+  const { rows } = await pool.query<Similar>(
+    perWord === undefined
+      ? 'SELECT pos, word, word_matches, alternative, alternative_matches FROM search.similar_words($1)'
+      : 'SELECT pos, word, word_matches, alternative, alternative_matches FROM search.similar_words($1, $2)',
+    perWord === undefined ? [q] : [q, perWord],
+  )
+  return rows
+}
+
+describe('search.similar_words', () => {
+  test('lists words that products use and that are spelled close to a query word', async () => {
+    assert.deepEqual(await similarWords('cheerois'), [
+      { pos: 1, word: 'cheerois', word_matches: 0, alternative: 'cheerios', alternative_matches: 3 },
+      { pos: 1, word: 'cheerois', word_matches: 0, alternative: 'cheerioz', alternative_matches: 1 },
+    ])
+  })
+
+  test('finds words one edit away that share too few trigrams, such as a swap', async () => {
+    assert.equal((await similarWords('mlik'))[0]?.alternative, 'milk')
+  })
+
+  test('counts what the search finds for the typed word, so a possessive is not a misspelling', async () => {
+    assert.ok(!(await similarWords('hersheys')).some(r => r.alternative === 'hershey'))
+    assert.equal(
+      (await pool.query("SELECT word_matches FROM search.similar_words('cheerioz')")).rows[0].word_matches,
+      1,
+    )
+  })
+
+  test('never lists the typed word, and counts the products that use it', async () => {
+    assert.deepEqual(await similarWords('cheerioz'), [
+      { pos: 1, word: 'cheerioz', word_matches: 1, alternative: 'cheerios', alternative_matches: 3 },
+    ])
+  })
+
+  test('gives each word of a longer query its own alternatives', async () => {
+    const rows = await similarWords('whole milc')
+    assert.deepEqual([...new Set(rows.map(r => r.pos))], [2])
+    assert.equal(rows[0].alternative, 'milk')
+  })
+
+  test('skips words under four letters and words with digits', async () => {
+    assert.deepEqual(await similarWords('oat'), [])
+    assert.deepEqual(await similarWords('16001'), [])
+    assert.deepEqual([...new Set((await similarWords('milc 16001 oat')).map(r => r.word))], ['milc'])
+  })
+
+  test('per_word keeps the closest alternatives, words one edit away first', async () => {
+    assert.deepEqual((await similarWords('cheerois', 1)).map(r => r.alternative), ['cheerios'])
+  })
+
+  test('leaves out stop words, which search.query ignores', async () => {
+    assert.deepEqual(await similarWords('with'), [])
+  })
+
+  test('offers only words the search finds in more products than the typed word', async () => {
+    assert.deepEqual(await similarWords('cheerios'), [])
+    assert.deepEqual((await similarWords('cheerioz')).map(r => r.alternative), ['cheerios'])
+  })
+
+  test('leaves out words that only finish the typed word, which the prefix step finds', async () => {
+    assert.ok(!(await similarWords('cheeri')).some(r => r.alternative.startsWith('cheeri')))
+  })
+
+  test('leaves out words that share too few letters', async () => {
+    assert.ok(!(await similarWords('cheerois')).some(r => r.alternative === 'cereal'))
+    assert.deepEqual(await similarWords('zzzz'), [])
+  })
+})
+
 describe('search.facets', () => {
   test('counts come from the rows search.query matched', async () => {
     const { rows } = await pool.query("SELECT facet, value, doc_count::int FROM search.facets('milk')")
@@ -281,14 +374,16 @@ describe('search.facets', () => {
 })
 
 describe('search.refresh', () => {
-  test('makes new rows searchable in both views', async () => {
+  test('makes new rows searchable in every view', async () => {
     await pool.query(
       "INSERT INTO fixture_items VALUES (15, 'Granola Clusters', 'Nature Valley', '016000123456', 'Cereal', 25)",
     )
     assert.deepEqual(await query('granola'), [])
+    assert.deepEqual(await similarWords('granloa'), [])
     await pool.query('SELECT search.refresh()')
     assert.deepEqual(ids(await query('granola')), ['15'])
     assert.ok((await suggest('gr')).some(s => s.name === 'Granola Clusters'))
+    assert.ok((await similarWords('granloa')).some(r => r.alternative === 'granola'))
   })
 
   test('facets skip JSON null values', async () => {

@@ -1,6 +1,6 @@
 ---
 name: postgres-search
-description: Add Algolia-style search (word, prefix, and typo matching, typeahead, facets) to a Postgres database with plain SQL, plus an optional Jev step that sinks wrong results. Use when a project wants to replace Algolia or add product or catalog search on Postgres.
+description: Add Algolia-style search (word, prefix, and typo matching, typeahead, facets) to a Postgres database with plain SQL, plus an optional Jev step that sinks wrong results and suggests spellings. Use when a project wants to replace Algolia or add product or catalog search on Postgres.
 ---
 
 # postgres-search
@@ -38,6 +38,8 @@ In one migration, in this order:
 3. the contents of `sql/functions.sql`
 
 Use the project's migration tool if it has one; otherwise give the user a single `.sql` file.
+To upgrade an existing install, apply `sql/schema.sql` again before `sql/functions.sql`: it
+creates only what is missing, such as `search.words`, which the newer functions need.
 `CREATE EXTENSION pg_trgm` needs a role allowed to create extensions; on managed hosts, check the
 provider's extension settings.
 
@@ -51,8 +53,8 @@ GRANT SELECT ON ALL TABLES IN SCHEMA search TO <role>;
 ```
 
 These functions run with the caller's privileges, so the `SELECT` grant also lets that role read
-`search.documents` and `search.names` directly, and anyone who can call `search.query` can ask for
-every match with `lim => NULL`. Grant to the role your server connects as, never to a
+`search.documents`, `search.names` and `search.words` directly, and anyone who can call
+`search.query` can ask for every match with `lim => NULL`. Grant to the role your server connects as, never to a
 browser-facing role such as `anon`.
 
 ### 3. Keep it current
@@ -60,14 +62,14 @@ browser-facing role such as `anon`.
 `search.documents` is a materialized view. Add `SELECT search.refresh();` after the project's
 import jobs, or on a schedule. Ask the user which. For data that changes constantly, suggest a
 trigger-maintained table instead (see https://github.com/alexforman1/postgres-search/blob/main/docs/your-data.md).
-With a table in place of the view, refresh only the names list with
-`REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;` since `search.refresh()` expects both to
-be materialized views.
+With a table in place of the view, refresh only the names and words lists with
+`REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;` and the same for `search.words`, since
+`search.refresh()` expects all three to be materialized views.
 
 `search.refresh()` must run as the role that owns the materialized views, usually the role that
 ran the migration; the grants above do not include that. Run the refresh as that role, or hand the
 views over with `ALTER MATERIALIZED VIEW search.documents OWNER TO <role>;` and the same for
-`search.names`.
+`search.names` and `search.words`.
 
 ### 4. Call it
 
@@ -78,6 +80,7 @@ JOIN search.documents d ON d.id = r.id ORDER BY r.pos;      -- results
 -- (sizes, colors); it returns one row per group_key, or per name when group_key is null
 SELECT * FROM search.suggest($1);                            -- typeahead: name, id, doc_count
 SELECT * FROM search.facets($1, $2::jsonb);                  -- facet, value, doc_count
+SELECT * FROM search.similar_words($1);                      -- close spellings, for the Jev step
 ```
 
 Never build facet counts with a separate `LIKE`/`ILIKE` query; always use `search.facets`.
@@ -86,12 +89,26 @@ Never call Jev from typeahead.
 ### 5. Optional: the Jev step
 
 Only if the user has a TypeSafe key (`TYPESAFE_API_KEY`). Port `rerank.ts` in this folder to the
-project's server language. Keep these rules:
-- one request for the top 10, one Noul question per candidate;
-- move candidates below the threshold (default 0.3) to the bottom of the 10; never sort by score;
-- skip the call when fewer than 2 results or all share one group;
-- on any error, timeout (1.5 s), or missing answer, return the original order;
+project's server language. It asks two questions per search, each in one request. Keep these
+rules:
+- keep or sink: one Noul question per candidate for the top 10; move candidates below the
+  threshold (default 0.3) to the bottom of the 10; never sort by score; skip the call when fewer
+  than 2 results or all share one group;
+- spelling: one Choice question over the query as typed and the respellings built from
+  `search.similar_words`, each option stating its edits from what was typed and how many products
+  the search finds for its words; send it while the search runs, since it needs only the query;
+  offer the likeliest respelling as a "Did you mean" link when it is at least twice as likely as
+  the spelling typed and at least 0.3 likely, and never search it without a click;
+- set the spelling question's `note` to say what the project's search holds;
+- say that nothing matches only when Jev sank every top result, none carries the typed words, and
+  there is no suggestion;
+- on any error, timeout (1.5 s), or missing answer, keep the original page;
 - the key never reaches the browser.
+
+On the demo data the step costs about 9 cents per 1,000 searches and adds 165 ms at the median.
+With the edit counts and product counts in its options, the spelling question tied a Norvig-style
+dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
+misspellings that are themselves words in the index. Without that evidence it lost; keep it. Measure it on the project's own queries before relying on the thresholds.
 
 ### 6. Verify
 

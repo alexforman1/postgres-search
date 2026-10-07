@@ -36,6 +36,66 @@ test('moves candidates below the threshold to the bottom and keeps the rest in o
   assert.equal(out.reranked, true)
 })
 
+test('returns each candidate score in candidate order', async () => {
+  const out = await rerank('oreo', four, { ...answering([0.9, 0.1, 0.8, 0.2]), threshold: 0.3 })
+  assert.deepEqual(out.scores, [0.9, 0.1, 0.8, 0.2])
+  assert.deepEqual((await rerank('oreo', four.slice(0, 1), answering([]))).scores, [])
+})
+
+test('reports the model that answered and the input tokens it billed', async () => {
+  const ask = async (): Promise<JevResponse> => ({
+    model: 'jev-1.13.0',
+    answers: { c0: { type: 'noul', noul: 0.9 }, c1: { type: 'noul', noul: 0.1 } },
+    usage: { input_tokens: 512, output_tokens: 8 },
+  })
+  const out = await rerank('oreo', four.slice(0, 2), { ask })
+  assert.equal(out.model, 'jev-1.13.0')
+  assert.equal(out.inputTokens, 512)
+})
+
+test('says nothing matches when Jev sinks every candidate', async () => {
+  const none = await rerank('shampoo', four, { ...answering([0.1, 0.05, 0.2, 0.01]), threshold: 0.3 })
+  assert.equal(none.noMatch, true)
+  const some = await rerank('oreo', four, { ...answering([0.9, 0.05, 0.2, 0.01]), threshold: 0.3 })
+  assert.equal(some.noMatch, false)
+})
+
+test('never says nothing matches when a candidate carries the typed words', async () => {
+  const brand = [
+    { ...candidate('a', 'Honey Nut Cheerios'), other_names: 'General Mills' },
+    candidate('b', 'Golden Grahams'),
+  ]
+  const byMaker = await rerank('general mills', brand, { ...answering([0.1, 0.1]), threshold: 0.3 })
+  assert.equal(byMaker.noMatch, false)
+  const unfinished = await rerank('strawb', [candidate('a', 'Strawberry Jam'), candidate('b', 'Jam')], {
+    ...answering([0.1, 0.1]),
+    threshold: 0.3,
+  })
+  assert.equal(unfinished.noMatch, false)
+})
+
+test('the typed words may differ in accents and spacing from the candidate', async () => {
+  const pepper = await rerank('jalapeno', [candidate('a', 'JALAPEÑO PEPPERS'), candidate('b', 'Salsa')], {
+    ...answering([0.1, 0.1]),
+    threshold: 0.3,
+  })
+  assert.equal(pepper.noMatch, false)
+  const joined = await rerank('almond milk', [candidate('a', 'ALMONDMILK, UNSWEETENED'), candidate('b', 'Milk')], {
+    ...answering([0.1, 0.1]),
+    threshold: 0.3,
+  })
+  assert.equal(joined.noMatch, false)
+})
+
+test('never says nothing matches when Jev did not answer', async () => {
+  const skipped = await rerank('oreo', four.slice(0, 1), answering([]))
+  assert.equal(skipped.noMatch, false)
+  const ask = async (): Promise<JevResponse> => {
+    throw new Error('connection refused')
+  }
+  assert.equal((await rerank('oreo', four, { ask })).noMatch, false)
+})
+
 test('keeps the original order among candidates above the threshold', async () => {
   const { ask } = answering([0.5, 0.9, 0.1, 0.8])
   const out = await rerank('oreo', four, { ask, threshold: 0.3 })

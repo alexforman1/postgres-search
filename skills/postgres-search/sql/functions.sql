@@ -183,6 +183,80 @@ AS $$
   ORDER BY c.facet, c.doc_count DESC, c.value
 $$;
 
+-- Every string one edit from w: a letter deleted, two neighbors swapped, a letter changed, or one
+-- added (Damerau, 1964). About 54 times the length of w, so a lookup costs that many index probes.
+CREATE OR REPLACE FUNCTION search.edits1(w text)
+RETURNS SETOF text
+LANGUAGE sql IMMUTABLE PARALLEL SAFE
+AS $$
+  SELECT DISTINCT e FROM (
+    SELECT left(w, i) || substr(w, i + 2) FROM generate_series(0, length(w) - 1) AS i
+    UNION ALL
+    SELECT left(w, i) || substr(w, i + 2, 1) || substr(w, i + 1, 1) || substr(w, i + 3)
+    FROM generate_series(0, length(w) - 2) AS i
+    UNION ALL
+    SELECT left(w, i) || c || substr(w, i + 2)
+    FROM generate_series(0, length(w) - 1) AS i, unnest(string_to_array('abcdefghijklmnopqrstuvwxyz', NULL)) AS c
+    UNION ALL
+    SELECT left(w, i) || c || substr(w, i + 1)
+    FROM generate_series(0, length(w)) AS i, unnest(string_to_array('abcdefghijklmnopqrstuvwxyz', NULL)) AS c
+  ) x(e)
+  WHERE e <> w
+$$;
+
+-- Words that products use and that are spelled close to each query word, for the Jev step's
+-- spelling question; this only finds them. Words one edit away come first, most found first, then
+-- words with trigram similarity of 0.3 or more, closest first. Counts are what the word step finds,
+-- so "hersheys" counts the Hershey products and is not offered "hershey". An alternative is offered
+-- only if the search finds it in more products than the typed word, if its stem differs, and if it
+-- does not just finish the typed word, which the prefix step already finds. Words under four
+-- letters, words with digits and stop words get none.
+CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
+RETURNS TABLE (pos int, word text, word_matches int, alternative text, alternative_matches int)
+LANGUAGE sql STABLE
+SET search_path = search, public, extensions
+SET pg_trgm.similarity_threshold = 0.3
+AS $$
+  WITH typed AS (
+    SELECT t.pos::int AS pos, t.word, coalesce((ts_lexize('english_stem', t.word))[1], t.word) AS stem
+    FROM unnest((search.tokens(left(q, 256)))[1:32]) WITH ORDINALITY AS t(word, pos)
+    WHERE length(t.word) >= 4 AND t.word !~ '[0-9]' AND ts_lexize('english_stem', t.word) IS DISTINCT FROM '{}'
+  ), counted AS (
+    SELECT ty.*, coalesce((SELECT max(s.match_count) FROM search.words s WHERE s.stem = ty.stem), 0) AS matches,
+           ARRAY(SELECT search.edits1(ty.word)) AS edits
+    FROM typed ty
+  ), offered AS (
+    SELECT c.pos, c.word, c.matches, x.alternative, x.alternative_matches,
+           row_number() OVER (PARTITION BY c.pos ORDER BY x.kind, x.sim DESC, x.alternative_matches DESC, x.alternative) AS n
+    FROM counted c
+    CROSS JOIN LATERAL (
+      SELECT DISTINCT ON (y.alternative) y.*
+      FROM (
+        SELECT s.word AS alternative, s.match_count AS alternative_matches, 1 AS kind, 0::real AS sim
+        FROM search.words s
+        -- The edits are built once per word, and = ANY of them probes the index.
+        WHERE s.word = ANY (c.edits)
+          AND s.stem <> c.stem AND s.match_count > c.matches AND s.word NOT LIKE c.word || '%'
+        UNION ALL
+        SELECT t.word, t.match_count, 2, t.sim
+        FROM (
+          SELECT s.word, s.match_count, similarity(s.word, c.word) AS sim
+          FROM search.words s
+          WHERE s.word % c.word
+            AND s.stem <> c.stem AND s.match_count > c.matches AND s.word NOT LIKE c.word || '%'
+          ORDER BY sim DESC, s.match_count DESC, s.word
+          LIMIT least(greatest(coalesce(per_word, 8), 1), 50)
+        ) t
+      ) y
+      ORDER BY y.alternative, y.kind
+    ) x
+  )
+  SELECT o.pos, o.word, o.matches, o.alternative, o.alternative_matches
+  FROM offered o
+  WHERE o.n <= least(greatest(coalesce(per_word, 8), 1), 50)
+  ORDER BY o.pos, o.n
+$$;
+
 CREATE OR REPLACE FUNCTION search.refresh()
 RETURNS void
 LANGUAGE plpgsql
@@ -191,5 +265,6 @@ AS $$
 BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY search.documents;
   REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY search.words;
 END
 $$;

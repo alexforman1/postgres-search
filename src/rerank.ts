@@ -1,4 +1,5 @@
 import { askJev, type JevRequest, type JevResponse } from './jev.ts'
+import { carries } from './tokens.ts'
 
 export interface Candidate {
   id: string
@@ -13,8 +14,15 @@ export interface RerankResult<T> {
   results: T[]
   sunk: T[]
   reranked: boolean
+  // Jev scored every candidate below the threshold and none carries the typed words. The results
+  // stay; the page can say that none of them matches.
+  noMatch: boolean
+  // Jev's score for each of the top candidates, in their original order; empty when it did not run.
+  scores: number[]
   ms: number
   error?: string
+  model?: string
+  inputTokens?: number
 }
 
 export interface RerankOptions {
@@ -36,7 +44,15 @@ export async function rerank<T extends Candidate>(
   const ask = options.ask ?? ((request: JevRequest) => askJev(request))
   const head = results.slice(0, top)
   const tail = results.slice(top)
-  const unchanged = (ms: number, error?: string): RerankResult<T> => ({ results, sunk: [], reranked: false, ms, error })
+  const unchanged = (ms: number, error?: string): RerankResult<T> => ({
+    results,
+    sunk: [],
+    reranked: false,
+    noMatch: false,
+    scores: [],
+    ms,
+    error,
+  })
 
   // Every comparison with NaN is false, which would drop every candidate from both lists.
   if (!Number.isFinite(threshold)) return unchanged(0, 'threshold is not a number')
@@ -48,15 +64,30 @@ export async function rerank<T extends Candidate>(
 
   const started = Date.now()
   try {
-    const response = await ask(buildRequest(query, head))
+    const response = await ask(buildRerankRequest(query, head))
     const scores = head.map((_, i) => response.answers[`c${i}`]?.noul)
     if (scores.some(s => typeof s !== 'number')) return unchanged(Date.now() - started, 'incomplete answer')
     const keep = head.filter((_, i) => (scores[i] as number) >= threshold)
     const sunk = head.filter((_, i) => (scores[i] as number) < threshold)
-    return { results: [...keep, ...sunk, ...tail], sunk, reranked: true, ms: Date.now() - started }
+    return {
+      results: [...keep, ...sunk, ...tail],
+      sunk,
+      reranked: true,
+      noMatch: keep.length === 0 && !head.some(c => carriesQuery(c, query)),
+      scores: scores as number[],
+      ms: Date.now() - started,
+      model: response.model,
+      inputTokens: response.usage?.input_tokens,
+    }
   } catch (err) {
     return unchanged(Date.now() - started, err instanceof Error ? err.message : String(err))
   }
+}
+
+// Jev judges products, so it scores low every product of a brand typed alone ("general mills") and
+// of an unfinished word ("strawb"); results that carry the typed words still match what was typed.
+function carriesQuery(c: Candidate, query: string): boolean {
+  return carries(c.name, query) || carries(c.other_names ?? '', query)
 }
 
 function thresholdFromEnv(): number {
@@ -64,7 +95,7 @@ function thresholdFromEnv(): number {
   return raw === undefined || raw.trim() === '' ? 0.3 : Number(raw)
 }
 
-function buildRequest(query: string, candidates: Candidate[]): JevRequest {
+function buildRerankRequest(query: string, candidates: Candidate[]): JevRequest {
   const questions: JevRequest['questions'] = {}
   candidates.forEach((_, i) => {
     questions[`c${i}`] = {

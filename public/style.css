@@ -37,3 +37,5 @@ button { min-height: 44px; padding: 0 1rem; font: inherit; cursor: pointer; }
 .name { font-weight: 600; overflow-wrap: anywhere; }
 .other, .meta, .sunk { font-size: 0.9rem; }
 .sunk { font-style: italic; }
+#notice { font-weight: 600; }
+.link { min-height: 24px; padding: 0; border: 0; background: none; color: LinkText; text-decoration: underline; font-weight: 600; }

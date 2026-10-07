@@ -1,0 +1,2373 @@
+{
+ "source": "https://en.wikipedia.org/w/index.php?title=Wikipedia:Lists_of_common_misspellings/For_machines&oldid=1199637275",
+ "revision": 1199637275,
+ "revisionDate": "2024-01-27T15:31:36Z",
+ "license": "CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/; adapted: filtered to words used in the USDA catalog",
+ "cases": [
+  {
+   "q": "abbout",
+   "kind": "typo",
+   "expect": "about"
+  },
+  {
+   "q": "abotu",
+   "kind": "typo",
+   "expect": "about"
+  },
+  {
+   "q": "accesories",
+   "kind": "typo",
+   "expect": "accessories"
+  },
+  {
+   "q": "absolutly",
+   "kind": "typo",
+   "expect": "absolutely"
+  },
+  {
+   "q": "adavanced",
+   "kind": "typo",
+   "expect": "advanced"
+  },
+  {
+   "q": "adminstration",
+   "kind": "typo",
+   "expect": "administration"
+  },
+  {
+   "q": "agian",
+   "kind": "typo",
+   "expect": "again"
+  },
+  {
+   "q": "agin",
+   "kind": "typo",
+   "expect": "again"
+  },
+  {
+   "q": "agricultue",
+   "kind": "typo",
+   "expect": "agriculture"
+  },
+  {
+   "q": "agriculure",
+   "kind": "typo",
+   "expect": "agriculture"
+  },
+  {
+   "q": "agricuture",
+   "kind": "typo",
+   "expect": "agriculture"
+  },
+  {
+   "q": "ahev",
+   "kind": "typo",
+   "expect": "have"
+  },
+  {
+   "q": "ahve",
+   "kind": "typo",
+   "expect": "have"
+  },
+  {
+   "q": "aisian",
+   "kind": "typo",
+   "expect": "asian"
+  },
+  {
+   "q": "alchoholic",
+   "kind": "typo",
+   "expect": "alcoholic"
+  },
+  {
+   "q": "alcholic",
+   "kind": "typo",
+   "expect": "alcoholic"
+  },
+  {
+   "q": "alcoholical",
+   "kind": "typo",
+   "expect": "alcoholic"
+  },
+  {
+   "q": "alwasy",
+   "kind": "typo",
+   "expect": "always"
+  },
+  {
+   "q": "alwyas",
+   "kind": "typo",
+   "expect": "always"
+  },
+  {
+   "q": "amercia",
+   "kind": "typo",
+   "expect": "america"
+  },
+  {
+   "q": "amke",
+   "kind": "typo",
+   "expect": "make"
+  },
+  {
+   "q": "anohter",
+   "kind": "typo",
+   "expect": "another"
+  },
+  {
+   "q": "appart",
+   "kind": "typo",
+   "expect": "apart"
+  },
+  {
+   "q": "aquisition",
+   "kind": "typo",
+   "expect": "acquisition"
+  },
+  {
+   "q": "artifical",
+   "kind": "typo",
+   "expect": "artificial"
+  },
+  {
+   "q": "asociated",
+   "kind": "typo",
+   "expect": "associated"
+  },
+  {
+   "q": "assocation",
+   "kind": "typo",
+   "expect": "association"
+  },
+  {
+   "q": "assoicated",
+   "kind": "typo",
+   "expect": "associated"
+  },
+  {
+   "q": "assoicates",
+   "kind": "typo",
+   "expect": "associates"
+  },
+  {
+   "q": "austrailia",
+   "kind": "typo",
+   "expect": "australia"
+  },
+  {
+   "q": "austrailian",
+   "kind": "typo",
+   "expect": "australian"
+  },
+  {
+   "q": "avalance",
+   "kind": "typo",
+   "expect": "avalanche"
+  },
+  {
+   "q": "bakc",
+   "kind": "typo",
+   "expect": "back"
+  },
+  {
+   "q": "banannas",
+   "kind": "typo",
+   "expect": "bananas"
+  },
+  {
+   "q": "bcak",
+   "kind": "typo",
+   "expect": "back"
+  },
+  {
+   "q": "beatiful",
+   "kind": "typo",
+   "expect": "beautiful"
+  },
+  {
+   "q": "beautyfull",
+   "kind": "typo",
+   "expect": "beautiful"
+  },
+  {
+   "q": "beleive",
+   "kind": "typo",
+   "expect": "believe"
+  },
+  {
+   "q": "beligum",
+   "kind": "typo",
+   "expect": "belgium"
+  },
+  {
+   "q": "belive",
+   "kind": "typo",
+   "expect": "believe"
+  },
+  {
+   "q": "beteen",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "betwen",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "beween",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "bewteen",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "brasillian",
+   "kind": "typo",
+   "expect": "brazilian"
+  },
+  {
+   "q": "brittish",
+   "kind": "typo",
+   "expect": "british"
+  },
+  {
+   "q": "buddah",
+   "kind": "typo",
+   "expect": "buddha"
+  },
+  {
+   "q": "buisness",
+   "kind": "typo",
+   "expect": "business"
+  },
+  {
+   "q": "busines",
+   "kind": "typo",
+   "expect": "business"
+  },
+  {
+   "q": "busness",
+   "kind": "typo",
+   "expect": "business"
+  },
+  {
+   "q": "bussiness",
+   "kind": "typo",
+   "expect": "business"
+  },
+  {
+   "q": "cahracters",
+   "kind": "typo",
+   "expect": "characters"
+  },
+  {
+   "q": "cannister",
+   "kind": "typo",
+   "expect": "canister"
+  },
+  {
+   "q": "caost",
+   "kind": "typo",
+   "expect": "coast"
+  },
+  {
+   "q": "captial",
+   "kind": "typo",
+   "expect": "capital"
+  },
+  {
+   "q": "carribbean",
+   "kind": "typo",
+   "expect": "caribbean"
+  },
+  {
+   "q": "carribean",
+   "kind": "typo",
+   "expect": "caribbean"
+  },
+  {
+   "q": "ceasar",
+   "kind": "typo",
+   "expect": "caesar"
+  },
+  {
+   "q": "celcius",
+   "kind": "typo",
+   "expect": "celsius"
+  },
+  {
+   "q": "centruy",
+   "kind": "typo",
+   "expect": "century"
+  },
+  {
+   "q": "centuty",
+   "kind": "typo",
+   "expect": "century"
+  },
+  {
+   "q": "challange",
+   "kind": "typo",
+   "expect": "challenge"
+  },
+  {
+   "q": "challege",
+   "kind": "typo",
+   "expect": "challenge"
+  },
+  {
+   "q": "champange",
+   "kind": "typo",
+   "expect": "champagne"
+  },
+  {
+   "q": "charachters",
+   "kind": "typo",
+   "expect": "characters"
+  },
+  {
+   "q": "charactors",
+   "kind": "typo",
+   "expect": "characters"
+  },
+  {
+   "q": "cheif",
+   "kind": "typo",
+   "expect": "chief"
+  },
+  {
+   "q": "chemcial",
+   "kind": "typo",
+   "expect": "chemical"
+  },
+  {
+   "q": "choosen",
+   "kind": "typo",
+   "expect": "chosen"
+  },
+  {
+   "q": "chuch",
+   "kind": "typo",
+   "expect": "church"
+  },
+  {
+   "q": "cincinatti",
+   "kind": "typo",
+   "expect": "cincinnati"
+  },
+  {
+   "q": "cincinnatti",
+   "kind": "typo",
+   "expect": "cincinnati"
+  },
+  {
+   "q": "claer",
+   "kind": "typo",
+   "expect": "clear"
+  },
+  {
+   "q": "claerly",
+   "kind": "typo",
+   "expect": "clearly"
+  },
+  {
+   "q": "clas",
+   "kind": "typo",
+   "expect": "class"
+  },
+  {
+   "q": "clasic",
+   "kind": "typo",
+   "expect": "classic"
+  },
+  {
+   "q": "cmoputer",
+   "kind": "typo",
+   "expect": "computer"
+  },
+  {
+   "q": "coctail",
+   "kind": "typo",
+   "expect": "cocktail"
+  },
+  {
+   "q": "colelctive",
+   "kind": "typo",
+   "expect": "collective"
+  },
+  {
+   "q": "collaberative",
+   "kind": "typo",
+   "expect": "collaborative"
+  },
+  {
+   "q": "collony",
+   "kind": "typo",
+   "expect": "colony"
+  },
+  {
+   "q": "collosal",
+   "kind": "typo",
+   "expect": "colossal"
+  },
+  {
+   "q": "comany",
+   "kind": "typo",
+   "expect": "company"
+  },
+  {
+   "q": "comapany",
+   "kind": "typo",
+   "expect": "company"
+  },
+  {
+   "q": "commerical",
+   "kind": "typo",
+   "expect": "commercial"
+  },
+  {
+   "q": "commericial",
+   "kind": "typo",
+   "expect": "commercial"
+  },
+  {
+   "q": "commonweath",
+   "kind": "typo",
+   "expect": "commonwealth"
+  },
+  {
+   "q": "commuications",
+   "kind": "typo",
+   "expect": "communications"
+  },
+  {
+   "q": "commuinications",
+   "kind": "typo",
+   "expect": "communications"
+  },
+  {
+   "q": "completelyl",
+   "kind": "typo",
+   "expect": "completely"
+  },
+  {
+   "q": "concious",
+   "kind": "typo",
+   "expect": "conscious"
+  },
+  {
+   "q": "conection",
+   "kind": "typo",
+   "expect": "connection"
+  },
+  {
+   "q": "consentrate",
+   "kind": "typo",
+   "expect": "concentrate"
+  },
+  {
+   "q": "consentrates",
+   "kind": "typo",
+   "expect": "concentrates"
+  },
+  {
+   "q": "consept",
+   "kind": "typo",
+   "expect": "concept"
+  },
+  {
+   "q": "consious",
+   "kind": "typo",
+   "expect": "conscious"
+  },
+  {
+   "q": "consolodated",
+   "kind": "typo",
+   "expect": "consolidated"
+  },
+  {
+   "q": "continential",
+   "kind": "typo",
+   "expect": "continental"
+  },
+  {
+   "q": "controll",
+   "kind": "typo",
+   "expect": "control"
+  },
+  {
+   "q": "coputer",
+   "kind": "typo",
+   "expect": "computer"
+  },
+  {
+   "q": "coridal",
+   "kind": "typo",
+   "expect": "cordial"
+  },
+  {
+   "q": "corparate",
+   "kind": "typo",
+   "expect": "corporate"
+  },
+  {
+   "q": "crowm",
+   "kind": "typo",
+   "expect": "crown"
+  },
+  {
+   "q": "curch",
+   "kind": "typo",
+   "expect": "church"
+  },
+  {
+   "q": "dacquiri",
+   "kind": "typo",
+   "expect": "daiquiri"
+  },
+  {
+   "q": "daed",
+   "kind": "typo",
+   "expect": "dead"
+  },
+  {
+   "q": "delevopment",
+   "kind": "typo",
+   "expect": "development"
+  },
+  {
+   "q": "developement",
+   "kind": "typo",
+   "expect": "development"
+  },
+  {
+   "q": "develpment",
+   "kind": "typo",
+   "expect": "development"
+  },
+  {
+   "q": "devolopement",
+   "kind": "typo",
+   "expect": "development"
+  },
+  {
+   "q": "disctinctive",
+   "kind": "typo",
+   "expect": "distinctive"
+  },
+  {
+   "q": "dispicable",
+   "kind": "typo",
+   "expect": "despicable"
+  },
+  {
+   "q": "distrubution",
+   "kind": "typo",
+   "expect": "distribution"
+  },
+  {
+   "q": "divison",
+   "kind": "typo",
+   "expect": "division"
+  },
+  {
+   "q": "dreasm",
+   "kind": "typo",
+   "expect": "dreams"
+  },
+  {
+   "q": "drnik",
+   "kind": "typo",
+   "expect": "drink"
+  },
+  {
+   "q": "eahc",
+   "kind": "typo",
+   "expect": "each"
+  },
+  {
+   "q": "eclispe",
+   "kind": "typo",
+   "expect": "eclipse"
+  },
+  {
+   "q": "eearly",
+   "kind": "typo",
+   "expect": "early"
+  },
+  {
+   "q": "efel",
+   "kind": "typo",
+   "expect": "evil"
+  },
+  {
+   "q": "elphant",
+   "kind": "typo",
+   "expect": "elephant"
+  },
+  {
+   "q": "emporer",
+   "kind": "typo",
+   "expect": "emperor"
+  },
+  {
+   "q": "ened",
+   "kind": "typo",
+   "expect": "need"
+  },
+  {
+   "q": "engeneering",
+   "kind": "typo",
+   "expect": "engineering"
+  },
+  {
+   "q": "enteratinment",
+   "kind": "typo",
+   "expect": "entertainment"
+  },
+  {
+   "q": "enviormental",
+   "kind": "typo",
+   "expect": "environmental"
+  },
+  {
+   "q": "enviornmental",
+   "kind": "typo",
+   "expect": "environmental"
+  },
+  {
+   "q": "enviromental",
+   "kind": "typo",
+   "expect": "environmental"
+  },
+  {
+   "q": "enxt",
+   "kind": "typo",
+   "expect": "next"
+  },
+  {
+   "q": "esential",
+   "kind": "typo",
+   "expect": "essential"
+  },
+  {
+   "q": "essencial",
+   "kind": "typo",
+   "expect": "essential"
+  },
+  {
+   "q": "essense",
+   "kind": "typo",
+   "expect": "essence"
+  },
+  {
+   "q": "essentail",
+   "kind": "typo",
+   "expect": "essential"
+  },
+  {
+   "q": "essentual",
+   "kind": "typo",
+   "expect": "essential"
+  },
+  {
+   "q": "essesital",
+   "kind": "typo",
+   "expect": "essential"
+  },
+  {
+   "q": "everthing",
+   "kind": "typo",
+   "expect": "everything"
+  },
+  {
+   "q": "everyting",
+   "kind": "typo",
+   "expect": "everything"
+  },
+  {
+   "q": "eveyr",
+   "kind": "typo",
+   "expect": "every"
+  },
+  {
+   "q": "excange",
+   "kind": "typo",
+   "expect": "exchange"
+  },
+  {
+   "q": "excelent",
+   "kind": "typo",
+   "expect": "excellent"
+  },
+  {
+   "q": "excell",
+   "kind": "typo",
+   "expect": "excel"
+  },
+  {
+   "q": "excellance",
+   "kind": "typo",
+   "expect": "excellence"
+  },
+  {
+   "q": "excellant",
+   "kind": "typo",
+   "expect": "excellent"
+  },
+  {
+   "q": "exelent",
+   "kind": "typo",
+   "expect": "excellent"
+  },
+  {
+   "q": "exellent",
+   "kind": "typo",
+   "expect": "excellent"
+  },
+  {
+   "q": "exeptional",
+   "kind": "typo",
+   "expect": "exceptional"
+  },
+  {
+   "q": "experiance",
+   "kind": "typo",
+   "expect": "experience"
+  },
+  {
+   "q": "expierence",
+   "kind": "typo",
+   "expect": "experience"
+  },
+  {
+   "q": "famoust",
+   "kind": "typo",
+   "expect": "famous"
+  },
+  {
+   "q": "firends",
+   "kind": "typo",
+   "expect": "friends"
+  },
+  {
+   "q": "fomed",
+   "kind": "typo",
+   "expect": "formed"
+  },
+  {
+   "q": "foootball",
+   "kind": "typo",
+   "expect": "football"
+  },
+  {
+   "q": "forbiden",
+   "kind": "typo",
+   "expect": "forbidden"
+  },
+  {
+   "q": "foriegn",
+   "kind": "typo",
+   "expect": "foreign"
+  },
+  {
+   "q": "foundary",
+   "kind": "typo",
+   "expect": "foundry"
+  },
+  {
+   "q": "foward",
+   "kind": "typo",
+   "expect": "forward"
+  },
+  {
+   "q": "freindly",
+   "kind": "typo",
+   "expect": "friendly"
+  },
+  {
+   "q": "frome",
+   "kind": "typo",
+   "expect": "from"
+  },
+  {
+   "q": "fromed",
+   "kind": "typo",
+   "expect": "formed"
+  },
+  {
+   "q": "galatic",
+   "kind": "typo",
+   "expect": "galactic"
+  },
+  {
+   "q": "ganes",
+   "kind": "typo",
+   "expect": "games"
+  },
+  {
+   "q": "gerat",
+   "kind": "typo",
+   "expect": "great"
+  },
+  {
+   "q": "glight",
+   "kind": "typo",
+   "expect": "flight"
+  },
+  {
+   "q": "godess",
+   "kind": "typo",
+   "expect": "goddess"
+  },
+  {
+   "q": "graet",
+   "kind": "typo",
+   "expect": "great"
+  },
+  {
+   "q": "grat",
+   "kind": "typo",
+   "expect": "great"
+  },
+  {
+   "q": "gropu",
+   "kind": "typo",
+   "expect": "group"
+  },
+  {
+   "q": "grwo",
+   "kind": "typo",
+   "expect": "grow"
+  },
+  {
+   "q": "guiseppe",
+   "kind": "typo",
+   "expect": "giuseppe"
+  },
+  {
+   "q": "healthercare",
+   "kind": "typo",
+   "expect": "healthcare"
+  },
+  {
+   "q": "heroe",
+   "kind": "typo",
+   "expect": "hero"
+  },
+  {
+   "q": "heros",
+   "kind": "typo",
+   "expect": "heroes"
+  },
+  {
+   "q": "hertiage",
+   "kind": "typo",
+   "expect": "heritage"
+  },
+  {
+   "q": "higway",
+   "kind": "typo",
+   "expect": "highway"
+  },
+  {
+   "q": "holliday",
+   "kind": "typo",
+   "expect": "holiday"
+  },
+  {
+   "q": "htikn",
+   "kind": "typo",
+   "expect": "think"
+  },
+  {
+   "q": "hting",
+   "kind": "typo",
+   "expect": "thing"
+  },
+  {
+   "q": "htink",
+   "kind": "typo",
+   "expect": "think"
+  },
+  {
+   "q": "htis",
+   "kind": "typo",
+   "expect": "this"
+  },
+  {
+   "q": "hvae",
+   "kind": "typo",
+   "expect": "have"
+  },
+  {
+   "q": "idaes",
+   "kind": "typo",
+   "expect": "ideas"
+  },
+  {
+   "q": "ihaca",
+   "kind": "typo",
+   "expect": "ithaca"
+  },
+  {
+   "q": "imagin",
+   "kind": "typo",
+   "expect": "imagine"
+  },
+  {
+   "q": "inbetween",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "incoroporated",
+   "kind": "typo",
+   "expect": "incorporated"
+  },
+  {
+   "q": "incorportaed",
+   "kind": "typo",
+   "expect": "incorporated"
+  },
+  {
+   "q": "increadible",
+   "kind": "typo",
+   "expect": "incredible"
+  },
+  {
+   "q": "incredable",
+   "kind": "typo",
+   "expect": "incredible"
+  },
+  {
+   "q": "independant",
+   "kind": "typo",
+   "expect": "independent"
+  },
+  {
+   "q": "independendet",
+   "kind": "typo",
+   "expect": "independent"
+  },
+  {
+   "q": "indipendent",
+   "kind": "typo",
+   "expect": "independent"
+  },
+  {
+   "q": "individualy",
+   "kind": "typo",
+   "expect": "individually"
+  },
+  {
+   "q": "indpendent",
+   "kind": "typo",
+   "expect": "independent"
+  },
+  {
+   "q": "indutrial",
+   "kind": "typo",
+   "expect": "industrial"
+  },
+  {
+   "q": "ingreediants",
+   "kind": "typo",
+   "expect": "ingredients"
+  },
+  {
+   "q": "inot",
+   "kind": "typo",
+   "expect": "into"
+  },
+  {
+   "q": "intenational",
+   "kind": "typo",
+   "expect": "international"
+  },
+  {
+   "q": "interational",
+   "kind": "typo",
+   "expect": "international"
+  },
+  {
+   "q": "internation",
+   "kind": "typo",
+   "expect": "international"
+  },
+  {
+   "q": "intertaining",
+   "kind": "typo",
+   "expect": "entertaining"
+  },
+  {
+   "q": "inudstry",
+   "kind": "typo",
+   "expect": "industry"
+  },
+  {
+   "q": "iunior",
+   "kind": "typo",
+   "expect": "junior"
+  },
+  {
+   "q": "iwll",
+   "kind": "typo",
+   "expect": "will"
+  },
+  {
+   "q": "iwth",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "japanes",
+   "kind": "typo",
+   "expect": "japanese"
+  },
+  {
+   "q": "jospeh",
+   "kind": "typo",
+   "expect": "joseph"
+  },
+  {
+   "q": "jstu",
+   "kind": "typo",
+   "expect": "just"
+  },
+  {
+   "q": "jsut",
+   "kind": "typo",
+   "expect": "just"
+  },
+  {
+   "q": "knwo",
+   "kind": "typo",
+   "expect": "know"
+  },
+  {
+   "q": "konw",
+   "kind": "typo",
+   "expect": "know"
+  },
+  {
+   "q": "kwno",
+   "kind": "typo",
+   "expect": "know"
+  },
+  {
+   "q": "larrry",
+   "kind": "typo",
+   "expect": "larry"
+  },
+  {
+   "q": "lastr",
+   "kind": "typo",
+   "expect": "last"
+  },
+  {
+   "q": "leage",
+   "kind": "typo",
+   "expect": "league"
+  },
+  {
+   "q": "lefted",
+   "kind": "typo",
+   "expect": "left"
+  },
+  {
+   "q": "lenght",
+   "kind": "typo",
+   "expect": "length"
+  },
+  {
+   "q": "liek",
+   "kind": "typo",
+   "expect": "like"
+  },
+  {
+   "q": "littel",
+   "kind": "typo",
+   "expect": "little"
+  },
+  {
+   "q": "liuke",
+   "kind": "typo",
+   "expect": "like"
+  },
+  {
+   "q": "livley",
+   "kind": "typo",
+   "expect": "lively"
+  },
+  {
+   "q": "loev",
+   "kind": "typo",
+   "expect": "love"
+  },
+  {
+   "q": "lsat",
+   "kind": "typo",
+   "expect": "last"
+  },
+  {
+   "q": "lveo",
+   "kind": "typo",
+   "expect": "love"
+  },
+  {
+   "q": "lvoe",
+   "kind": "typo",
+   "expect": "love"
+  },
+  {
+   "q": "mackeral",
+   "kind": "typo",
+   "expect": "mackerel"
+  },
+  {
+   "q": "magasine",
+   "kind": "typo",
+   "expect": "magazine"
+  },
+  {
+   "q": "magizine",
+   "kind": "typo",
+   "expect": "magazine"
+  },
+  {
+   "q": "magisine",
+   "kind": "typo",
+   "expect": "magazine"
+  },
+  {
+   "q": "magolia",
+   "kind": "typo",
+   "expect": "magnolia"
+  },
+  {
+   "q": "makse",
+   "kind": "typo",
+   "expect": "makes"
+  },
+  {
+   "q": "managment",
+   "kind": "typo",
+   "expect": "management"
+  },
+  {
+   "q": "manufaturing",
+   "kind": "typo",
+   "expect": "manufacturing"
+  },
+  {
+   "q": "marketting",
+   "kind": "typo",
+   "expect": "marketing"
+  },
+  {
+   "q": "marmelade",
+   "kind": "typo",
+   "expect": "marmalade"
+  },
+  {
+   "q": "mechandise",
+   "kind": "typo",
+   "expect": "merchandise"
+  },
+  {
+   "q": "medacine",
+   "kind": "typo",
+   "expect": "medicine"
+  },
+  {
+   "q": "mediterainnean",
+   "kind": "typo",
+   "expect": "mediterranean"
+  },
+  {
+   "q": "mediteranean",
+   "kind": "typo",
+   "expect": "mediterranean"
+  },
+  {
+   "q": "memeber",
+   "kind": "typo",
+   "expect": "member"
+  },
+  {
+   "q": "michagan",
+   "kind": "typo",
+   "expect": "michigan"
+  },
+  {
+   "q": "milennia",
+   "kind": "typo",
+   "expect": "millennia"
+  },
+  {
+   "q": "milennium",
+   "kind": "typo",
+   "expect": "millennium"
+  },
+  {
+   "q": "millenia",
+   "kind": "typo",
+   "expect": "millennia"
+  },
+  {
+   "q": "millenium",
+   "kind": "typo",
+   "expect": "millennium"
+  },
+  {
+   "q": "minature",
+   "kind": "typo",
+   "expect": "miniature"
+  },
+  {
+   "q": "minstries",
+   "kind": "typo",
+   "expect": "ministries"
+  },
+  {
+   "q": "minumum",
+   "kind": "typo",
+   "expect": "minimum"
+  },
+  {
+   "q": "missisipi",
+   "kind": "typo",
+   "expect": "mississippi"
+  },
+  {
+   "q": "missisippi",
+   "kind": "typo",
+   "expect": "mississippi"
+  },
+  {
+   "q": "mistery",
+   "kind": "typo",
+   "expect": "mystery"
+  },
+  {
+   "q": "mkae",
+   "kind": "typo",
+   "expect": "make"
+  },
+  {
+   "q": "mkaes",
+   "kind": "typo",
+   "expect": "makes"
+  },
+  {
+   "q": "mkea",
+   "kind": "typo",
+   "expect": "make"
+  },
+  {
+   "q": "moeny",
+   "kind": "typo",
+   "expect": "money"
+  },
+  {
+   "q": "montnana",
+   "kind": "typo",
+   "expect": "montana"
+  },
+  {
+   "q": "morroccan",
+   "kind": "typo",
+   "expect": "moroccan"
+  },
+  {
+   "q": "mosture",
+   "kind": "typo",
+   "expect": "moisture"
+  },
+  {
+   "q": "movei",
+   "kind": "typo",
+   "expect": "movie"
+  },
+  {
+   "q": "mroe",
+   "kind": "typo",
+   "expect": "more"
+  },
+  {
+   "q": "naploeon",
+   "kind": "typo",
+   "expect": "napoleon"
+  },
+  {
+   "q": "napolean",
+   "kind": "typo",
+   "expect": "napoleon"
+  },
+  {
+   "q": "naturaly",
+   "kind": "typo",
+   "expect": "naturally"
+  },
+  {
+   "q": "naturely",
+   "kind": "typo",
+   "expect": "naturally"
+  },
+  {
+   "q": "naturual",
+   "kind": "typo",
+   "expect": "natural"
+  },
+  {
+   "q": "naturually",
+   "kind": "typo",
+   "expect": "naturally"
+  },
+  {
+   "q": "neigborhood",
+   "kind": "typo",
+   "expect": "neighborhood"
+  },
+  {
+   "q": "nkow",
+   "kind": "typo",
+   "expect": "know"
+  },
+  {
+   "q": "nkwo",
+   "kind": "typo",
+   "expect": "know"
+  },
+  {
+   "q": "nmae",
+   "kind": "typo",
+   "expect": "name"
+  },
+  {
+   "q": "norhern",
+   "kind": "typo",
+   "expect": "northern"
+  },
+  {
+   "q": "northen",
+   "kind": "typo",
+   "expect": "northern"
+  },
+  {
+   "q": "noth",
+   "kind": "typo",
+   "expect": "north"
+  },
+  {
+   "q": "nothern",
+   "kind": "typo",
+   "expect": "northern"
+  },
+  {
+   "q": "nutritent",
+   "kind": "typo",
+   "expect": "nutrient"
+  },
+  {
+   "q": "ocuntry",
+   "kind": "typo",
+   "expect": "country"
+  },
+  {
+   "q": "olther",
+   "kind": "typo",
+   "expect": "other"
+  },
+  {
+   "q": "omre",
+   "kind": "typo",
+   "expect": "more"
+  },
+  {
+   "q": "onyl",
+   "kind": "typo",
+   "expect": "only"
+  },
+  {
+   "q": "orginal",
+   "kind": "typo",
+   "expect": "original"
+  },
+  {
+   "q": "origional",
+   "kind": "typo",
+   "expect": "original"
+  },
+  {
+   "q": "otehr",
+   "kind": "typo",
+   "expect": "other"
+  },
+  {
+   "q": "partialy",
+   "kind": "typo",
+   "expect": "partially"
+  },
+  {
+   "q": "pary",
+   "kind": "typo",
+   "expect": "party"
+  },
+  {
+   "q": "peaple",
+   "kind": "typo",
+   "expect": "people"
+  },
+  {
+   "q": "peculure",
+   "kind": "typo",
+   "expect": "peculiar"
+  },
+  {
+   "q": "peice",
+   "kind": "typo",
+   "expect": "piece"
+  },
+  {
+   "q": "pennyslvania",
+   "kind": "typo",
+   "expect": "pennsylvania"
+  },
+  {
+   "q": "peopel",
+   "kind": "typo",
+   "expect": "people"
+  },
+  {
+   "q": "perfomance",
+   "kind": "typo",
+   "expect": "performance"
+  },
+  {
+   "q": "performence",
+   "kind": "typo",
+   "expect": "performance"
+  },
+  {
+   "q": "peronal",
+   "kind": "typo",
+   "expect": "personal"
+  },
+  {
+   "q": "phillipine",
+   "kind": "typo",
+   "expect": "philippine"
+  },
+  {
+   "q": "pinapple",
+   "kind": "typo",
+   "expect": "pineapple"
+  },
+  {
+   "q": "pinnaple",
+   "kind": "typo",
+   "expect": "pineapple"
+  },
+  {
+   "q": "planation",
+   "kind": "typo",
+   "expect": "plantation"
+  },
+  {
+   "q": "pomegranite",
+   "kind": "typo",
+   "expect": "pomegranate"
+  },
+  {
+   "q": "pomotion",
+   "kind": "typo",
+   "expect": "promotion"
+  },
+  {
+   "q": "porshan",
+   "kind": "typo",
+   "expect": "portion"
+  },
+  {
+   "q": "porshon",
+   "kind": "typo",
+   "expect": "portion"
+  },
+  {
+   "q": "portugese",
+   "kind": "typo",
+   "expect": "portuguese"
+  },
+  {
+   "q": "portuguease",
+   "kind": "typo",
+   "expect": "portuguese"
+  },
+  {
+   "q": "portugues",
+   "kind": "typo",
+   "expect": "portuguese"
+  },
+  {
+   "q": "postive",
+   "kind": "typo",
+   "expect": "positive"
+  },
+  {
+   "q": "potatos",
+   "kind": "typo",
+   "expect": "potatoes"
+  },
+  {
+   "q": "poverful",
+   "kind": "typo",
+   "expect": "powerful"
+  },
+  {
+   "q": "poweful",
+   "kind": "typo",
+   "expect": "powerful"
+  },
+  {
+   "q": "powerfull",
+   "kind": "typo",
+   "expect": "powerful"
+  },
+  {
+   "q": "prairy",
+   "kind": "typo",
+   "expect": "prairie"
+  },
+  {
+   "q": "prarie",
+   "kind": "typo",
+   "expect": "prairie"
+  },
+  {
+   "q": "prefered",
+   "kind": "typo",
+   "expect": "preferred"
+  },
+  {
+   "q": "privte",
+   "kind": "typo",
+   "expect": "private"
+  },
+  {
+   "q": "proccess",
+   "kind": "typo",
+   "expect": "process"
+  },
+  {
+   "q": "proccessing",
+   "kind": "typo",
+   "expect": "processing"
+  },
+  {
+   "q": "proces",
+   "kind": "typo",
+   "expect": "process"
+  },
+  {
+   "q": "provisiosn",
+   "kind": "typo",
+   "expect": "provision"
+  },
+  {
+   "q": "pumkin",
+   "kind": "typo",
+   "expect": "pumpkin"
+  },
+  {
+   "q": "pwoer",
+   "kind": "typo",
+   "expect": "power"
+  },
+  {
+   "q": "raelly",
+   "kind": "typo",
+   "expect": "really"
+  },
+  {
+   "q": "realy",
+   "kind": "typo",
+   "expect": "really"
+  },
+  {
+   "q": "realyl",
+   "kind": "typo",
+   "expect": "really"
+  },
+  {
+   "q": "reasearch",
+   "kind": "typo",
+   "expect": "research"
+  },
+  {
+   "q": "recrod",
+   "kind": "typo",
+   "expect": "record"
+  },
+  {
+   "q": "regluar",
+   "kind": "typo",
+   "expect": "regular"
+  },
+  {
+   "q": "rela",
+   "kind": "typo",
+   "expect": "real"
+  },
+  {
+   "q": "relaly",
+   "kind": "typo",
+   "expect": "really"
+  },
+  {
+   "q": "relpacement",
+   "kind": "typo",
+   "expect": "replacement"
+  },
+  {
+   "q": "repblic",
+   "kind": "typo",
+   "expect": "republic"
+  },
+  {
+   "q": "repubic",
+   "kind": "typo",
+   "expect": "republic"
+  },
+  {
+   "q": "republi",
+   "kind": "typo",
+   "expect": "republic"
+  },
+  {
+   "q": "repulic",
+   "kind": "typo",
+   "expect": "republic"
+  },
+  {
+   "q": "resaurant",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "restarant",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "restarants",
+   "kind": "typo",
+   "expect": "restaurants"
+  },
+  {
+   "q": "restaraunt",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "restaraunts",
+   "kind": "typo",
+   "expect": "restaurants"
+  },
+  {
+   "q": "restauraunt",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "resteraunt",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "resteraunts",
+   "kind": "typo",
+   "expect": "restaurants"
+  },
+  {
+   "q": "resturant",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "resturants",
+   "kind": "typo",
+   "expect": "restaurants"
+  },
+  {
+   "q": "resturaunt",
+   "kind": "typo",
+   "expect": "restaurant"
+  },
+  {
+   "q": "resturaunts",
+   "kind": "typo",
+   "expect": "restaurants"
+  },
+  {
+   "q": "reveiw",
+   "kind": "typo",
+   "expect": "review"
+  },
+  {
+   "q": "rhythem",
+   "kind": "typo",
+   "expect": "rhythm"
+  },
+  {
+   "q": "rhythim",
+   "kind": "typo",
+   "expect": "rhythm"
+  },
+  {
+   "q": "rocord",
+   "kind": "typo",
+   "expect": "record"
+  },
+  {
+   "q": "russina",
+   "kind": "typo",
+   "expect": "russian"
+  },
+  {
+   "q": "russion",
+   "kind": "typo",
+   "expect": "russian"
+  },
+  {
+   "q": "rythem",
+   "kind": "typo",
+   "expect": "rhythm"
+  },
+  {
+   "q": "rythim",
+   "kind": "typo",
+   "expect": "rhythm"
+  },
+  {
+   "q": "rythm",
+   "kind": "typo",
+   "expect": "rhythm"
+  },
+  {
+   "q": "sacremento",
+   "kind": "typo",
+   "expect": "sacramento"
+  },
+  {
+   "q": "sandwhich",
+   "kind": "typo",
+   "expect": "sandwich"
+  },
+  {
+   "q": "saterday",
+   "kind": "typo",
+   "expect": "saturday"
+  },
+  {
+   "q": "saveing",
+   "kind": "typo",
+   "expect": "saving"
+  },
+  {
+   "q": "scince",
+   "kind": "typo",
+   "expect": "science"
+  },
+  {
+   "q": "scinece",
+   "kind": "typo",
+   "expect": "science"
+  },
+  {
+   "q": "sernedipity",
+   "kind": "typo",
+   "expect": "serendipity"
+  },
+  {
+   "q": "serendipiyt",
+   "kind": "typo",
+   "expect": "serendipity"
+  },
+  {
+   "q": "sevice",
+   "kind": "typo",
+   "expect": "service"
+  },
+  {
+   "q": "shoudl",
+   "kind": "typo",
+   "expect": "should"
+  },
+  {
+   "q": "sicne",
+   "kind": "typo",
+   "expect": "since"
+  },
+  {
+   "q": "simpley",
+   "kind": "typo",
+   "expect": "simply"
+  },
+  {
+   "q": "slighly",
+   "kind": "typo",
+   "expect": "slightly"
+  },
+  {
+   "q": "smoe",
+   "kind": "typo",
+   "expect": "some"
+  },
+  {
+   "q": "soem",
+   "kind": "typo",
+   "expect": "some"
+  },
+  {
+   "q": "sofware",
+   "kind": "typo",
+   "expect": "software"
+  },
+  {
+   "q": "sohw",
+   "kind": "typo",
+   "expect": "show"
+  },
+  {
+   "q": "soley",
+   "kind": "typo",
+   "expect": "solely"
+  },
+  {
+   "q": "sotry",
+   "kind": "typo",
+   "expect": "story"
+  },
+  {
+   "q": "soudn",
+   "kind": "typo",
+   "expect": "sound"
+  },
+  {
+   "q": "sourthern",
+   "kind": "typo",
+   "expect": "southern"
+  },
+  {
+   "q": "spainish",
+   "kind": "typo",
+   "expect": "spanish"
+  },
+  {
+   "q": "spectauclar",
+   "kind": "typo",
+   "expect": "spectacular"
+  },
+  {
+   "q": "spectum",
+   "kind": "typo",
+   "expect": "spectrum"
+  },
+  {
+   "q": "speices",
+   "kind": "typo",
+   "expect": "species"
+  },
+  {
+   "q": "spoace",
+   "kind": "typo",
+   "expect": "space"
+  },
+  {
+   "q": "spreaded",
+   "kind": "typo",
+   "expect": "spread"
+  },
+  {
+   "q": "spred",
+   "kind": "typo",
+   "expect": "spread"
+  },
+  {
+   "q": "sqaure",
+   "kind": "typo",
+   "expect": "square"
+  },
+  {
+   "q": "staion",
+   "kind": "typo",
+   "expect": "station"
+  },
+  {
+   "q": "stong",
+   "kind": "typo",
+   "expect": "strong"
+  },
+  {
+   "q": "stopry",
+   "kind": "typo",
+   "expect": "story"
+  },
+  {
+   "q": "stoyr",
+   "kind": "typo",
+   "expect": "story"
+  },
+  {
+   "q": "stpo",
+   "kind": "typo",
+   "expect": "stop"
+  },
+  {
+   "q": "straght",
+   "kind": "typo",
+   "expect": "straight"
+  },
+  {
+   "q": "stragiht",
+   "kind": "typo",
+   "expect": "straight"
+  },
+  {
+   "q": "stregth",
+   "kind": "typo",
+   "expect": "strength"
+  },
+  {
+   "q": "strenght",
+   "kind": "typo",
+   "expect": "strength"
+  },
+  {
+   "q": "suppy",
+   "kind": "typo",
+   "expect": "supply"
+  },
+  {
+   "q": "suprise",
+   "kind": "typo",
+   "expect": "surprise"
+  },
+  {
+   "q": "suprize",
+   "kind": "typo",
+   "expect": "surprise"
+  },
+  {
+   "q": "surprize",
+   "kind": "typo",
+   "expect": "surprise"
+  },
+  {
+   "q": "syrap",
+   "kind": "typo",
+   "expect": "syrup"
+  },
+  {
+   "q": "sytem",
+   "kind": "typo",
+   "expect": "system"
+  },
+  {
+   "q": "tahn",
+   "kind": "typo",
+   "expect": "than"
+  },
+  {
+   "q": "taht",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "tast",
+   "kind": "typo",
+   "expect": "taste"
+  },
+  {
+   "q": "tath",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "technnology",
+   "kind": "typo",
+   "expect": "technology"
+  },
+  {
+   "q": "technolgy",
+   "kind": "typo",
+   "expect": "technology"
+  },
+  {
+   "q": "theather",
+   "kind": "typo",
+   "expect": "theater"
+  },
+  {
+   "q": "thgat",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "thign",
+   "kind": "typo",
+   "expect": "thing"
+  },
+  {
+   "q": "thigns",
+   "kind": "typo",
+   "expect": "things"
+  },
+  {
+   "q": "thigsn",
+   "kind": "typo",
+   "expect": "things"
+  },
+  {
+   "q": "thikn",
+   "kind": "typo",
+   "expect": "think"
+  },
+  {
+   "q": "thiunk",
+   "kind": "typo",
+   "expect": "think"
+  },
+  {
+   "q": "thna",
+   "kind": "typo",
+   "expect": "than"
+  },
+  {
+   "q": "thnig",
+   "kind": "typo",
+   "expect": "thing"
+  },
+  {
+   "q": "thnigs",
+   "kind": "typo",
+   "expect": "things"
+  },
+  {
+   "q": "threee",
+   "kind": "typo",
+   "expect": "three"
+  },
+  {
+   "q": "thrid",
+   "kind": "typo",
+   "expect": "third"
+  },
+  {
+   "q": "thsi",
+   "kind": "typo",
+   "expect": "this"
+  },
+  {
+   "q": "thta",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "thyat",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "tihkn",
+   "kind": "typo",
+   "expect": "think"
+  },
+  {
+   "q": "tihs",
+   "kind": "typo",
+   "expect": "this"
+  },
+  {
+   "q": "timne",
+   "kind": "typo",
+   "expect": "time"
+  },
+  {
+   "q": "tkae",
+   "kind": "typo",
+   "expect": "take"
+  },
+  {
+   "q": "tlaking",
+   "kind": "typo",
+   "expect": "talking"
+  },
+  {
+   "q": "todya",
+   "kind": "typo",
+   "expect": "today"
+  },
+  {
+   "q": "toghether",
+   "kind": "typo",
+   "expect": "together"
+  },
+  {
+   "q": "tomatos",
+   "kind": "typo",
+   "expect": "tomatoes"
+  },
+  {
+   "q": "tradionally",
+   "kind": "typo",
+   "expect": "traditionally"
+  },
+  {
+   "q": "traditionaly",
+   "kind": "typo",
+   "expect": "traditionally"
+  },
+  {
+   "q": "traditionnal",
+   "kind": "typo",
+   "expect": "traditional"
+  },
+  {
+   "q": "tradtionally",
+   "kind": "typo",
+   "expect": "traditionally"
+  },
+  {
+   "q": "truely",
+   "kind": "typo",
+   "expect": "truly"
+  },
+  {
+   "q": "tuscon",
+   "kind": "typo",
+   "expect": "tucson"
+  },
+  {
+   "q": "twon",
+   "kind": "typo",
+   "expect": "town"
+  },
+  {
+   "q": "tyhat",
+   "kind": "typo",
+   "expect": "that"
+  },
+  {
+   "q": "univeral",
+   "kind": "typo",
+   "expect": "universal"
+  },
+  {
+   "q": "vaccum",
+   "kind": "typo",
+   "expect": "vacuum"
+  },
+  {
+   "q": "vaccume",
+   "kind": "typo",
+   "expect": "vacuum"
+  },
+  {
+   "q": "variey",
+   "kind": "typo",
+   "expect": "variety"
+  },
+  {
+   "q": "varity",
+   "kind": "typo",
+   "expect": "variety"
+  },
+  {
+   "q": "vegatarian",
+   "kind": "typo",
+   "expect": "vegetarian"
+  },
+  {
+   "q": "vegitable",
+   "kind": "typo",
+   "expect": "vegetable"
+  },
+  {
+   "q": "vegitables",
+   "kind": "typo",
+   "expect": "vegetables"
+  },
+  {
+   "q": "vegtable",
+   "kind": "typo",
+   "expect": "vegetable"
+  },
+  {
+   "q": "vell",
+   "kind": "typo",
+   "expect": "well"
+  },
+  {
+   "q": "vetween",
+   "kind": "typo",
+   "expect": "between"
+  },
+  {
+   "q": "veyr",
+   "kind": "typo",
+   "expect": "very"
+  },
+  {
+   "q": "volcanoe",
+   "kind": "typo",
+   "expect": "volcano"
+  },
+  {
+   "q": "vreity",
+   "kind": "typo",
+   "expect": "variety"
+  },
+  {
+   "q": "vrey",
+   "kind": "typo",
+   "expect": "very"
+  },
+  {
+   "q": "vriety",
+   "kind": "typo",
+   "expect": "variety"
+  },
+  {
+   "q": "vyer",
+   "kind": "typo",
+   "expect": "very"
+  },
+  {
+   "q": "vyre",
+   "kind": "typo",
+   "expect": "very"
+  },
+  {
+   "q": "waht",
+   "kind": "typo",
+   "expect": "what"
+  },
+  {
+   "q": "whith",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "wholey",
+   "kind": "typo",
+   "expect": "wholly"
+  },
+  {
+   "q": "whta",
+   "kind": "typo",
+   "expect": "what"
+  },
+  {
+   "q": "wiew",
+   "kind": "typo",
+   "expect": "view"
+  },
+  {
+   "q": "wih",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "wiht",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "wille",
+   "kind": "typo",
+   "expect": "will"
+  },
+  {
+   "q": "willk",
+   "kind": "typo",
+   "expect": "will"
+  },
+  {
+   "q": "withh",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "witht",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "witn",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "wiull",
+   "kind": "typo",
+   "expect": "will"
+  },
+  {
+   "q": "wonderfull",
+   "kind": "typo",
+   "expect": "wonderful"
+  },
+  {
+   "q": "wordlwide",
+   "kind": "typo",
+   "expect": "worldwide"
+  },
+  {
+   "q": "worls",
+   "kind": "typo",
+   "expect": "world"
+  },
+  {
+   "q": "wtih",
+   "kind": "typo",
+   "expect": "with"
+  },
+  {
+   "q": "wupport",
+   "kind": "typo",
+   "expect": "support"
+  },
+  {
+   "q": "yaer",
+   "kind": "typo",
+   "expect": "year"
+  },
+  {
+   "q": "yearm",
+   "kind": "typo",
+   "expect": "year"
+  },
+  {
+   "q": "yera",
+   "kind": "typo",
+   "expect": "year"
+  },
+  {
+   "q": "yrea",
+   "kind": "typo",
+   "expect": "year"
+  },
+  {
+   "q": "zeebra",
+   "kind": "typo",
+   "expect": "zebra"
+  }
+ ]
+}

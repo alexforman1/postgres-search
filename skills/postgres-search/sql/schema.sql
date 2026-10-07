@@ -52,3 +52,27 @@ WHERE d.name_key <> ''
 GROUP BY d.name_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS names_name_key ON search.names (name_key text_pattern_ops);
+
+-- One row per word that products use: how many products' names or other names hold it, its
+-- English stem, and how many products the word step finds for it, which are those whose stemmed
+-- words hold that stem. search.similar_words looks up close spellings here for the Jev step.
+CREATE MATERIALIZED VIEW IF NOT EXISTS search.words AS
+WITH words AS (
+  SELECT w AS word, count(*)::int AS doc_count
+  FROM search.documents d
+  CROSS JOIN LATERAL unnest(tsvector_to_array(d.prefix_vector)) AS w
+  GROUP BY w
+), stems AS (
+  SELECT s AS stem, count(*)::int AS match_count
+  FROM search.documents d
+  CROSS JOIN LATERAL unnest(tsvector_to_array(d.search_vector)) AS s
+  GROUP BY s
+)
+SELECT w.word, w.doc_count, x.stem, coalesce(s.match_count, 0) AS match_count
+FROM words w
+CROSS JOIN LATERAL (SELECT coalesce((ts_lexize('english_stem', w.word))[1], w.word) AS stem) x
+LEFT JOIN stems s ON s.stem = x.stem;
+
+CREATE UNIQUE INDEX IF NOT EXISTS words_word ON search.words (word);
+CREATE INDEX IF NOT EXISTS words_stem ON search.words (stem);
+CREATE INDEX IF NOT EXISTS words_word_trgm ON search.words USING gin (word gin_trgm_ops);

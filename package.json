@@ -1,7 +1,7 @@
 {
   "name": "postgres-search",
   "version": "0.1.0",
-  "description": "Algolia-style search in plain Postgres, with an optional Jev step that sinks wrong results.",
+  "description": "Algolia-style search in plain Postgres, with an optional Jev step that sinks wrong results and suggests spellings.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -19,6 +19,7 @@
     "test": "node --test",
     "typecheck": "tsc -p .",
     "eval": "node scripts/eval.ts",
+    "compare": "node scripts/compare.ts",
     "check-skill-sql": "cmp sql/schema.sql skills/postgres-search/sql/schema.sql && cmp sql/functions.sql skills/postgres-search/sql/functions.sql"
   },
   "dependencies": {

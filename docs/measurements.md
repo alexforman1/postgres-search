@@ -1,7 +1,10 @@
 # Measurements
 
 Measured on 2026-09-22 against the USDA FoodData Central Branded Foods release of 2025-12-18,
-loaded with `npm run load -- --full`, without Jev. Machine: Intel Core i5-10500H (12 logical CPUs,
+loaded with `npm run load -- --full`, without Jev. `search.words`, `search.similar_words` and the
+[Jev](#jev-and-the-three-way-comparison) numbers were measured on 2026-10-07 on the same machine
+and load; the `search.similar_words` times were taken with a load average of 3 to 5 from other
+programs. About two thirds of each comes from `search.edits1`, about 2 ms per word. Machine: Intel Core i5-10500H (12 logical CPUs,
 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker image on a local disk, default
 settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
 
@@ -13,8 +16,10 @@ The load keeps one row per barcode: the newest record, with leading zeros ignore
 |----------------------------------------------|----------------:|
 | products in `search.documents`               | 440,302         |
 | distinct names in `search.names`             | 386,091         |
+| distinct words in `search.words`             | 44,179          |
 | `search.documents`, with / without indexes   | 343 MB / 231 MB |
 | `search.names` with its index                | 87 MB           |
+| `search.words` with its three indexes        | 6.2 MB          |
 | release zip (`npm run load -- --full`)       | 447 MB          |
 | committed sample, `data/sample.csv.gz`       | 4.3 MB          |
 
@@ -27,7 +32,8 @@ Indexes on `search.documents`: `documents_name_trgm` 40 MB, `documents_other_nam
 
 `npm run load` (the 100,000-product sample) took 9.4 s and 9.7 s. `npm run load -- --full`, with
 the zip already downloaded, took 70 s. `SELECT search.refresh()` over 440,302 rows took 29.3 s and
-28.4 s.
+28.4 s. These times are from before `search.words` existed. Refreshing it alone took 2.7 s and
+2.1 s, so the loader and `search.refresh()` now take about that much longer.
 
 ## Query speed
 
@@ -51,11 +57,18 @@ last five, in milliseconds, and the guide's other timings were taken the same wa
 | `search.facets('milk')`                 | word   | 15,770       | 128 to 135     |
 | `search.facets('chocolate')`            | word   | 38,068       | 311 to 335     |
 | `search.facets('chocolatte')`           | typo   | 39,149       | 1,238 to 1,262 |
+| `search.similar_words('parmesean')`     |        |              | 9.9 to 20.4    |
+| `search.similar_words('chocolatte')`    |        |              | 7.3 to 11.1    |
+| `search.similar_words('tortila chips')` |        |              | 6.4 to 10.8    |
+| `search.similar_words('skippy peanut butter')` |  |            | 9.0 to 13.1    |
 
 ## Evaluation
 
 `npm run eval` scores `eval/queries.json` (50 queries through `search.query_distinct`) and
 `eval/suggest.json` (126 typeahead inputs). A hit is a result that matches the case's pattern.
+With a TypeSafe key it also scores the Jev step, `eval/spelling.json` and `eval/absent.json`.
+The tables here are without Jev; the Jev numbers come from `scripts/compare.ts`
+([below](#jev-and-the-three-way-comparison)).
 
 | kind   | cases | hit@1 | hit@3 | hit@10 |
 |--------|------:|------:|------:|-------:|
@@ -121,11 +134,50 @@ found 8 names before `a48f595`; `suggest` took 462 to 930 ms for `aed`, `bld` an
 `a007c4c` and `b291178`; and each `chocolatte` call took 1.4 to 1.9 s on a sequential scan plan,
 before autoanalyze ran after a reload.
 
-## Jev
+## Jev and the three-way comparison
 
-Jev's effect was not measured for this release. With `TYPESAFE_API_KEY` in `.env`, this adds
-`jev hit@1` and `jev hit@3` columns to the first eval table:
+Measured on 2026-10-07 with `jev-1.13.0`, the model every answer reported, in five runs of:
 
 ```sh
-node --env-file=.env scripts/eval.ts
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
+node scripts/report.ts
 ```
+
+`scripts/compare.ts` runs 1,588 queries (`eval/queries.json`, `eval/spelling.json`,
+`eval/synthetic.json`, `eval/synthetic-test.json`, `eval/wikipedia.json`, `eval/absent.json`)
+through plain Postgres full-text search, this SQL, and this SQL with the Jev step, and writes every
+query's outcome to `results/`. `scripts/report.ts` turns those files into
+[`results/report.md`](../results/report.md), the full record with every group, system and test,
+and into the figures in `docs/figures/`. The first version of the Jev step, which these runs
+replace, is in `results/v1/` with its own report. The [README](../README.md#3-method) gives the
+method and discusses the results; the numbers below are copied from `results/report.md`.
+
+The Jev calls are network round trips from this machine to `api.typesafe.ai`, so their times
+depend on where the server runs. A browser was running during the runs, with a load average of 3
+to 14, which makes the Postgres times noisier than the table above.
+
+| hit@1, median of five runs | hand-written (50) | synthetic test (500) | Wikipedia (473) |
+|----------------------------|------------------:|---------------------:|----------------:|
+| plain Postgres full-text search | 52% | 37% | 5% |
+| this SQL | 82% | 65% | 42% |
+| this SQL + Jev keep or sink | 86% | 70% | 48% |
+| this SQL + Jev "Did you mean", one click | 90% | 85% | 70% |
+| this SQL + both, one click | 94% | 85% | 71% |
+| this SQL + Norvig corrector, one click | 82% | 86% | 64% |
+
+| ms, five runs pooled | median | p90 | p99 |
+|----------------------|-------:|----:|----:|
+| plain Postgres full-text search | 2 | 11 | 140 |
+| this SQL | 26 | 231 | 688 |
+| this SQL + Jev, whole page | 201 | 324 | 698 |
+| time Jev adds to the page | 165 | 213 | 332 |
+| one keep-or-sink call | 159 | 203 | 312 |
+| one spelling call | 155 | 199 | 332 |
+
+Cost is input tokens times \$0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
+output tokens are free. On the hand-written queries a search used 2,076 input tokens on average,
+\$0.087 per 1,000 searches; across the six sets it was \$0.087 to \$0.097 per 1,000. One run of
+`scripts/compare.ts` sends about 3.5 million input tokens and costs \$0.149.
+
+Numbers in this file from before 2026-10-07 that concern Jev are in the git history; they describe
+earlier code.
