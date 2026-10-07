@@ -75,4 +75,6 @@ LEFT JOIN stems s ON s.stem = x.stem;
 
 CREATE UNIQUE INDEX IF NOT EXISTS words_word ON search.words (word);
 CREATE INDEX IF NOT EXISTS words_stem ON search.words (stem);
+-- Byte order, for finding the words that start with a typed word.
+CREATE INDEX IF NOT EXISTS words_word_prefix ON search.words (word text_pattern_ops);
 CREATE INDEX IF NOT EXISTS words_word_trgm ON search.words USING gin (word gin_trgm_ops);

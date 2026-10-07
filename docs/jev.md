@@ -20,38 +20,40 @@ Without a key, the demo and the eval skip the step and use the Postgres order. T
 
 ## What it changes
 
-Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 1,588 queries.
-The design was frozen before the two test sets were made. The
-[README](../README.md#4-results) gives the method, the statistical tests and the figures, and
-[`results/report.md`](../results/report.md) has every number.
+Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 3,188 queries.
+Version 2.2 of the spelling question was frozen before its two test sets, synthetic test 3 and
+truncation 2, were made. The [README](../README.md#4-results) gives the method, the statistical
+tests and the figures, and [`results/report.md`](../results/report.md) has every number.
 
-| hit@1, median of five runs | hand-written (50) | synthetic test (500) | Wikipedia (473) |
-|----------------------------|------------------:|---------------------:|----------------:|
-| this SQL | 82% | 65% | 42% |
-| + keep or sink | 86% | 70% | 48% |
-| + "Did you mean", one click | 90% | 85% | 70% |
-| + both, one click | 94% | 85% | 71% |
-| Norvig-style corrector instead, one click | 82% | 86% | 64% |
+| hit@1, median of five runs | hand-written (50) | synthetic test 3 (500) | truncation 2 (300) | Wikipedia (473) |
+|----------------------------|------------------:|-----------------------:|-------------------:|----------------:|
+| this SQL | 82% | 62% | 75% | 42% |
+| + keep or sink | 86% | 69% | 73% | 48% |
+| + "Did you mean", one click | 92% | 83% | 76% | 70% |
+| + both, one click | 96% | 84% | 74% | 70% |
+| Norvig-style corrector instead, one click | 82% | 83% | 30% | 64% |
 
-On the 973 test queries, keep or sink (59% against 54%) and "Did you mean" (78% against 54%) are
-both significant after Holm's correction, and "Did you mean" beats the dictionary corrector (78%
-against 75%, p ≤ 0.040). The corrector ties it on the synthetic one-edit set, which matches the
-corrector's own error model, and loses on real misspellings, most of all on those that are
-themselves words some product uses (84% against 31% on 32 such cases).
+On synthetic test 3, keep or sink (69% against 62%) and "Did you mean" (83% against 62%) are both
+significant after Holm's correction, and "Did you mean" ties the dictionary corrector (83% each).
+That set matches the corrector's own error model. On words cut short as a user types them, "Did
+you mean" leaves the prefix step's results alone (76% against 75% for this SQL), while the
+corrector respells them and finds the right product for 30%. On real misspellings from Wikipedia,
+a test set for version 2, Jev leads 70% to 64%, and 84% to 31% on the 32 misspellings that are
+themselves words some product uses.
 
 ## Cost and time
 
 TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output tokens are free
-([models](https://docs.typesafe.ai/models)). Five runs pooled, 7,940 queries:
+([models](https://docs.typesafe.ai/models)). Five runs pooled, 15,940 queries:
 
 | call | sent on | ms, median | ms, p90 |
 |------|--------:|-----------:|--------:|
-| keep or sink, 10 results judged | 92% of searches | 159 | 203 |
-| spelling, median 8 options | 89% of searches | 155 | 199 |
+| keep or sink, 10 results judged | 94% of searches | 168 | 214 |
+| spelling, median 7 options | 73% of searches | 165 | 208 |
 
-On the hand-written queries a search used 2,076 input tokens on average, \$0.087 per 1,000
-searches; across the six query sets it was \$0.087 to \$0.097 per 1,000. The two calls run at the
-same time, so the page waits for the slower one: the step adds 165 ms at the median and 213 ms at
+On the hand-written queries a search used 1,969 input tokens on average, \$0.083 per 1,000
+searches; across the ten query sets it was \$0.077 to \$0.097 per 1,000. The two calls run at the
+same time, so the page waits for the slower one: the step adds 173 ms at the median and 223 ms at
 the 90th percentile to the Postgres query. These are round trips from one machine; measure from
 your own servers.
 
@@ -125,10 +127,12 @@ and how many products the word step finds for it. `search.similar_words(q)` retu
 word, up to 8 candidates: every word one edit away (`search.edits1`: a letter added, removed or
 replaced, or two neighbors swapped), most found first, then trigram neighbors with similarity 0.3
 or more, closest first. It skips words under four letters, words with digits and stop words. A
-candidate must be found in more products than the typed word, must have a different stem, and must
-not just finish the typed word, which the prefix step finds. Counting what the search finds, not
-how often the word itself appears, keeps possessives such as `hellmanns` from looking misspelled:
-the search finds 85 HELLMANN'S products for it.
+word that the search finds in no product but that starts some word in the index gets no
+candidates: the user may still be typing it, and the prefix step already shows the products of the
+words it starts (`strawb`, strawberries; `captai`, Captain's). For any other word, a candidate must
+have a different stem from the typed word and must be found in more products than both the typed
+word and the most common word, of another stem, that starts with the typed word. Counting what the search finds, not how often the word itself appears, keeps possessives such as
+`hellmanns` from looking misspelled: the search finds 85 HELLMANN'S products for it.
 
 `checkSpelling()` in `src/spelling.ts` turns those rows into options, the query as typed and then
 the query with one word changed, every word's closest candidate before any word's second, up to
@@ -179,8 +183,17 @@ which fixed 272. Two causes accounted for most of the gap: 40 intended words wer
 options, and 75 were offered but declined, because Jev could not tell a misspelling from a rare
 brand without knowing which spellings the catalog uses. The one-edit candidates, the counts, the
 edits and the twice-as-likely rule fix those; the rule was chosen with `scripts/spelling-rules.ts`
-on the development sets. The design was then frozen and tested on two sets made afterwards. The
-[README](../README.md#4-results) reports both stages.
+on the development sets. That version 2 was frozen and tested on two sets made afterwards.
+
+Version 2 then showed one more fault: on a word cut short it barred the full word as a candidate,
+so Jev chose another nearby word (`strawb`, "straw"; `shee`, "ghee") and pulled the user away
+from the prefix step's right results. Version 2.1 kept those candidates unless they beat the most
+common completion, and allowed one-letter completions. It failed on a test set of 300 words cut
+short, made after it was frozen: it still offered a nearby word for most of them (`yellowf`,
+"yellow"; `orna`, "orca") and found the right product less often than the SQL alone. Version 2.2
+gives no candidates to a word that finds nothing but starts an index word, and leaves it to the
+prefix step. It was frozen and tested on two more sets made afterwards. The
+[README](../README.md#4-results) reports every stage.
 
 ## No match
 
@@ -193,10 +206,10 @@ check keeps the line off those pages. The demo shows the line only when there is
 and the results stay on the page.
 
 In the five runs the page said that nothing matches for 12 of the 15 household goods in
-`eval/absent.json`, and for 75 to 78 of the 1,573 answerable queries, 7 or 8 of them with a match
-in the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for 1,001
-of the 1,573. The flag changed between runs on 58 of the 225 queries where it was raised at least
-once.
+`eval/absent.json`, and for 106 to 108 of the 3,173 answerable queries, 7 to 9 of them with a
+match in the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for
+2,038 of the 3,173. The flag changed between runs on 83 of the 300 queries where it was raised at
+least once.
 
 The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
 and `strawb`. Before the check, the line also appeared for `toothpaste` and `light bulbs`, whose
@@ -224,12 +237,12 @@ inputTokens }`, so the page can show whether Jev ran and how long it took.
 
 ## Limits
 
-- Answers move between identical runs: over five runs, the suggestion changed for 3% of the
-  queries that got one in any run, and the no-match flag for 26% of those where it was raised.
+- Answers move between identical runs: over five runs, the suggestion changed for 2% of the
+  queries that got one in any run, and the no-match flag for 28% of those where it was raised.
 - One word is respelled per option, so a query with two misspelled words is not fixed.
-- A word whose last letter was dropped rarely reaches the options, because a candidate that only
-  finishes the typed word is left to the prefix step; and a one-edit deletion can offer a shorter
-  word for an unfinished one (`strawb` to "straw").
+- A word whose last letter was dropped is left to the prefix step, which finds the full word
+  unless the cut text is itself a word, or has the stem of one: `monke` finds MONK FRUIT
+  sweeteners through the word step, and the prefix step never runs.
 - On rare brand names Jev tends to choose a common word (`foyster` to "oyster" for foster,
   `djraft` to "kraft" for draft), where a dictionary corrector picks the closest known word.
 - The no-match line needs question 1, so a page with a single wrong result shows no line.
@@ -245,7 +258,7 @@ Put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
 
 ```sh
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts      # the 50 eval queries, under a cent
-JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 1,588 queries, about $0.15
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 3,188 queries, about $0.29
 node scripts/report.ts                                          # tables and figures from results/
 ```
 

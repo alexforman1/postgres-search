@@ -1,9 +1,14 @@
 // Writes eval/synthetic.json: misspellings made by one Damerau edit of words that product names
 // use, and correctly spelled controls, both sampled with a fixed seed. Rerunning it on the same
-// load writes the same file. Words in any other eval file are left out, so a second set made with
-// another seed shares no word with the first:
-//   node scripts/make-spelling-set.ts                                          # the development set
-//   node scripts/make-spelling-set.ts --seed 20261008 --out synthetic-test.json   # the test set
+// load writes the same file. Words in any eval file made before it are left out, so each set
+// shares no word with the earlier ones. With --truncate it writes words cut short instead, as a
+// user types them, each kept to at least four letters and at least one letter short:
+//   node scripts/make-spelling-set.ts                                               # development
+//   node scripts/make-spelling-set.ts --seed 20261008 --out synthetic-test.json     # test, version 2
+//   node scripts/make-spelling-set.ts --seed 20261009 --out synthetic-test-2.json   # test, version 2.1
+//   node scripts/make-spelling-set.ts --seed 20261010 --out truncation.json --truncate
+//   node scripts/make-spelling-set.ts --seed 20261011 --out synthetic-test-3.json   # test, version 2.2
+//   node scripts/make-spelling-set.ts --seed 20261012 --out truncation-2.json --truncate --min-length 7
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
@@ -14,11 +19,12 @@ const arg = (name: string, fallback: string) => {
 }
 const SEED = Number(arg('--seed', '20261007'))
 const OUT = arg('--out', 'synthetic.json')
+const TRUNCATE = process.argv.includes('--truncate')
 const TYPOS = 300
 const CONTROLS = 200
 // A word must appear in this many product names, so the sample holds words, not stray tokens.
 const MIN_DOCS = 20
-const MIN_LENGTH = 5
+const MIN_LENGTH = Number(arg('--min-length', '5'))
 const EDITS = ['deletion', 'insertion', 'substitution', 'transposition'] as const
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'
 
@@ -57,10 +63,22 @@ function misspell(word: string, edit: (typeof EDITS)[number]): string {
   }
 }
 
-// The development set excludes the files that existed when it was made, so it still regenerates
-// the same; any later set also excludes the development and Wikipedia sets.
-const EXCLUDE = ['queries.json', 'spelling.json', 'suggest.json', 'absent.json']
-if (OUT !== 'synthetic.json') EXCLUDE.push('synthetic.json', 'wikipedia.json')
+// The eval files in the order they were made. A set excludes the words of every file before it,
+// so each one still regenerates the same after later files are added.
+const ORDER = [
+  'queries.json',
+  'spelling.json',
+  'suggest.json',
+  'absent.json',
+  'synthetic.json',
+  'wikipedia.json',
+  'synthetic-test.json',
+  'synthetic-test-2.json',
+  'truncation.json',
+  'synthetic-test-3.json',
+  'truncation-2.json',
+]
+const EXCLUDE = ORDER.includes(OUT) ? ORDER.slice(0, ORDER.indexOf(OUT)) : ORDER
 const used = new Set<string>()
 for (const file of EXCLUDE) {
   let data: unknown
@@ -93,6 +111,21 @@ try {
     ;[words[i], words[j]] = [words[j], words[i]]
   }
 
+  if (TRUNCATE) {
+    const cases: { q: string; kind: 'truncation'; expect: string }[] = []
+    for (const word of words) {
+      if (cases.length === TYPOS) break
+      if (word.length < 5) continue
+      // A length from 4 to one short of the word; a cut that is itself a word is skipped, since the
+      // intended meaning is then unclear.
+      const q = word.slice(0, 4 + pick(word.length - 4))
+      if (vocabulary.has(q)) continue
+      cases.push({ q, kind: 'truncation', expect: word })
+    }
+    await writeFile(new URL(`../eval/${OUT}`, import.meta.url), `${JSON.stringify(cases, null, 1)}\n`)
+    console.log(`${words.length} eligible words; wrote ${cases.length} truncations`)
+    process.exit(0)
+  }
   const typos: { q: string; kind: 'typo'; edit: string; expect: string }[] = []
   let next = 0
   while (typos.length < TYPOS) {

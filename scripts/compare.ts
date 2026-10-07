@@ -9,7 +9,9 @@
 // frequency rule (the most common close word, if used ten times as often) and a Norvig-style
 // corrector (the most common known word within two edits; a known word is kept).
 // The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
-// when present, the test sets eval/synthetic-test.json and eval/wikipedia.json.
+// when present, the later sets eval/synthetic-test.json, eval/wikipedia.json,
+// eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json and
+// eval/truncation-2.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -23,7 +25,17 @@ import { carries, tokens } from '../src/tokens.ts'
 
 if (!process.env.TYPESAFE_API_KEY) throw new Error('set TYPESAFE_API_KEY; the third search needs Jev')
 
-type QuerySet = 'hand-written' | 'held-out' | 'synthetic' | 'synthetic-test' | 'wikipedia' | 'absent'
+type QuerySet =
+  | 'hand-written'
+  | 'held-out'
+  | 'synthetic'
+  | 'synthetic-test'
+  | 'wikipedia'
+  | 'synthetic-test-2'
+  | 'truncation'
+  | 'synthetic-test-3'
+  | 'truncation-2'
+  | 'absent'
 
 interface Case {
   q: string
@@ -50,6 +62,10 @@ for (const [file, set] of [
   ['synthetic.json', 'synthetic'],
   ['synthetic-test.json', 'synthetic-test'],
   ['wikipedia.json', 'wikipedia'],
+  ['synthetic-test-2.json', 'synthetic-test-2'],
+  ['truncation.json', 'truncation'],
+  ['synthetic-test-3.json', 'synthetic-test-3'],
+  ['truncation-2.json', 'truncation-2'],
 ] as const) {
   if (!(await exists(file))) continue
   const data = await read(file)
@@ -61,6 +77,12 @@ for (const [file, set] of [
   }
 }
 for (const c of (await read('absent.json')) as { q: string }[]) cases.push({ q: c.q, set: 'absent', kind: 'absent', hit: null })
+// COMPARE_SETS=hand-written,held-out,synthetic,absent runs only those sets, so a development run
+// never scores the test sets.
+if (process.env.COMPARE_SETS) {
+  const keep = new Set(process.env.COMPARE_SETS.split(','))
+  cases.splice(0, cases.length, ...cases.filter(c => keep.has(c.set)))
+}
 // COMPARE_LIMIT=n runs only every nth query, for a quick check of the script.
 if (process.env.COMPARE_LIMIT) {
   const every = Math.max(1, Math.floor(cases.length / Number(process.env.COMPARE_LIMIT)))
