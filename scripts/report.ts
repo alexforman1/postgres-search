@@ -1250,7 +1250,7 @@ figures['timeline'] = theme => {
   }
   const rows = [
     { label: 'search, then keep or sink', pg: s, pgLabel: `search ${s.toFixed(0)} ms`, jev: r, jevLabel: `judge ${median(judgments)} results: ${r.toFixed(0)} ms` },
-    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (6 to 20 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
+    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (2 to 22 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
   ]
   rows.forEach((row, i) => {
     const y = 96 + i * 58

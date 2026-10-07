@@ -105,10 +105,14 @@ rules:
 - on any error, timeout (1.5 s), or missing answer, keep the original page;
 - the key never reaches the browser.
 
-On the demo data the step costs about 9 cents per 1,000 searches and adds 165 ms at the median.
+On the demo data the step costs about 9 cents per 1,000 searches and adds 173 ms at the median.
 With the edit counts and product counts in its options, the spelling question tied a Norvig-style
 dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
-misspellings that are themselves words in the index. Without that evidence it lost; keep it. Measure it on the project's own queries before relying on the thresholds.
+misspellings that are themselves words in the index. Without that evidence it lost; keep it.
+`search.similar_words` gives no candidates to a word that finds nothing but starts an index word,
+so a word the user is still typing stays with the prefix step; a version without that rule found
+the right product less often than the SQL alone on such words. Measure it on the project's own
+queries before relying on the thresholds.
 
 ### 6. Verify
 
