@@ -208,9 +208,12 @@ $$;
 -- spelling question; this only finds them. Words one edit away come first, most found first, then
 -- words with trigram similarity of 0.3 or more, closest first. Counts are what the word step finds,
 -- so "hersheys" counts the Hershey products and is not offered "hershey". An alternative is offered
--- only if the search finds it in more products than the typed word, if its stem differs, and if it
--- does not just finish the typed word, which the prefix step already finds. Words under four
--- letters, words with digits and stop words get none.
+-- only if its stem differs from the typed word's and the search finds it in more products than
+-- both the typed word and the most common word, of another stem, that starts with the typed word:
+-- for an unfinished word the prefix step shows that word's products, so "strawb" is not offered
+-- "straw" while strawberries start with it. A word one letter longer can be offered ("captai",
+-- "captain"); longer completions are left to the prefix step. Words under four letters, words
+-- with digits and stop words get none.
 CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
 RETURNS TABLE (pos int, word text, word_matches int, alternative text, alternative_matches int)
 LANGUAGE sql STABLE
@@ -223,8 +226,20 @@ AS $$
     WHERE length(t.word) >= 4 AND t.word !~ '[0-9]' AND ts_lexize('english_stem', t.word) IS DISTINCT FROM '{}'
   ), counted AS (
     SELECT ty.*, coalesce((SELECT max(s.match_count) FROM search.words s WHERE s.stem = ty.stem), 0) AS matches,
-           ARRAY(SELECT search.edits1(ty.word)) AS edits
+           ARRAY(SELECT search.edits1(ty.word)) AS edits,
+           cs.completion_stems, cs.completion_counts
     FROM typed ty
+    -- The two most common stems among words that start with the typed word, with their counts. The
+    -- byte range is the prefix match that the index on word text_pattern_ops can serve.
+    CROSS JOIN LATERAL (
+      SELECT array_agg(x.stem ORDER BY x.n DESC, x.stem) AS completion_stems,
+             array_agg(x.n ORDER BY x.n DESC, x.stem) AS completion_counts
+      FROM (
+        SELECT s.stem, max(s.match_count) AS n FROM search.words s
+        WHERE s.word ~>=~ ty.word AND s.word ~<~ (ty.word || chr(1114111)) AND s.word <> ty.word
+        GROUP BY s.stem ORDER BY n DESC, s.stem LIMIT 2
+      ) x
+    ) cs
   ), offered AS (
     SELECT c.pos, c.word, c.matches, x.alternative, x.alternative_matches,
            row_number() OVER (PARTITION BY c.pos ORDER BY x.kind, x.sim DESC, x.alternative_matches DESC, x.alternative) AS n
@@ -236,7 +251,9 @@ AS $$
         FROM search.words s
         -- The edits are built once per word, and = ANY of them probes the index.
         WHERE s.word = ANY (c.edits)
-          AND s.stem <> c.stem AND s.match_count > c.matches AND s.word NOT LIKE c.word || '%'
+          AND s.stem <> c.stem AND s.match_count > c.matches
+          AND s.match_count > CASE WHEN s.stem = c.completion_stems[1] THEN coalesce(c.completion_counts[2], 0)
+                                   ELSE coalesce(c.completion_counts[1], 0) END
         UNION ALL
         SELECT t.word, t.match_count, 2, t.sim
         FROM (
@@ -244,6 +261,8 @@ AS $$
           FROM search.words s
           WHERE s.word % c.word
             AND s.stem <> c.stem AND s.match_count > c.matches AND s.word NOT LIKE c.word || '%'
+            AND s.match_count > CASE WHEN s.stem = c.completion_stems[1] THEN coalesce(c.completion_counts[2], 0)
+                                     ELSE coalesce(c.completion_counts[1], 0) END
           ORDER BY sim DESC, s.match_count DESC, s.word
           LIMIT least(greatest(coalesce(per_word, 8), 1), 50)
         ) t

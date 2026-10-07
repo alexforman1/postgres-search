@@ -321,8 +321,26 @@ describe('search.similar_words', () => {
     assert.deepEqual((await similarWords('cheerioz')).map(r => r.alternative), ['cheerios'])
   })
 
-  test('leaves out words that only finish the typed word, which the prefix step finds', async () => {
+  test('leaves out longer completions of the typed word, which the prefix step finds', async () => {
     assert.ok(!(await similarWords('cheeri')).some(r => r.alternative.startsWith('cheeri')))
+  })
+
+  test('offers a word one letter longer than the typed word, when nothing else starts with it', async () => {
+    assert.ok((await similarWords('wate')).some(r => r.alternative === 'water'))
+  })
+
+  test('offers only words found in more products than what the prefix step would show', async () => {
+    // "peanu" is the start of "peanut", found in 1 product, so "peans", also in 1, is not offered;
+    // this is the strawb case, which was offered "straw" though strawberries start with it.
+    const rows = await similarWords('peanu')
+    assert.ok(!rows.some(r => r.alternative === 'peans'))
+    assert.ok(rows.some(r => r.alternative === 'peanut'))
+  })
+
+  test('blocks a one-letter completion when a more common completion has another stem', async () => {
+    // "cheerioz" starts with "cheerio", and so does "cheerios" (stem cheerio, 3 products); the
+    // one-letter completion cheerioz, found in 1, is blocked by it.
+    assert.ok(!(await similarWords('cheerio')).some(r => r.alternative === 'cheerioz'))
   })
 
   test('leaves out words that share too few letters', async () => {

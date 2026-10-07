@@ -61,6 +61,12 @@ for (const [file, set] of [
   }
 }
 for (const c of (await read('absent.json')) as { q: string }[]) cases.push({ q: c.q, set: 'absent', kind: 'absent', hit: null })
+// COMPARE_SETS=hand-written,held-out,synthetic,absent runs only those sets, so a development run
+// never scores the test sets.
+if (process.env.COMPARE_SETS) {
+  const keep = new Set(process.env.COMPARE_SETS.split(','))
+  cases.splice(0, cases.length, ...cases.filter(c => keep.has(c.set)))
+}
 // COMPARE_LIMIT=n runs only every nth query, for a quick check of the script.
 if (process.env.COMPARE_LIMIT) {
   const every = Math.max(1, Math.floor(cases.length / Number(process.env.COMPARE_LIMIT)))
