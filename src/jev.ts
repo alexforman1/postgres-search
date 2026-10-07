@@ -6,15 +6,29 @@ export interface NoulQuestion {
   criteria?: { true: string; false: string }
 }
 
+// Picks one option. criteria maps each option id to its description.
+export interface ChoiceQuestion {
+  type: 'choice'
+  instructions: string
+  criteria: Record<string, string>
+}
+
 export interface JevRequest {
   state: unknown
-  questions: Record<string, NoulQuestion>
+  questions: Record<string, NoulQuestion | ChoiceQuestion>
+}
+
+export interface JevAnswer {
+  type: string
+  noul?: number
+  choice?: string
+  probabilities?: Record<string, number>
 }
 
 export interface JevResponse {
   // The versioned model that answered, even when the request named an alias such as jev-latest.
   model: string
-  answers: Record<string, { type: string; noul?: number }>
+  answers: Record<string, JevAnswer>
   // TypeSafe bills input tokens only.
   usage?: { input_tokens: number; output_tokens: number }
 }

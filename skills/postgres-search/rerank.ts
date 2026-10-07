@@ -6,15 +6,29 @@ export interface NoulQuestion {
   criteria?: { true: string; false: string }
 }
 
+// Picks one option. criteria maps each option id to its description.
+export interface ChoiceQuestion {
+  type: 'choice'
+  instructions: string
+  criteria: Record<string, string>
+}
+
 export interface JevRequest {
   state: unknown
-  questions: Record<string, NoulQuestion>
+  questions: Record<string, NoulQuestion | ChoiceQuestion>
+}
+
+export interface JevAnswer {
+  type: string
+  noul?: number
+  choice?: string
+  probabilities?: Record<string, number>
 }
 
 export interface JevResponse {
   // The versioned model that answered, even when the request named an alias such as jev-latest.
   model: string
-  answers: Record<string, { type: string; noul?: number }>
+  answers: Record<string, JevAnswer>
   // TypeSafe bills input tokens only.
   usage?: { input_tokens: number; output_tokens: number }
 }
@@ -42,6 +56,11 @@ export async function askJev(request: JevRequest, options: JevOptions = {}): Pro
   return (await res.json()) as JevResponse
 }
 
+// The same split as search.tokens in sql/schema.sql.
+export function tokens(q: string): string[] {
+  return q.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim().split(' ').filter(Boolean)
+}
+
 export interface Candidate {
   id: string
   name: string
@@ -55,6 +74,9 @@ export interface RerankResult<T> {
   results: T[]
   sunk: T[]
   reranked: boolean
+  // Jev scored every candidate below the threshold and none carries the typed words. The results
+  // stay; the page can say that none of them matches.
+  noMatch: boolean
   ms: number
   error?: string
   model?: string
@@ -80,7 +102,14 @@ export async function rerank<T extends Candidate>(
   const ask = options.ask ?? ((request: JevRequest) => askJev(request))
   const head = results.slice(0, top)
   const tail = results.slice(top)
-  const unchanged = (ms: number, error?: string): RerankResult<T> => ({ results, sunk: [], reranked: false, ms, error })
+  const unchanged = (ms: number, error?: string): RerankResult<T> => ({
+    results,
+    sunk: [],
+    reranked: false,
+    noMatch: false,
+    ms,
+    error,
+  })
 
   // Every comparison with NaN is false, which would drop every candidate from both lists.
   if (!Number.isFinite(threshold)) return unchanged(0, 'threshold is not a number')
@@ -92,7 +121,7 @@ export async function rerank<T extends Candidate>(
 
   const started = Date.now()
   try {
-    const response = await ask(buildRequest(query, head))
+    const response = await ask(buildRerankRequest(query, head))
     const scores = head.map((_, i) => response.answers[`c${i}`]?.noul)
     if (scores.some(s => typeof s !== 'number')) return unchanged(Date.now() - started, 'incomplete answer')
     const keep = head.filter((_, i) => (scores[i] as number) >= threshold)
@@ -101,6 +130,7 @@ export async function rerank<T extends Candidate>(
       results: [...keep, ...sunk, ...tail],
       sunk,
       reranked: true,
+      noMatch: keep.length === 0 && !head.some(c => carriesQuery(c, query)),
       ms: Date.now() - started,
       model: response.model,
       inputTokens: response.usage?.input_tokens,
@@ -110,12 +140,20 @@ export async function rerank<T extends Candidate>(
   }
 }
 
+// The typed words, in order, each at the start of a word of the name or of the other names. Jev
+// judges products, so it scores low every product of a brand typed alone ("general mills") and of
+// an unfinished word ("strawb"); those results still match what was typed.
+function carriesQuery(c: Candidate, query: string): boolean {
+  const typed = tokens(query).join(' ')
+  return typed !== '' && [c.name, c.other_names ?? ''].some(text => ` ${tokens(text).join(' ')}`.includes(` ${typed}`))
+}
+
 function thresholdFromEnv(): number {
   const raw = process.env.JEV_THRESHOLD
   return raw === undefined || raw.trim() === '' ? 0.3 : Number(raw)
 }
 
-function buildRequest(query: string, candidates: Candidate[]): JevRequest {
+function buildRerankRequest(query: string, candidates: Candidate[]): JevRequest {
   const questions: JevRequest['questions'] = {}
   candidates.forEach((_, i) => {
     questions[`c${i}`] = {
@@ -134,5 +172,125 @@ function buildRequest(query: string, candidates: Candidate[]): JevRequest {
       candidates: candidates.map((c, i) => ({ index: i, name: c.name, other_names: c.other_names, facets: c.facets })),
     },
     questions,
+  }
+}
+
+// One row of search.similar_words.
+export interface SimilarWord {
+  pos: number
+  word: string
+  word_count: number
+  alternative: string
+  doc_count: number
+}
+
+export interface SpellingResult {
+  // A respelled query to offer as a "Did you mean" link, or null. Never search it without asking.
+  suggestion: string | null
+  // Jev's probability for the likeliest respelling, whether or not it cleared the bar.
+  p: number
+  ran: boolean
+  ms: number
+  // What Jev chose from: the query as typed, then the respellings.
+  options: string[]
+  error?: string
+  model?: string
+  inputTokens?: number
+}
+
+export interface SpellingOptions {
+  suggestAt?: number
+  maxOptions?: number
+  // Describes the catalog to Jev. The demo names groceries; say what your search holds.
+  note?: string
+  ask?: (request: JevRequest) => Promise<JevResponse>
+}
+
+// The query as typed, then the query with one word respelled. Every word's closest alternative
+// comes before any word's second, so a long query cannot fill the list from its first word.
+export function spellings(query: string, similar: SimilarWord[], max = 16): string[] {
+  const words = tokens(query)
+  const byPos = new Map<number, string[]>()
+  for (const row of similar) {
+    // Postgres and JavaScript lower-case some letters differently; a row that does not line up
+    // with the query would respell the wrong word.
+    if (words[row.pos - 1] !== row.word) continue
+    byPos.set(row.pos, [...(byPos.get(row.pos) ?? []), row.alternative])
+  }
+  const positions = [...byPos.keys()].sort((a, b) => a - b)
+  const depth = Math.max(0, ...[...byPos.values()].map(alternatives => alternatives.length))
+  const out = [words.join(' ')]
+  for (let rank = 0; rank < depth; rank++) {
+    for (const pos of positions) {
+      const alternative = byPos.get(pos)![rank]
+      if (alternative === undefined) continue
+      const respelled = words.with(pos - 1, alternative).join(' ')
+      if (!out.includes(respelled)) out.push(respelled)
+    }
+  }
+  return out.slice(0, max)
+}
+
+// Asks Jev which spelling the user meant: the query as typed or one of the respellings. A
+// respelling becomes a suggestion only at suggestAt or above. Every failure suggests nothing.
+export async function checkSpelling(
+  query: string,
+  similar: SimilarWord[],
+  options: SpellingOptions = {},
+): Promise<SpellingResult> {
+  const suggestAt = options.suggestAt ?? 0.6
+  const ask = options.ask ?? ((request: JevRequest) => askJev(request))
+  const spelled = spellings(query, similar, options.maxOptions)
+  const nothing = (ms: number, error?: string): SpellingResult => ({
+    suggestion: null,
+    p: 0,
+    ran: false,
+    ms,
+    options: spelled,
+    error,
+  })
+  if (spelled.length < 2) return nothing(0)
+
+  const started = Date.now()
+  try {
+    const response = await ask(buildSpellingRequest(query, spelled, options.note))
+    const probabilities = response.answers.meant?.probabilities
+    if (!probabilities) return nothing(Date.now() - started, 'incomplete answer')
+    let best = 0
+    let p = 0
+    spelled.forEach((_, i) => {
+      const pi = probabilities[`s${i}`]
+      if (i > 0 && typeof pi === 'number' && pi > p) {
+        best = i
+        p = pi
+      }
+    })
+    return {
+      suggestion: best > 0 && p >= suggestAt ? spelled[best] : null,
+      p,
+      ran: true,
+      ms: Date.now() - started,
+      options: spelled,
+      model: response.model,
+      inputTokens: response.usage?.input_tokens,
+    }
+  } catch (err) {
+    return nothing(Date.now() - started, err instanceof Error ? err.message : String(err))
+  }
+}
+
+function buildSpellingRequest(query: string, spelled: string[], note = 'A user typed `query` into a product search box.'): JevRequest {
+  const criteria: Record<string, string> = {}
+  spelled.forEach((s, i) => (criteria[`s${i}`] = `"${s}"`))
+  return {
+    state: { query, note },
+    questions: {
+      meant: {
+        type: 'choice',
+        instructions:
+          'Which of these searches did the user mean to type? Pick the one that is spelled the way the user intended. The first option is exactly what they typed.',
+        criteria,
+      },
+    },
   }
 }

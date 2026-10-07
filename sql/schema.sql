@@ -52,3 +52,14 @@ WHERE d.name_key <> ''
 GROUP BY d.name_key;
 
 CREATE UNIQUE INDEX IF NOT EXISTS names_name_key ON search.names (name_key text_pattern_ops);
+
+-- One row per word that products use, counted once per product. search.similar_words looks up
+-- the words spelled close to a query word here, for the Jev step's spelling question.
+CREATE MATERIALIZED VIEW IF NOT EXISTS search.words AS
+SELECT w AS word, count(*)::int AS doc_count
+FROM search.documents d
+CROSS JOIN LATERAL unnest(tsvector_to_array(d.prefix_vector)) AS w
+GROUP BY w;
+
+CREATE UNIQUE INDEX IF NOT EXISTS words_word ON search.words (word);
+CREATE INDEX IF NOT EXISTS words_word_trgm ON search.words USING gin (word gin_trgm_ops);

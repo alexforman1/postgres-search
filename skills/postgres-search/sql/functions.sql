@@ -183,6 +183,30 @@ AS $$
   ORDER BY c.facet, c.doc_count DESC, c.value
 $$;
 
+-- Words that products use and that are spelled close to each query word, closest first. The Jev
+-- step asks which spelling the user meant; this only finds the spellings. Words under four letters
+-- and words with digits get none, because their few trigrams match too many words. Words that
+-- only finish the typed word are left out: the prefix step already finds them.
+CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
+RETURNS TABLE (pos int, word text, word_count int, alternative text, doc_count int)
+LANGUAGE sql STABLE
+SET search_path = search, public, extensions
+SET pg_trgm.similarity_threshold = 0.3
+AS $$
+  SELECT t.pos::int, t.word, coalesce(own.doc_count, 0), a.word, a.doc_count
+  FROM unnest((search.tokens(left(q, 256)))[1:32]) WITH ORDINALITY AS t(word, pos)
+  LEFT JOIN search.words own ON own.word = t.word
+  CROSS JOIN LATERAL (
+    SELECT s.word, s.doc_count, similarity(s.word, t.word) AS sim
+    FROM search.words s
+    WHERE s.word % t.word AND s.word NOT LIKE t.word || '%'
+    ORDER BY sim DESC, s.doc_count DESC, s.word
+    LIMIT least(greatest(coalesce(per_word, 8), 1), 50)
+  ) a
+  WHERE length(t.word) >= 4 AND t.word !~ '[0-9]'
+  ORDER BY t.pos, a.sim DESC, a.doc_count DESC, a.word
+$$;
+
 CREATE OR REPLACE FUNCTION search.refresh()
 RETURNS void
 LANGUAGE plpgsql
@@ -191,5 +215,6 @@ AS $$
 BEGIN
   REFRESH MATERIALIZED VIEW CONCURRENTLY search.documents;
   REFRESH MATERIALIZED VIEW CONCURRENTLY search.names;
+  REFRESH MATERIALIZED VIEW CONCURRENTLY search.words;
 END
 $$;
