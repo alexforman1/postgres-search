@@ -2,7 +2,9 @@
 
 Measured on 2026-09-22 against the USDA FoodData Central Branded Foods release of 2025-12-18,
 loaded with `npm run load -- --full`, without Jev. `search.words`, `search.similar_words` and the
-[Jev](#jev) numbers were measured on 2026-10-07 on the same machine and load. Machine: Intel Core i5-10500H (12 logical CPUs,
+[Jev](#jev-and-the-three-way-comparison) numbers were measured on 2026-10-07 on the same machine
+and load; the `search.similar_words` times were taken with a load average of about 11 from other
+programs. Machine: Intel Core i5-10500H (12 logical CPUs,
 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker image on a local disk, default
 settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
 
@@ -55,16 +57,17 @@ last five, in milliseconds, and the guide's other timings were taken the same wa
 | `search.facets('milk')`                 | word   | 15,770       | 128 to 135     |
 | `search.facets('chocolate')`            | word   | 38,068       | 311 to 335     |
 | `search.facets('chocolatte')`           | typo   | 39,149       | 1,238 to 1,262 |
-| `search.similar_words('parmesean')`     |        |              | 0.7 to 0.9     |
-| `search.similar_words('chocolatte')`    |        |              | 0.9 to 1.1     |
-| `search.similar_words('tortila chips')` |        |              | 2.6 to 5.3     |
+| `search.similar_words('parmesean')`     |        |              | 0.8 to 2.6     |
+| `search.similar_words('chocolatte')`    |        |              | 1.7 to 3.3     |
+| `search.similar_words('tortila chips')` |        |              | 3.3 to 5.8     |
 
 ## Evaluation
 
 `npm run eval` scores `eval/queries.json` (50 queries through `search.query_distinct`) and
 `eval/suggest.json` (126 typeahead inputs). A hit is a result that matches the case's pattern.
-With a TypeSafe key it also scores the Jev step, `eval/spelling.json` and `eval/absent.json`
-([Jev](#jev)). The tables here are without Jev.
+With a TypeSafe key it also scores the Jev step, `eval/spelling.json` and `eval/absent.json`.
+The tables here are without Jev; the Jev numbers come from `scripts/compare.ts`
+([below](#jev-and-the-three-way-comparison)).
 
 | kind   | cases | hit@1 | hit@3 | hit@10 |
 |--------|------:|------:|------:|-------:|
@@ -130,144 +133,50 @@ found 8 names before `a48f595`; `suggest` took 462 to 930 ms for `aed`, `bld` an
 `a007c4c` and `b291178`; and each `chocolatte` call took 1.4 to 1.9 s on a sequential scan plan,
 before autoanalyze ran after a reload.
 
-## Jev
+## Jev and the three-way comparison
 
-Measured on 2026-10-07 with `jev-1.13.0`, the model every answer reported. Three runs of:
-
-```sh
-JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts
-```
-
-The Jev calls are network round trips from the machine above to `api.typesafe.ai`, so their times
-depend on where the server runs. The machine was also busier than on 2026-09-22, which makes the
-Postgres times in these runs noisier than the table above.
-
-### Results page
-
-All three runs gave this table. "jev" is the page after keep or sink. "followed" scores the
-plain Postgres results of the suggested spelling where "Did you mean" appeared, and the "jev"
-results everywhere else.
-
-| kind   | cases | hit@1 | hit@3 | hit@10 | jev hit@1 | jev hit@3 | followed hit@1 | followed hit@3 | followed hit@10 |
-|--------|------:|------:|------:|-------:|----------:|----------:|---------------:|---------------:|----------------:|
-| exact  | 20    | 95%   | 95%   | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
-| typo   | 18    | 72%   | 72%   | 72%    | 72%       | 72%       | 100%           | 100%           | 100%            |
-| prefix | 6     | 50%   | 67%   | 83%    | 67%       | 83%       | 67%            | 83%            | 83%             |
-| brand  | 3     | 100%  | 100%  | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
-| code   | 3     | 100%  | 100%  | 100%   | 100%      | 100%      | 100%           | 100%           | 100%            |
-| all    | 50    | 82%   | 84%   | 88%    | 86%       | 88%       | 96%            | 98%            | 98%             |
-
-"Did you mean" appeared for the same 11 queries in every run: `cherios`, `cheerois`, `pringels`,
-`nutela`, `dortios`, `stawberry jam`, `parmesean`, `worchestershire`, `gaucamole`,
-`tortila chips` and `choclate milk`, each with the intended spelling, at 0.67 to 0.98. The
-no-match line appeared once, for `peanut buter`.
-
-An earlier run, before `search.similar_words` left out words that only finish the typed word, also
-suggested "gatorade" for `gatorad` and "blueberry muff" for `blueb muff`. The second made the
-prefix row's followed hit@10 67%.
-
-### Cost and time
-
-| measure                                   | run 1      | run 2      | run 3      |
-|-------------------------------------------|-----------:|-----------:|-----------:|
-| keep or sink: calls / skipped             | 44 / 6     | 44 / 6     | 44 / 6     |
-| keep or sink: input tokens, median        | 1,827      | 1,827      | 1,827      |
-| keep or sink: ms, median / p90            | 153 / 183  | 165 / 200  | 165 / 209  |
-| spelling: calls / skipped                 | 47 / 3     | 47 / 3     | 47 / 3     |
-| spelling: input tokens, median            | 494        | 494        | 494        |
-| spelling: ms, median / p90                | 161 / 196  | 155 / 196  | 170 / 212  |
-| page time added over Postgres, median / p90 | 157 / 216 | 168 / 203 | 165 / 211 |
-| cost per search                           | $0.000087  | $0.000087  | $0.000087  |
-| cost of the whole run                     | $0.0066    | $0.0066    | $0.0066    |
-
-Cost is input tokens times $0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
-output tokens are free. Cost per search divides the results-page tokens by all 50 queries, skipped
-calls included, which is $0.087 per 1,000 searches and about 2,070 input tokens per search. The whole run also covers the spelling and
-absent sets. No call failed.
-
-Before the spelling question existed, the same eval with only keep or sink gave jev hit@1 86% and
-hit@3 88%, 1,827 input tokens per call, 160 and 164 ms median and 200 ms p90 per call (two runs),
-and $0.000065 per search.
-
-### Spelling
-
-`eval/spelling.json` holds 30 misspellings and 20 correctly spelled words. It was written before
-any Jev call on it, and the 0.6 bar was not changed after it was scored. `search.similar_words`
-did change after its first scoring, when it began to leave out words that only finish the typed
-word; that first run scored 77% and 100%, the same as two of the three runs below. "offered" counts cases
-where the intended spelling was among Jev's options (every control counts). The frequency rule
-respells a word to its most common close word when that word is used at least ten times as often
-as the typed word.
-
-| kind    | cases | offered | Jev              | frequency rule |
-|---------|------:|--------:|-----------------:|---------------:|
-| typo    | 30    | 97%     | 77%, 83%, 77%    | 73%            |
-| control | 20    | 100%    | 100%             | 60%            |
-
-Jev made no wrong suggestion in any run. Its misses were declines: `jalepeno`, `fettucine`,
-`funyons` and `skittels` in all three runs, `cappucino` in two, `marshmellow` and `vinegarette` in
-one, and `granloa`, whose intended spelling was never offered. The frequency rule made 16 wrong
-suggestions in each run, 8 on misspellings (such as `tostitoes` to "tomatoes") and 8 on controls
-(such as `harissa` to "harris").
-
-### No match
-
-`eval/absent.json` holds 15 household goods. In all three runs the line appeared for 10 of them.
-An earlier run, before `rerank` checked for the typed words, showed it for 12.
-`laundry detergent` and `paper towels` returned no results, `sunscreen` returned one result so
-keep or sink did not run, and `toothpaste` and `light bulbs` returned products carrying those
-words.
-
-## Three searches compared
-
-`scripts/compare.ts` runs three searches over the same products and 115 queries: the 50 in
-`eval/queries.json`, the 50 in `eval/spelling.json` and the 15 in `eval/absent.json`. Measured on
-2026-10-07 with `jev-1.13.0`, three runs of:
+Measured on 2026-10-07 with `jev-1.13.0`, the model every answer reported, in five runs of:
 
 ```sh
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
+node scripts/report.ts
 ```
 
-- plain: Postgres full-text search as its manual shows it, over the same names as `search.source`:
-  `to_tsvector('english', name || ' ' || other_names)` in the table `baseline.documents` with a
-  GIN index, `plainto_tsquery`, ordered by `ts_rank`, one row per name. The script builds the
-  table on its first run.
-- sql: `search.query_distinct`.
-- sql+jev: the same with the Jev step, scored on the page as shown, and after one click, where a
-  "Did you mean" link appeared, on the plain `search.query_distinct` results of the suggestion.
+`scripts/compare.ts` runs 615 queries (`eval/queries.json`, `eval/spelling.json`,
+`eval/synthetic.json`, `eval/absent.json`) through plain Postgres full-text search, this SQL, and
+this SQL with the Jev step, and writes every query's outcome to `results/`. `scripts/report.ts`
+turns those files into [`results/report.md`](../results/report.md), the full record with every
+group, system and test, and into the figures in `docs/figures/`. The
+[README](../README.md#3-method) gives the method and discusses the results; the numbers below are
+copied from `results/report.md`.
 
-A hit on `eval/queries.json` uses each case's pattern, as in the eval. On `eval/spelling.json` a
-hit is a result whose name or other names carry the intended words, ignoring spaces,
-punctuation and accents, so "almond milk" finds ALMONDMILK and "jalapeno" finds JALAPEÑO.
+The Jev calls are network round trips from this machine to `api.typesafe.ai`, so their times
+depend on where the server runs. A browser was running during the runs, with a load average of 5
+to 13, which makes the Postgres times noisier than the table above.
 
-| hit@1                          | cases | plain | sql  | sql+jev    | sql+jev, one click |
-|--------------------------------|------:|------:|-----:|-----------:|-------------------:|
-| `eval/queries.json`            | 50    | 52%   | 82%  | 86%        | 96%                |
-| `eval/spelling.json`           | 50    | 42%   | 64%  | 66 to 70%  | 86 to 90%          |
-| `eval/spelling.json`, typos    | 30    | 10%   | 43%  | 43 to 50%  | 77 to 83%          |
-| `eval/spelling.json`, controls | 20    | 90%   | 95%  | 100%       | 100%               |
+| hit@1, median of five runs | hand-written (50) | held-out (50) | synthetic (500) |
+|----------------------------|------------------:|--------------:|----------------:|
+| plain Postgres full-text search | 52% | 42% | 36% |
+| this SQL | 82% | 64% | 68% |
+| this SQL + Jev keep or sink | 86% | 68% | 73% |
+| this SQL + Jev "Did you mean", one click | 92% | 86% | 77% |
+| this SQL + both, one click | 96% | 90% | 79% |
+| this SQL + Norvig corrector, one click | 82% | 66% | 87% |
 
-| hit@10                         | cases | plain | sql  | sql+jev    | sql+jev, one click |
-|--------------------------------|------:|------:|-----:|-----------:|-------------------:|
-| `eval/queries.json`            | 50    | 56%   | 88%  | 88%        | 98%                |
-| `eval/spelling.json`           | 50    | 52%   | 78%  | 78%        | 90 to 92%          |
-| `eval/spelling.json`, typos    | 30    | 23%   | 63%  | 63%        | 83 to 87%          |
+| ms, five runs pooled | median | p90 | p99 |
+|----------------------|-------:|----:|----:|
+| plain Postgres full-text search | 3 | 21 | 227 |
+| this SQL | 25 | 202 | 667 |
+| this SQL + Jev, whole page | 196 | 314 | 669 |
+| time Jev adds to the page | 166 | 219 | 382 |
+| one keep-or-sink call | 162 | 207 | 362 |
+| one spelling call | 157 | 202 | 331 |
 
-Where a cell has one number, all three runs gave it. Plain returned no results at all for 16 of
-the 50 in `eval/queries.json`, among them every barcode, and 12 of the 50 in
-`eval/spelling.json`; sql returned results for all 100. Of the 48 misspellings across the two
-files, plain returned nothing for 23. Of the 15 queries in `eval/absent.json`,
-plain returned nothing for 12 and sql for 2; sql+jev returned nothing or showed the no-match line
-for 12.
+Cost is input tokens times \$0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
+output tokens are free. On the hand-written queries a search used 1,912 input tokens on average,
+\$0.080 per 1,000 searches; across the four sets it was \$0.077 to \$0.089 per 1,000. One run of
+`scripts/compare.ts`, including a research-only variant of the spelling question, sends about 1.5
+million input tokens and costs \$0.065.
 
-| ms per query, median / p90, all 115 | run 1     | run 2     | run 3     |
-|-------------------------------------|----------:|----------:|----------:|
-| plain                               | 4 / 34    | 3 / 15    | 3 / 10    |
-| sql                                 | 28 / 312  | 15 / 141  | 12 / 143  |
-| sql+jev, the whole page             | 231 / 342 | 201 / 309 | 194 / 316 |
-| Jev keep or sink call               | 176 / 216 | 167 / 207 | 161 / 200 |
-| Jev spelling call                   | 168 / 212 | 159 / 207 | 166 / 212 |
-
-The times come from Node over the connection pool, after one untimed pass over every query.
-Run 1 followed the first build of `baseline.documents`. Each run made 102 keep or sink calls, with
-a median of 10 results judged per call, and 112 spelling calls, with a median of 9 options.
+Numbers in this file from before 2026-10-07 that concern Jev, and the eval runs made before the
+review fixes of that day, are in the git history; they describe earlier code.

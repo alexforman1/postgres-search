@@ -76,4 +76,5 @@ One less service to pay for, and no index updates to send to it. No per-record s
 Algolia sets by plan. Search runs inside your database's transactions and permissions: a query can
 join your own tables, filter by the same rules as the rest of your app, and see a row as soon as
 the refresh that includes it commits. With a TypeSafe key, the [Jev step](jev.md) adds "Did you
-mean" and moves clearly wrong results down, for about 9 cents per 1,000 searches.
+mean" and moves clearly wrong results down, for about 8 cents per 1,000 searches
+([cost](../README.md#7-cost-and-the-comparison-with-algolia)).

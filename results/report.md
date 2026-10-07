@@ -29,6 +29,7 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 | synthetic | 500 | 36% [32%, 41%] | 68% [64%, 72%] | 73% (72% to 73%) [69%, 76%] | 77% (77% to 78%) [74%, 81%] | 79% (79% to 80%) [75%, 83%] | 87% [84%, 90%] | 50% [45%, 54%] | 80% (79% to 80%) [76%, 83%] | 88% [85%, 91%] |
 | synthetic, misspelled | 300 | 2% [1%, 4%] | 55% [49%, 60%] | 59% (59% to 60%) [53%, 64%] | 70% (69% to 70%) [65%, 75%] | 71% (70% to 71%) [65%, 76%] | 86% [81%, 89%] | 45% [39%, 51%] | 74% (73% to 74%) [69%, 79%] | 86% [81%, 89%] |
 | synthetic, correctly spelled | 200 | 89% [83%, 92%] | 89% [84%, 93%] | 93% (92% to 93%) [88%, 95%] | 89% (88% to 89%) [83%, 92%] | 92% (92% to 93%) [87%, 95%] | 89% [84%, 93%] | 57% [50%, 64%] | 88% (88% to 89%) [83%, 92%] | 92% (92% to 93%) [87%, 95%] |
+| out-of-sample (held-out and synthetic) | 550 | 37% [33%, 41%] | 68% [64%, 72%] | 72% (71% to 73%) [68%, 76%] | 78% (78% to 79%) [74%, 81%] | 80% [77%, 83%] | 85% [82%, 88%] | 51% [47%, 56%] | 80% (79% to 80%) [77%, 83%] | 88% (88% to 89%) [85%, 91%] |
 
 ### hit@10
 
@@ -42,8 +43,20 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 | synthetic | 500 | 39% [35%, 43%] | 80% [76%, 83%] | 80% [76%, 83%] | 86% [83%, 89%] | 86% [83%, 89%] | 93% [91%, 95%] | 55% [51%, 59%] | 89% (88% to 89%) [86%, 91%] | 93% [91%, 95%] |
 | synthetic, misspelled | 300 | 2% [1%, 4%] | 68% [63%, 73%] | 68% [63%, 73%] | 80% (79% to 80%) [75%, 84%] | 80% (79% to 80%) [75%, 84%] | 91% [88%, 94%] | 50% [44%, 56%] | 84% (83% to 84%) [79%, 87%] | 91% [88%, 94%] |
 | synthetic, correctly spelled | 200 | 95% [91%, 97%] | 97% [93%, 98%] | 97% [93%, 98%] | 96% [92%, 98%] | 96% [92%, 98%] | 97% [93%, 98%] | 63% [56%, 69%] | 96% [92%, 98%] | 96% [92%, 98%] |
+| out-of-sample (held-out and synthetic) | 550 | 40% [36%, 44%] | 79% [76%, 83%] | 79% [76%, 83%] | 87% (86% to 87%) [83%, 89%] | 87% (86% to 87%) [83%, 89%] | 92% [89%, 94%] | 57% [52%, 61%] | 89% (88% to 89%) [86%, 91%] | 93% [91%, 95%] |
 
-## Paired tests (exact McNemar, hit@1)
+## Primary comparisons
+
+On the 550 out-of-sample queries (held-out and synthetic), hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
+
+| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, worst run |
+|:---|:---|---:|---:|---:|---:|---:|
+| this SQL | plain Postgres full-text search | 68% | 37% | 178 | 7 | < 0.0001 |
+| this SQL + Jev keep or sink, as shown | this SQL | 72% | 68% | 22 to 28 | 2 to 3 | 0.0002 |
+| this SQL + Jev "Did you mean", one click | this SQL | 78% | 68% | 67 to 69 | 11 to 14 | < 0.0001 |
+| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 78% | 85% | 20 to 22 | 57 to 61 | 0.0001 |
+
+## Paired tests (exact McNemar, hit@1, exploratory)
 
 "only A" counts queries the first system gets right and the second gets wrong. For systems
 that call Jev, each run gives its own test; the table shows the range over runs.
@@ -110,6 +123,16 @@ that call Jev, each run gives its own test; the table shows the range over runs.
 | synthetic, misspelled | this SQL + Jev over wider options, one click vs this SQL + Jev "Did you mean", one click | 13 to 16 | 2 to 4 | 0.004 to 0.049 |
 | synthetic, misspelled | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Norvig corrector, one click | 0 | 0 | 1.000 |
 | synthetic, misspelled | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Jev, both questions, one click | 53 to 57 | 10 to 11 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL vs plain Postgres full-text search | 178 | 7 | < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev keep or sink, as shown vs this SQL | 22 to 28 | 2 to 3 | < 0.0001 to 0.0002 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev "Did you mean", one click vs this SQL | 67 to 69 | 11 to 14 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev, both questions, one click vs this SQL | 80 to 81 | 12 to 16 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev, both questions, one click vs plain Postgres full-text search | 239 to 242 | 3 to 4 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev "Did you mean", one click vs this SQL + Norvig corrector, one click | 20 to 22 | 57 to 61 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev "Did you mean", one click vs this SQL + frequency rule, one click | 168 to 171 | 22 to 24 | < 0.0001 to < 0.0001 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev over wider options, one click vs this SQL + Jev "Did you mean", one click | 13 to 18 | 3 to 6 | 0.004 to 0.167 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Norvig corrector, one click | 19 to 21 | 1 to 3 | < 0.0001 to 0.0005 |
+| out-of-sample (held-out and synthetic) | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Jev, both questions, one click | 54 to 58 | 10 to 11 | < 0.0001 to < 0.0001 |
 
 ## Spelling correction
 
@@ -219,11 +242,13 @@ Suggestions that changed: `cappucino`: cappuccino, none, cappuccino, cappuccino,
 
 ## No-match line
 
-| measure | plain | this SQL | this SQL + Jev |
+An empty page, or for Jev the no-match line, counts as saying that nothing matches.
+
+| queries | plain | this SQL | this SQL + Jev |
 |:---|---:|---:|---:|
-| absent queries (of 15) shown as having no match | 12 | 2 | 12 |
-| answerable queries (of 600) with the line shown | n/a | n/a | 15 (12 to 17) |
-| of those, with a matching result in the top 10 | n/a | n/a | 4 (4 to 6) |
+| absent (15): says nothing matches | 12 | 2 | 12 |
+| answerable (600): says nothing matches | 314 | 15 | 30 (27 to 32) |
+| answerable, says nothing matches while a match is in the top 10 | 0 | 0 | 4 (4 to 6) |
 
 ## Time
 
@@ -247,6 +272,7 @@ Each keep or sink call judged a median of 10 results; each spelling call chose a
 | hand-written | 50 | 1912 | $0.000080 | $0.0803 |
 | held-out | 50 | 1941 | $0.000082 | $0.0815 |
 | synthetic | 500 | 2123 | $0.000089 | $0.0892 |
+| out-of-sample (held-out and synthetic) | 550 | 2106 | $0.000088 | $0.0885 |
 | absent | 15 | 1844 | $0.000077 | $0.0774 |
 | every query | 615 | 2084 | $0.000088 | $0.0875 |
 

@@ -169,6 +169,7 @@ const GROUPS: Group[] = [
   { name: 'synthetic', take: r => r.set === 'synthetic' },
   { name: 'synthetic, misspelled', take: r => r.set === 'synthetic' && r.kind === 'typo' },
   { name: 'synthetic, correctly spelled', take: r => r.set === 'synthetic' && r.kind === 'control' },
+  { name: 'out-of-sample (held-out and synthetic)', take: r => r.set === 'held-out' || r.set === 'synthetic' },
 ]
 
 interface Cell {
@@ -241,7 +242,44 @@ for (const metric of ['hit1', 'hit10'] as const) {
   )
 }
 
-line('## Paired tests (exact McNemar, hit@1)')
+// The four comparisons the README treats as primary, on the queries nothing was tuned on, with
+// Holm's correction across the four, run by run.
+const PRIMARY: [SystemId, SystemId][] = [
+  ['sql', 'plain'],
+  ['rerank', 'sql'],
+  ['spellingOnly', 'sql'],
+  ['spellingOnly', 'norvig'],
+]
+const outOfSample = GROUPS.find(g => g.name.startsWith('out-of-sample'))!
+const holmByRun = runs.map(run => {
+  const rs = run.records.filter(outOfSample.take)
+  const tests = PRIMARY.map(([a, b]) => mcnemar(rs.map(r => outcome(r, a).hit1), rs.map(r => outcome(r, b).hit1)))
+  const order = tests.map((t, i) => i).sort((i, j) => tests[i].p - tests[j].p)
+  const adjusted = new Array<number>(tests.length)
+  let running = 0
+  order.forEach((i, rank) => {
+    running = Math.max(running, Math.min(1, (tests.length - rank) * tests[i].p))
+    adjusted[i] = running
+  })
+  return tests.map((t, i) => ({ ...t, adjusted: adjusted[i] }))
+})
+line('## Primary comparisons')
+line()
+line(`On the ${runs[0].records.filter(outOfSample.take).length} out-of-sample queries (held-out and synthetic), hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the ${runs.length} runs.`)
+line()
+table(
+  ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'Holm-adjusted p, worst run'],
+  PRIMARY.map(([a, b], i) => {
+    const ca = cell(outOfSample, a, 'hit1')
+    const cb = cell(outOfSample, b, 'hit1')
+    const onlyA = holmByRun.map(r => r[i].onlyA)
+    const onlyB = holmByRun.map(r => r[i].onlyB)
+    const sp = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `${Math.min(...v)} to ${Math.max(...v)}`)
+    return [SYSTEM_LABEL[a], SYSTEM_LABEL[b], pct(ca.k / ca.n), pct(cb.k / cb.n), sp(onlyA), sp(onlyB), fmtP(Math.max(...holmByRun.map(r => r[i].adjusted)))]
+  }),
+  ['l', 'l'],
+)
+line('## Paired tests (exact McNemar, hit@1, exploratory)')
 line()
 line('"only A" counts queries the first system gets right and the second gets wrong. For systems')
 line('that call Jev, each run gives its own test; the table shows the range over runs.')
@@ -574,14 +612,20 @@ line()
     }
   })
   const falseLines = runs.map(run => run.records.filter(r => r.set !== 'absent' && r.jev.rerank.noMatch && !r.suggestions.jev && r.jev.hit10).length)
-  const anyLines = runs.map(run => run.records.filter(r => r.set !== 'absent' && r.jev.rerank.noMatch && !r.suggestions.jev).length)
   const answerable = runs[0].records.filter(r => r.set !== 'absent').length
+  // "Shown as having no match": an empty page, or for Jev, the no-match line.
+  const told = (run: Run, f: (r: Rec) => boolean) => run.records.filter(r => r.set !== 'absent' && f(r)).length
+  const plainAnswerable = runs.map(run => told(run, r => r.plain.n === 0))
+  const sqlAnswerable = runs.map(run => told(run, r => r.sql.n === 0))
+  const jevAnswerable = runs.map(run => told(run, r => r.jev.n === 0 || (r.jev.rerank.noMatch && !r.suggestions.jev)))
+  line('An empty page, or for Jev the no-match line, counts as saying that nothing matches.')
+  line()
   table(
-    ['measure', 'plain', 'this SQL', 'this SQL + Jev'],
+    ['queries', 'plain', 'this SQL', 'this SQL + Jev'],
     [
-      [`absent queries (of ${absentRows[0].n}) shown as having no match`, span(absentRows.map(x => x.plainEmpty)), span(absentRows.map(x => x.sqlEmpty)), span(absentRows.map(x => x.jevTold))],
-      [`answerable queries (of ${answerable}) with the line shown`, 'n/a', 'n/a', span(anyLines)],
-      ['of those, with a matching result in the top 10', 'n/a', 'n/a', span(falseLines)],
+      [`absent (${absentRows[0].n}): says nothing matches`, span(absentRows.map(x => x.plainEmpty)), span(absentRows.map(x => x.sqlEmpty)), span(absentRows.map(x => x.jevTold))],
+      [`answerable (${answerable}): says nothing matches`, span(plainAnswerable), span(sqlAnswerable), span(jevAnswerable)],
+      ['answerable, says nothing matches while a match is in the top 10', '0', '0', span(falseLines)],
     ],
   )
 }
@@ -970,7 +1014,7 @@ figures['timeline'] = theme => {
   }
   const rows = [
     { label: 'search, then keep or sink', pg: s, pgLabel: `search ${s.toFixed(0)} ms`, jev: r, jevLabel: `judge ${median(judgments)} results: ${r.toFixed(0)} ms` },
-    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (0.7 to 5.3 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
+    { label: 'close words, then spelling', pg: 0, pgLabel: 'close-word lookup (0.8 to 5.8 ms in psql)', jev: sp, jevLabel: `choose among ${median(optionCounts)} spellings: ${sp.toFixed(0)} ms` },
   ]
   rows.forEach((row, i) => {
     const y = 96 + i * 58
@@ -996,17 +1040,17 @@ figures['error-types'] = theme => {
   const right = 20
   const top = 90
   const bottom = 290
-  const shown: Corrector[] = ['jev', 'norvig', 'cascade']
+  const shown: Corrector[] = ['jev', 'norvig', 'frequency', 'cascade']
   const y = (v: number) => bottom - v * (bottom - top)
   let body = text(24, 30, 'Misspellings fixed, by kind of error (held-out and synthetic sets)', { fill: t.text, size: 16, weight: 600 })
-  body += text(24, 50, 'A real-word error also appears in some product name, so a dictionary corrector keeps it. Median of five runs.', { fill: t.muted, size: 12 })
+  body += text(24, 50, 'A real-word error also appears in some product name, so Norvig\'s corrector keeps it by design. The 18 come from the hand-written held-out set.', { fill: t.muted, size: 12 })
   body += legend(shown.map((c, i) => ({ label: CORRECTOR_LABEL[c], color: t.series[i] })), left, 74, t)
   for (const v of [0, 0.25, 0.5, 0.75, 1]) {
     body += lineEl(left, y(v), W - right, y(v), t.grid)
     body += text(left - 8, y(v) + 4, pct(v), { fill: t.muted, size: 11, anchor: 'end' })
   }
   const gw = (W - left - right) / errorSplit.length
-  const bw = 24
+  const bw = 22
   errorSplit.forEach((e, gi) => {
     const cx = left + gi * gw + gw / 2
     const x0 = cx - (shown.length * bw + (shown.length - 1) * 2) / 2

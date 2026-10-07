@@ -20,68 +20,44 @@ Without a key, the demo and the eval skip the step and use the Postgres order. T
 
 ## What it changes
 
-Compared with plain Postgres full-text search and with this repo's SQL alone, on 50 held-out
-words, the right product comes first for 42%, 64%, and, with Jev and one click on "Did you mean",
-86 to 90%. The page takes 194 to 231 ms at the median with Jev, against 12 to 28 ms for the SQL
-alone and 3 to 4 ms for plain full-text search
-([three searches compared](measurements.md#three-searches-compared)).
+Measured on 2026-10-07 with `jev-1.13.0` in five runs of `scripts/compare.ts` over 615 queries. The
+[README](../README.md#4-results) gives the method, the statistical tests and the figures, and
+[`results/report.md`](../results/report.md) has every number.
 
-Measured on 2026-10-07 on the full USDA load (2025-12-18 release) with `jev-1.13.0`, over three
-runs of the eval. This table was the same in all three ([measurements](measurements.md#jev)):
+| hit@1, median of five runs | hand-written (50) | held-out (50) | synthetic (500) |
+|----------------------------|------------------:|--------------:|----------------:|
+| this SQL | 82% | 64% | 68% |
+| + keep or sink | 86% | 68% | 73% |
+| + "Did you mean", one click | 92% | 86% | 77% |
+| + both, one click | 96% | 90% | 79% |
 
-| on `eval/queries.json`, 50 queries       | hit@1 | hit@3 | hit@10 |
-|------------------------------------------|------:|------:|-------:|
-| Postgres order                           | 82%   | 84%   | 88%    |
-| with Jev's keep or sink                  | 86%   | 88%   | 88%    |
-| and following "Did you mean" when shown  | 96%   | 98%   | 98%    |
+On the 550 queries nothing was tuned on (held-out and synthetic), keep or sink (72% against 68%)
+and "Did you mean" (78% against 68%) are both significant after Holm's correction. "Did you mean"
+appeared on the same 12 of the 50 hand-written queries in every run, all misspellings, each with
+the intended word, among them `parmesean`, `dortios`, `gaucamole`, `tortila chips` and
+`choclate milk`, which the SQL alone cannot fix.
 
-"Did you mean" appeared on 11 of the 50 queries, all misspellings, and each suggestion was the
-intended word. It fixes the misses the typo step cannot: `parmesean`, `gaucamole`,
-`tortila chips` and `choclate milk`, whose misspellings some product also carries, and `dortios`,
-whose swapped letters score under the trigram cutoff.
-
-The spelling question was also scored on `eval/spelling.json`, 30 misspellings and 20 correctly
-spelled words written for this test and kept out of every probe. Jev suggested the intended
-spelling for 23 to 25 of the 30 misspellings, suggested nothing for all 20 correct words, and
-never suggested a wrong word. The table compares it with a simple rule (respell a word to its most
-common close word when that word is used ten times as often):
-
-|                                   | Jev        | frequency rule |
-|-----------------------------------|-----------:|---------------:|
-| misspellings fixed, of 30         | 23 to 25   | 22             |
-| correct words left alone, of 20   | 20         | 12             |
-| wrong suggestions                 | 0          | 16             |
-
-The rule's wrong suggestions include `fritos` to "frito", `harissa` to "harris", `lemonaid` to
-"lemon" and `tostitoes` to "tomatoes". Jev left the first two alone and fixed the other two.
-
-The no-match line appeared for 10 of the 15 household goods in `eval/absent.json`, such as
-`shampoo` (first result: SHAMROCK FARMS ORIGINAL SOUR CREAM) and `motor oil` (first result: a
-MOTOR CITY MIX popcorn). Of the other five, two returned no results, one returned a single result,
-and two returned products that do carry the words: a jelly bean mix with a TOOTHPASTE flavor,
-and LIGHT BULBS icing decorations. On the 50 eval queries the line appeared once, for `peanut buter`, whose top 10 are
-peanut butter cookies, crackers and pretzels rather than peanut butter.
+A Norvig-style dictionary corrector over `search.words` beats the spelling question on
+single-edit non-word misspellings (85% against 78% hit@1 out of sample). The spelling question is
+better where the misspelling is itself a word some product uses, which that corrector keeps by
+design, and it rarely respells a correct word: 2 of 220 controls, where a frequency rule respelled
+84.
 
 ## Cost and time
 
-TypeSafe charges $0.042 per million input tokens for `jev-1.13.0`; output tokens are free
-([models](https://docs.typesafe.ai/models)). On the 50 queries in `eval/queries.json`, over the
-three eval runs (the [comparison](measurements.md#three-searches-compared) runs over 115 queries
-gave 161 to 176 ms and 159 to 168 ms at the median):
+TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output tokens are free
+([models](https://docs.typesafe.ai/models)). Five runs pooled, 3,075 queries:
 
-| call                 | ran on | input tokens, median | ms, median | ms, p90    |
-|----------------------|-------:|---------------------:|-----------:|-----------:|
-| keep or sink         | 44     | 1,827                | 153 to 165 | 183 to 209 |
-| spelling             | 47     | 494                  | 155 to 170 | 196 to 212 |
+| call | sent on | ms, median | ms, p90 |
+|------|--------:|-----------:|--------:|
+| keep or sink, 10 results judged | 94% of searches | 162 | 207 |
+| spelling, median 7 options | 88% of searches | 157 | 202 |
 
-Averaged over every search, including those where a call was skipped, the step costs $0.000087
-per search, or about 9 cents per 1,000 searches. The spelling question is about $0.00002 of that.
-
-The two calls run at the same time, so the page waits for the slower one. Compared with the
-Postgres query alone, the step adds 157 to 168 ms at the median and 203 to 216 ms at the 90th
-percentile. Before the spelling question was added, the keep or sink call alone added 160 to 164
-ms and cost $0.000065 per search, so the second question costs time only when it is the slower of
-the two. These times are network round trips from one machine; measure from your own servers.
+On the hand-written queries a search used 1,912 input tokens on average, \$0.080 per 1,000
+searches; across the four query sets it was \$0.077 to \$0.089 per 1,000. The two calls run at the
+same time, so the page waits for the slower one: the step adds 166 ms at the median and 219 ms at
+the 90th percentile to the Postgres query. These are round trips from one machine; measure from
+your own servers.
 
 ## Question 1: keep or sink, never sort
 
@@ -182,7 +158,7 @@ options. For `parmesean`, the request is:
 ```
 
 The answer's `probabilities` gives each option a share of 1. A respelling with 0.6 or more becomes
-the suggestion; `parmesan` got 0.71 to 0.77 in the three runs. The page shows it as a link and never
+the suggestion; `parmesan` got 0.71 to 0.79 in five runs. The page shows it as a link and never
 searches it without a click. The `note` tells Jev what the catalog holds; the default says "a
 product search box", and the demo names groceries. Say what your search holds.
 
@@ -200,15 +176,19 @@ results on `eval/queries.json` are not held out; the `eval/spelling.json` result
 `rerank` returns `noMatch` when Jev scores every top result below the threshold and none of them
 holds the typed words, in order and from the start of a word, in its name or other names. The
 check ignores accents and the spaces and punctuation between words, so "almond milk" is found in
-ALMONDMILK and "jalapeno" in JALAPEÑO. Jev
-judges products, so for a brand typed alone (`general mills`) or an unfinished word (`strawb`) it
-scores every product low; the typed-words check keeps the line off those pages. The demo shows the
-line only when there is no suggestion, and the results stay on the page.
+ALMONDMILK and "jalapeno" in JALAPEÑO. Jev judges products, so for a brand typed alone
+(`general mills`) or an unfinished word (`strawb`) it scores every product low; the typed-words
+check keeps the line off those pages. The demo shows the line only when there is no suggestion,
+and the results stay on the page.
+
+In the five runs the page said that nothing matches for 12 of the 15 household goods in
+`eval/absent.json`, and for 27 to 32 of the 600 answerable queries, 4 to 6 of them with a match in
+the top 10. Plain full-text search shows an empty page for 12 of the 15 too, but also for 314 of the
+600. The flag changed between runs on 14 of the 51 queries where it was raised at least once.
 
 The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
-and `strawb`, so the one false line in 50 queries is a count after that fix. Before the check, the
-line also appeared for 12 of the 15 household goods; the check removed it from `toothpaste` and
-`light bulbs`, whose results carry those words.
+and `strawb`. Before the check, the line also appeared for `toothpaste` and `light bulbs`, whose
+results carry those words.
 
 ## When a call is skipped
 
@@ -225,21 +205,22 @@ has a digit, or matches nothing in `search.words`.
 
 Every failure leaves the page as Postgres made it: a missing key, a network error, a non-2xx
 response, the 1.5-second timeout, a threshold that is not a number, an answer without a score for
-every candidate, or a spelling answer without probabilities. Each question is one request with no retry. `rerank` returns
-`{ results, sunk, reranked, noMatch, ms, error, model, inputTokens }` and `checkSpelling` returns
-`{ suggestion, p, ran, ms, options, error, model, inputTokens }`, so the page can show whether
-Jev ran and how long it took.
+every candidate, or a spelling answer without probabilities. Each question is one request with no
+retry. `rerank` returns `{ results, sunk, reranked, noMatch, scores, ms, error, model, inputTokens }`
+and `checkSpelling` returns `{ suggestion, p, ran, ms, options, probabilities, error, model,
+inputTokens }`, so the page can show whether Jev ran and how long it took.
 
 ## Limits
 
-- Probabilities move between runs, by up to 0.12 in the three runs, so a respelling near 0.6 can
-  be suggested on one run and not the next (`vinegarette` got 0.59 on one run and 0.60 on
-  another).
+- Answers move between identical runs: over five runs, the suggestion changed for 10% of the
+  queries that got one in any run, and a probability by up to 0.18. A respelling near 0.6 can be
+  suggested on one run and not the next.
 - One word is respelled per option, so a query with two misspelled words is not fixed.
 - Respellings come from trigrams, which miss some swaps: for `granloa`, granola is not among the 8
   closest words, so Jev never sees it.
-- Jev declined some real misspellings: `fettucine`, `funyons`, `skittels` and `jalepeno` stayed
-  under 0.6 in all three runs, and `cappucino` in two.
+- Jev declines many single-edit misspellings that a dictionary corrector fixes: of 300 synthetic
+  ones it fixed 172 to 177, guessed wrong on 14 to 18 and declined the rest. Among the held-out
+  words, `marshmellow`, `jalepeno`, `funyons` and `skittels` got no suggestion in any run.
 - The no-match line needs question 1, so a page with a single wrong result shows no line.
 - The thresholds were not tuned beyond what is described here. `jev-latest` is an alias that moves
   when TypeSafe ships a new release, so pin the versioned model your thresholds were checked
@@ -251,11 +232,14 @@ Jev ran and how long it took.
 Put `TYPESAFE_API_KEY` in `.env` (it is in `.gitignore`) and run:
 
 ```sh
-JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/eval.ts      # the 50 eval queries, under a cent
+JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts   # all 615 queries, about $0.065
+node scripts/report.ts                                          # tables and figures from results/
 ```
 
-The eval adds the Jev columns, the cost and time lines, the suggestions it made, the spelling and
-absent tables, and what the run cost. One run makes about 160 Jev calls and costs under a cent.
+The eval adds the Jev columns, the cost and time lines, the suggestions it made, and the spelling
+and absent tables. The comparison writes one file per run to `results/`, and the report builds
+`results/report.md` and the figures from every file there.
 
 To use the step in another server language, port `skills/postgres-search/rerank.ts`, which holds
 all of `src/jev.ts`, `src/rerank.ts`, `src/spelling.ts` and `src/tokens.ts` in one file. Keep the
