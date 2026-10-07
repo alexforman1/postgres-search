@@ -247,6 +247,7 @@ const ALL_GROUPS: Group[] = [
   { name: 'truncation-2', take: r => r.set === 'truncation-2' },
   { name: 'truncation-2, one letter cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length === 1 },
   { name: 'truncation-2, two or more letters cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length >= 2 },
+  { name: 'clean test (synthetic-test-3 and truncation-2)', take: r => r.set === 'synthetic-test-3' || r.set === 'truncation-2' },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
 const hasTest = runs[0].records.some(isTest)
@@ -331,9 +332,10 @@ const PRIMARY: [SystemId, SystemId][] = [
   ['spellingOnly', 'sql'],
   ['spellingOnly', 'norvig'],
 ]
-// The test sets when present; in results/v1, which has none, the held-out and synthetic sets.
+// The newest version's test sets when present; in results/v1, which has none, the held-out and
+// synthetic sets.
 const outOfSample =
-  GROUPS.find(g => g.name === 'synthetic-test-3') ??
+  GROUPS.find(g => g.name.startsWith('clean test')) ??
   GROUPS.find(g => g.name === 'synthetic-test-2') ??
   GROUPS.find(g => g.name.startsWith(hasTest ? 'test' : 'out-of-sample'))!
 const holmByRun = runs.map(run => {
@@ -572,18 +574,37 @@ const editSet = runs[0].records.some(r => r.set === 'synthetic-test-3')
   : runs[0].records.some(r => r.set === 'synthetic-test')
     ? 'synthetic-test'
     : 'synthetic'
+const editSetLabel = editSet === 'synthetic' ? 'Synthetic development set' : `Synthetic test set${editSet === 'synthetic-test' ? '' : ` ${editSet.slice(-1)}`}`
 line(`### ${editSet} misspellings by edit type (fixed, median run)`)
 line()
-const EDIT_TYPES = ['deletion', 'insertion', 'substitution', 'transposition']
-const byEdit = EDIT_TYPES.map(e => {
-  const counts = CORRECTORS.map(c => runs.map(run => correction(run.records.filter(r => r.set === editSet && (r.edit === e || r.kind === 'control')), c).fixed))
-  const n = runs[0].records.filter(r => r.set === editSet && r.edit === e).length
-  const offered = runs.map(run => correction(run.records.filter(r => r.set === editSet && (r.edit === e || r.kind === 'control')), 'jev').offered)
-  return { e, n, fixed: counts.map(median), offered: median(offered) }
+line('A word missing its last letter is also a word being typed, which the prefix step finds.')
+line()
+// A deletion that leaves the start of the word, as in captai for captain, is split from the rest.
+const cutShort = (r: Rec) => r.q === (r.expect ?? '').slice(0, -1)
+const EDIT_TYPES: { e: string; take: (r: Rec) => boolean }[] = [
+  { e: 'deletion, last letter', take: r => r.edit === 'deletion' && cutShort(r) },
+  { e: 'deletion, other letter', take: r => r.edit === 'deletion' && !cutShort(r) },
+  { e: 'insertion', take: r => r.edit === 'insertion' },
+  { e: 'substitution', take: r => r.edit === 'substitution' },
+  { e: 'transposition', take: r => r.edit === 'transposition' },
+]
+const byEdit = EDIT_TYPES.map(({ e, take }) => {
+  const scope = (run: Run) => run.records.filter(r => r.set === editSet && (take(r) || r.kind === 'control'))
+  const counts = CORRECTORS.map(c => runs.map(run => correction(scope(run), c).fixed))
+  const n = runs[0].records.filter(r => r.set === editSet && take(r)).length
+  const offered = runs.map(run => correction(scope(run), 'jev').offered)
+  const hits = (s: SystemId) => median(runs.map(run => run.records.filter(r => r.set === editSet && take(r) && outcome(r, s).hit1).length))
+  return { e, n, fixed: counts.map(median), offered: median(offered), sql: hits('sql'), jev: hits('spellingOnly'), norvig: hits('norvig') }
 })
 table(
   ['edit', 'n', ...CORRECTORS.map(c => CORRECTOR_LABEL[c]), 'offered (shipped options)'],
   byEdit.map(x => [x.e, x.n, ...x.fixed.map(f => `${f} (${pct(f / x.n)})`), `${x.offered} (${pct(x.offered / x.n)})`]),
+)
+line(`### ${editSet} misspellings by edit type (right product first, median run)`)
+line()
+table(
+  ['edit', 'n', SYSTEM_LABEL.sql, SYSTEM_LABEL.spellingOnly, SYSTEM_LABEL.norvig],
+  byEdit.map(x => [x.e, x.n, ...[x.sql, x.jev, x.norvig].map(h => `${h} (${pct(h / x.n)})`)]),
 )
 
 // Choice accuracy when the intended word was offered.
@@ -975,39 +996,44 @@ figures['accuracy'] = theme => {
   return svg(W, H, theme, 'Right product first by system and query set', body)
 }
 
-// Figure 2: misspellings fixed by edit type, four correctors.
+// Figure 2: right product first by edit type, this SQL against the two correctors.
 figures['spelling-by-edit'] = theme => {
   const t = THEME[theme]
   const W = 860
-  const H = 380
+  const H = 390
   const left = 56
   const right = 20
   const top = 86
   const bottom = 300
-  const groups = [...byEdit.map(b => ({ name: b.e, n: b.n, fixed: b.fixed }))]
-  const gw = (W - left - right) / groups.length
-  const bw = 22
+  const bars = [
+    { label: SYSTEM_LABEL.sql, v: (b: (typeof byEdit)[number]) => b.sql, color: t.muted },
+    { label: SYSTEM_LABEL.spellingOnly, v: (b: (typeof byEdit)[number]) => b.jev, color: t.series[0] },
+    { label: SYSTEM_LABEL.norvig, v: (b: (typeof byEdit)[number]) => b.norvig, color: t.series[1] },
+  ]
+  const gw = (W - left - right) / byEdit.length
+  const bw = 26
   const y = (v: number) => bottom - v * (bottom - top)
-  let body = text(24, 30, `${editSet === 'synthetic-test' ? 'Synthetic test set' : 'Synthetic set'}: misspellings fixed, by edit type`, { fill: t.text, size: 16, weight: 600 })
-  body += text(24, 50, 'Share of 75 misspellings per type where the suggestion is the intended word (median of five runs). Labels: Jev.', { fill: t.muted, size: 12 })
-  body += legend(CORRECTORS.map((c, i) => ({ label: CORRECTOR_LABEL[c], color: t.series[i] })), left, 72, t)
+  let body = text(24, 30, `${editSetLabel}: right product first, by edit type`, { fill: t.text, size: 16, weight: 600 })
+  body += text(24, 50, 'Share of misspellings whose first result carries the intended word (median of five runs). Labels: + Did you mean.', { fill: t.muted, size: 12 })
+  body += legend(bars.map(b => ({ label: b.label, color: b.color })), left, 72, t)
   for (const v of [0, 0.25, 0.5, 0.75, 1]) {
     body += lineEl(left, y(v), W - right, y(v), t.grid)
     body += text(left - 8, y(v) + 4, pct(v), { fill: t.muted, size: 11, anchor: 'end' })
   }
-  groups.forEach((g, gi) => {
+  byEdit.forEach((g, gi) => {
     const cx = left + gi * gw + gw / 2
-    const x0 = cx - (CORRECTORS.length * bw + (CORRECTORS.length - 1) * 2) / 2
-    g.fixed.forEach((f, i) => {
-      const v = f / g.n
+    const x0 = cx - (bars.length * bw + (bars.length - 1) * 2) / 2
+    bars.forEach((b, i) => {
+      const v = b.v(g) / g.n
       const bx = x0 + i * (bw + 2)
-      body += column(bx, bw, bottom, y(v), t.series[i])
-      if (i === 0) body += text(bx + bw / 2, y(v) - 6, pct(v), { fill: t.text, size: 11, anchor: 'middle' })
+      body += column(bx, bw, bottom, y(v), b.color)
+      if (i === 1) body += text(bx + bw / 2, y(v) - 6, pct(v), { fill: t.text, size: 11, anchor: 'middle' })
     })
-    body += text(cx, bottom + 20, g.name, { fill: t.text, size: 12, anchor: 'middle' })
+    body += text(cx, bottom + 20, g.e, { fill: t.text, size: 12, anchor: 'middle' })
+    body += text(cx, bottom + 36, `n = ${g.n}`, { fill: t.muted, size: 11, anchor: 'middle' })
   })
   body += lineEl(left, bottom, W - right, bottom, t.muted)
-  return svg(W, H, theme, 'Synthetic misspellings fixed by edit type and corrector', body)
+  return svg(W, H, theme, 'Right product first by edit type: this SQL, Did you mean and the Norvig corrector', body)
 }
 
 // Figure 3: the spelling bar, post hoc.
