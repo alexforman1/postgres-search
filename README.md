@@ -57,7 +57,21 @@ median, or a choice among seven spellings in 165 ms. The two calls run at the sa
 probabilities are well calibrated (expected calibration error 0.014; right 97.7% of the time at
 0.9 or more), and the page says that nothing matches for 12 of 15 queries that have no answer in a
 grocery catalog against 107 of 3,173 that do. For this demo's 440,302 records, Algolia's published
-Grow price is \$136 a month for records alone, before any search.
+Grow price is \$136 a month for records alone, before any search; at 100,000 searches a month it is
+\$181 to \$381, against \$8.27 for the Jev step.
+
+| median of five runs | plain Postgres full-text search | this SQL | this SQL + Jev | this SQL + Norvig corrector |
+|---------------------|--------------------------------:|---------:|---------------:|----------------------------:|
+| right product first, one-edit misspellings and controls, clean test (500) | 35% | 62% | **84%** | 83% |
+| right product first, words cut short, clean test (300) | 12% | **75%** | 74% | 30% |
+| right product first, real misspellings from Wikipedia (473) | 5% | 42% | **70%** | 64% |
+| right product first, real-word errors among them (32) | 28% | 31% | **84%** | 31% |
+| says nothing matches, queries with no answer (15) | 12 | 2 | 12 | |
+| says nothing matches, queries with an answer (3,173) | 2,038 | 84 | 107 | |
+| time per search, median | 2 ms | 23 ms | 209 ms | |
+| cost per 1,000 searches, beyond the database | | | \$0.083 | |
+
+"This SQL + Jev" asks both questions and follows a "Did you mean" link when one appears.
 
 ## 2. System
 
@@ -360,8 +374,8 @@ plain 52%).
 
 Keep or sink costs a little on words cut short. On truncation 2 it gets 1 or 2 queries right that
 this SQL gets wrong, and 7 or 8 the other way (p = 0.039 to 0.180, exploratory). A cut word is
-ambiguous to Jev, so it scores the right products near the threshold and sometimes under it:
-FREIHOFER'S for `frei` at 0.28, MANITOBA HARVEST for `manit` at 0.26.
+ambiguous to Jev, so it scores the right products near the threshold and sometimes under it; in
+the first run, FREIHOFER'S for `frei` at 0.28 and MANITOBA HARVEST for `manit` at 0.26.
 
 The sets made for earlier versions, rescored: on version 2's 973 test queries, "Did you mean"
 reaches 78% (77% to 78%) and the corrector 75%, as in version 2 (78% against 75%, Holm p ≤ 0.040 in
