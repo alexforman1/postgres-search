@@ -247,7 +247,6 @@ const ALL_GROUPS: Group[] = [
   { name: 'truncation-2', take: r => r.set === 'truncation-2' },
   { name: 'truncation-2, one letter cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length === 1 },
   { name: 'truncation-2, two or more letters cut', take: r => r.set === 'truncation-2' && (r.expect ?? '').length - r.q.length >= 2 },
-  { name: 'clean test (synthetic-test-3 and truncation-2)', take: r => r.set === 'synthetic-test-3' || r.set === 'truncation-2' },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
 const hasTest = runs[0].records.some(isTest)
@@ -332,10 +331,11 @@ const PRIMARY: [SystemId, SystemId][] = [
   ['spellingOnly', 'sql'],
   ['spellingOnly', 'norvig'],
 ]
-// The newest version's test sets when present; in results/v1, which has none, the held-out and
-// synthetic sets.
+// The newest version's misspelling test set when present; in results/v1, which has none, the
+// held-out and synthetic sets. Words cut short get their own test below: the Norvig corrector and
+// plain full-text search have no rule for them, so they would tilt two of these four.
 const outOfSample =
-  GROUPS.find(g => g.name.startsWith('clean test')) ??
+  GROUPS.find(g => g.name === 'synthetic-test-3') ??
   GROUPS.find(g => g.name === 'synthetic-test-2') ??
   GROUPS.find(g => g.name.startsWith(hasTest ? 'test' : 'out-of-sample'))!
 const holmByRun = runs.map(run => {
@@ -366,6 +366,37 @@ table(
   }),
   ['l', 'l'],
 )
+// Set before version 2.2's runs were read: on words cut short, does the spelling step lose
+// queries that the prefix step gets right?
+const cutGroup = GROUPS.find(g => g.name === 'truncation-2')
+if (cutGroup) {
+  const tests = runs.map(run => {
+    const rs = run.records.filter(cutGroup.take)
+    return mcnemar(rs.map(r => outcome(r, 'spellingOnly').hit1), rs.map(r => outcome(r, 'sql').hit1))
+  })
+  const sp = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `${Math.min(...v)} to ${Math.max(...v)}`)
+  const ps = tests.map(t => t.p)
+  const n = runs[0].records.filter(cutGroup.take).length
+  line('### Words cut short')
+  line()
+  line(`On the ${n} queries of truncation-2, exact McNemar per run, not part of the Holm family.`)
+  line()
+  table(
+    ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'p, range over runs'],
+    [
+      [
+        SYSTEM_LABEL.spellingOnly,
+        SYSTEM_LABEL.sql,
+        pct(cell(cutGroup, 'spellingOnly', 'hit1').k / n),
+        pct(cell(cutGroup, 'sql', 'hit1').k / n),
+        sp(tests.map(t => t.onlyA)),
+        sp(tests.map(t => t.onlyB)),
+        Math.min(...ps) === Math.max(...ps) ? fmtP(ps[0]) : `${fmtP(Math.min(...ps))} to ${fmtP(Math.max(...ps))}`,
+      ],
+    ],
+    ['l', 'l'],
+  )
+}
 line('## Paired tests (exact McNemar, hit@1, exploratory)')
 line()
 line('"only A" counts queries the first system gets right and the second gets wrong. For systems')
