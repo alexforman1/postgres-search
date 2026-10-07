@@ -12,8 +12,11 @@ export interface JevRequest {
 }
 
 export interface JevResponse {
+  // The versioned model that answered, even when the request named an alias such as jev-latest.
   model: string
   answers: Record<string, { type: string; noul?: number }>
+  // TypeSafe bills input tokens only.
+  usage?: { input_tokens: number; output_tokens: number }
 }
 
 export interface JevOptions {
@@ -54,6 +57,8 @@ export interface RerankResult<T> {
   reranked: boolean
   ms: number
   error?: string
+  model?: string
+  inputTokens?: number
 }
 
 export interface RerankOptions {
@@ -92,7 +97,14 @@ export async function rerank<T extends Candidate>(
     if (scores.some(s => typeof s !== 'number')) return unchanged(Date.now() - started, 'incomplete answer')
     const keep = head.filter((_, i) => (scores[i] as number) >= threshold)
     const sunk = head.filter((_, i) => (scores[i] as number) < threshold)
-    return { results: [...keep, ...sunk, ...tail], sunk, reranked: true, ms: Date.now() - started }
+    return {
+      results: [...keep, ...sunk, ...tail],
+      sunk,
+      reranked: true,
+      ms: Date.now() - started,
+      model: response.model,
+      inputTokens: response.usage?.input_tokens,
+    }
   } catch (err) {
     return unchanged(Date.now() - started, err instanceof Error ? err.message : String(err))
   }

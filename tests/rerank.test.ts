@@ -36,6 +36,17 @@ test('moves candidates below the threshold to the bottom and keeps the rest in o
   assert.equal(out.reranked, true)
 })
 
+test('reports the model that answered and the input tokens it billed', async () => {
+  const ask = async (): Promise<JevResponse> => ({
+    model: 'jev-1.13.0',
+    answers: { c0: { type: 'noul', noul: 0.9 }, c1: { type: 'noul', noul: 0.1 } },
+    usage: { input_tokens: 512, output_tokens: 8 },
+  })
+  const out = await rerank('oreo', four.slice(0, 2), { ask })
+  assert.equal(out.model, 'jev-1.13.0')
+  assert.equal(out.inputTokens, 512)
+})
+
 test('keeps the original order among candidates above the threshold', async () => {
   const { ask } = answering([0.5, 0.9, 0.1, 0.8])
   const out = await rerank('oreo', four, { ask, threshold: 0.3 })

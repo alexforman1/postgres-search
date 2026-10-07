@@ -12,8 +12,11 @@ export interface JevRequest {
 }
 
 export interface JevResponse {
+  // The versioned model that answered, even when the request named an alias such as jev-latest.
   model: string
   answers: Record<string, { type: string; noul?: number }>
+  // TypeSafe bills input tokens only.
+  usage?: { input_tokens: number; output_tokens: number }
 }
 
 export interface JevOptions {
