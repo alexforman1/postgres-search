@@ -7,11 +7,9 @@
 //            mean" link
 // For every query it also records two spelling correctors that use no model, for comparison: the
 // frequency rule (the most common close word, if used ten times as often) and a Norvig-style
-// corrector (the most common known word within two edits; a known word is kept). And it asks Jev
-// the spelling question over a wider option list, the trigram words plus the corrector's
-// edit-distance words, to separate finding the right word from choosing it. That variant is
-// research only; the page does not use it.
-// The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json and eval/absent.json.
+// corrector (the most common known word within two edits; a known word is kept).
+// The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
+// when present, the test sets eval/synthetic-test.json and eval/wikipedia.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -19,13 +17,13 @@ import { execFileSync } from 'node:child_process'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import os from 'node:os'
 import { connect } from '../src/db.ts'
-import { NOTE, page, search, similarWords, type Row } from '../src/page.ts'
-import { checkSpelling, type SimilarWord } from '../src/spelling.ts'
+import { page, search, similarWords, type Row } from '../src/page.ts'
+import type { SimilarWord } from '../src/spelling.ts'
 import { carries, tokens } from '../src/tokens.ts'
 
 if (!process.env.TYPESAFE_API_KEY) throw new Error('set TYPESAFE_API_KEY; the third search needs Jev')
 
-type QuerySet = 'hand-written' | 'held-out' | 'synthetic' | 'absent'
+type QuerySet = 'hand-written' | 'held-out' | 'synthetic' | 'synthetic-test' | 'wikipedia' | 'absent'
 
 interface Case {
   q: string
@@ -46,8 +44,18 @@ const cases: Case[] = [
     return { q: c.q, set: 'hand-written', kind: c.kind, hit: (r: Row) => pattern.test(text(r)) }
   }),
 ]
-for (const [file, set] of [['spelling.json', 'held-out'], ['synthetic.json', 'synthetic']] as const) {
-  for (const c of (await read(file)) as { q: string; kind: string; edit?: string; expect?: string }[]) {
+const exists = async (file: string) => readFile(new URL(`../eval/${file}`, import.meta.url)).then(() => true, () => false)
+for (const [file, set] of [
+  ['spelling.json', 'held-out'],
+  ['synthetic.json', 'synthetic'],
+  ['synthetic-test.json', 'synthetic-test'],
+  ['wikipedia.json', 'wikipedia'],
+] as const) {
+  if (!(await exists(file))) continue
+  const data = await read(file)
+  // eval/wikipedia.json wraps its cases with their source and license.
+  const list = (Array.isArray(data) ? data : data.cases) as { q: string; kind: string; edit?: string; expect?: string }[]
+  for (const c of list) {
     const want = c.expect ?? c.q
     cases.push({ q: c.q, set, kind: c.kind, edit: c.edit, expect: c.expect, hit: r => carries(text(r), want) })
   }
@@ -160,34 +168,9 @@ function norvig(q: string): string | null {
 function frequencyRule(q: string, similar: SimilarWord[]): string | null {
   const words = tokens(q)
   const best = similar
-    .filter(r => words[r.pos - 1] === r.word && r.doc_count >= 10 * Math.max(r.word_count, 1))
-    .sort((a, b) => b.doc_count - a.doc_count)[0]
+    .filter(r => words[r.pos - 1] === r.word && r.alternative_matches >= 10 * Math.max(r.word_matches, 1))
+    .sort((a, b) => b.alternative_matches - a.alternative_matches)[0]
   return best ? words.with(best.pos - 1, best.alternative).join(' ') : null
-}
-
-// search.similar_words rows with the corrector's edit-distance words merged in, alternating the two
-// lists for each word, so the spelling question sees both.
-function widerOptions(q: string, similar: SimilarWord[]): SimilarWord[] {
-  const words = tokens(q)
-  const out: SimilarWord[] = []
-  words.forEach((word, i) => {
-    const pos = i + 1
-    if (!eligible(word)) return
-    const trigram = similar.filter(r => r.pos === pos && r.word === word)
-    const edit = editCandidates(word)
-      .slice(0, 8)
-      .map(c => ({ pos, word, word_count: vocabulary.get(word) ?? 0, alternative: c.word, doc_count: c.count }))
-    const seen = new Set<string>()
-    for (let k = 0; k < Math.max(trigram.length, edit.length); k++) {
-      for (const r of [trigram[k], edit[k]]) {
-        if (r && !seen.has(r.alternative)) {
-          seen.add(r.alternative)
-          out.push(r)
-        }
-      }
-    }
-  })
-  return out
 }
 
 interface Scored {
@@ -247,11 +230,8 @@ try {
     for (const m of [r.model, sp.model]) if (m) models.add(m)
 
     const similar = await similarWords(pool, c.q)
-    const wide = await checkSpelling(c.q, widerOptions(c.q, similar), { note: NOTE })
-    if (wide.model) models.add(wide.model)
     const suggestions = {
       jev: sp.suggestion,
-      wide: wide.suggestion,
       norvig: norvig(c.q),
       frequency: frequencyRule(c.q, similar),
     }
@@ -292,13 +272,6 @@ try {
           p: sp.p,
         },
       },
-      wide: {
-        ran: wide.ran,
-        tokens: wide.inputTokens ?? 0,
-        options: wide.options,
-        probabilities: wide.probabilities,
-        suggestion: wide.suggestion,
-      },
       suggestions,
       followed,
     })
@@ -319,6 +292,8 @@ try {
     loadAfter: os.loadavg(),
     products: (await pool.query('SELECT count(*)::int AS n FROM search.documents')).rows[0].n,
     pricePerMillionInputTokens: 0.042,
+    // The rule that turned spelling probabilities into suggestions (src/spelling.ts defaults).
+    spellingRule: { ratio: 2, suggestAt: 0.3 },
   }
   await mkdir(new URL('../results/', import.meta.url), { recursive: true })
   const file = new URL(`../results/compare-${startedAt.replace(/[:.]/g, '-')}.json`, import.meta.url)

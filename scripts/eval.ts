@@ -61,8 +61,8 @@ const similarWords = (q: string) => similarWordsWith(pool, q)
 function frequencyRule(q: string, similar: SimilarWord[]): string | null {
   const words = tokens(q)
   const best = similar
-    .filter(r => words[r.pos - 1] === r.word && r.doc_count >= FREQUENCY_RATIO * Math.max(r.word_count, 1))
-    .sort((a, b) => b.doc_count - a.doc_count)[0]
+    .filter(r => words[r.pos - 1] === r.word && r.alternative_matches >= FREQUENCY_RATIO * Math.max(r.word_matches, 1))
+    .sort((a, b) => b.alternative_matches - a.alternative_matches)[0]
   return best ? words.with(best.pos - 1, best.alternative).join(' ') : null
 }
 

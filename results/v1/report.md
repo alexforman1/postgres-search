@@ -47,7 +47,7 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 
 ## Primary comparisons
 
-On the 550 out-of-sample queries (held-out and synthetic), hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
+On the 550 queries of the group "out-of-sample (held-out and synthetic)", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
 
 | A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, worst run |
 |:---|:---|---:|---:|---:|---:|---:|
@@ -162,7 +162,7 @@ was among the options Jev chose from. Medians over runs, range in parentheses.
 | frequency rule | 131 | 162 | 7 | 75 | 36% | n/a |
 | Jev (wider options, research only) | 189 (188 to 191) | 11 (8 to 12) | 101 (98 to 103) | 3 (2 to 3) | 93% | 300 |
 
-### Synthetic misspellings by edit type (fixed, median run)
+### synthetic misspellings by edit type (fixed, median run)
 
 | edit | n | Jev (shipped options) | Norvig corrector | frequency rule | Jev (wider options, research only) | offered (shipped options) |
 |:---|---:|---:|---:|---:|---:|---:|
@@ -172,6 +172,8 @@ was among the options Jev chose from. Medians over runs, range in parentheses.
 | transposition | 75 | 38 (51%) | 71 (95%) | 26 (35%) | 51 (68%) | 54 (72%) |
 
 ### When the intended word was offered
+
+Misspellings in held-out and synthetic.
 
 | options | typos with the word offered | Jev picked it | rate |
 |:---|---:|---:|---:|
@@ -192,10 +194,12 @@ The cascade would still send the spelling question on 38% of the searches that s
 
 ## Spelling bar sensitivity (post hoc)
 
-Held-out and synthetic sets pooled over all runs (1650 misspelling and 1100 control answers). The page uses 0.6, fixed before these sets were scored.
+The held-out and synthetic sets pooled over all runs (1650 misspelling and 1100 control answers). The rule is the one these runs used with its floor moved; the runs used 0.6.
 
 | bar | misspellings fixed | controls respelled | precision |
 |:---|---:|---:|---:|
+| 0.20 | 74.3% | 11.4% | 74.3% |
+| 0.25 | 73.7% | 8.8% | 76.9% |
 | 0.30 | 71.9% | 5.6% | 79.7% |
 | 0.35 | 70.2% | 4.3% | 81.9% |
 | 0.40 | 69.2% | 3.7% | 83.8% |

@@ -239,23 +239,32 @@ describe('search.suggest', () => {
 })
 
 describe('search.words', () => {
-  test('counts each word once per product, from names and other names', async () => {
+  test('counts each word once per product, and the products the word step finds for it', async () => {
     const { rows } = await pool.query(
-      "SELECT word, doc_count FROM search.words WHERE word IN ('cheerios', 'cheerioz', 'mills') ORDER BY word",
+      "SELECT word, doc_count, stem, match_count FROM search.words WHERE word IN ('cheerios', 'cheerioz', 'hershey', 'mills') ORDER BY word",
     )
     assert.deepEqual(rows, [
-      { word: 'cheerios', doc_count: 3 },
-      { word: 'cheerioz', doc_count: 1 },
-      { word: 'mills', doc_count: 3 },
+      { word: 'cheerios', doc_count: 3, stem: 'cheerio', match_count: 3 },
+      { word: 'cheerioz', doc_count: 1, stem: 'cheerioz', match_count: 1 },
+      { word: 'hershey', doc_count: 1, stem: 'hershey', match_count: 1 },
+      { word: 'mills', doc_count: 3, stem: 'mill', match_count: 3 },
     ])
   })
 })
 
+interface Similar {
+  pos: number
+  word: string
+  word_matches: number
+  alternative: string
+  alternative_matches: number
+}
+
 async function similarWords(q: string, perWord?: number) {
-  const { rows } = await pool.query<{ pos: number; word: string; word_count: number; alternative: string; doc_count: number }>(
+  const { rows } = await pool.query<Similar>(
     perWord === undefined
-      ? 'SELECT pos, word, word_count, alternative, doc_count FROM search.similar_words($1)'
-      : 'SELECT pos, word, word_count, alternative, doc_count FROM search.similar_words($1, $2)',
+      ? 'SELECT pos, word, word_matches, alternative, alternative_matches FROM search.similar_words($1)'
+      : 'SELECT pos, word, word_matches, alternative, alternative_matches FROM search.similar_words($1, $2)',
     perWord === undefined ? [q] : [q, perWord],
   )
   return rows
@@ -264,14 +273,26 @@ async function similarWords(q: string, perWord?: number) {
 describe('search.similar_words', () => {
   test('lists words that products use and that are spelled close to a query word', async () => {
     assert.deepEqual(await similarWords('cheerois'), [
-      { pos: 1, word: 'cheerois', word_count: 0, alternative: 'cheerios', doc_count: 3 },
-      { pos: 1, word: 'cheerois', word_count: 0, alternative: 'cheerioz', doc_count: 1 },
+      { pos: 1, word: 'cheerois', word_matches: 0, alternative: 'cheerios', alternative_matches: 3 },
+      { pos: 1, word: 'cheerois', word_matches: 0, alternative: 'cheerioz', alternative_matches: 1 },
     ])
+  })
+
+  test('finds words one edit away that share too few trigrams, such as a swap', async () => {
+    assert.equal((await similarWords('mlik'))[0]?.alternative, 'milk')
+  })
+
+  test('counts what the search finds for the typed word, so a possessive is not a misspelling', async () => {
+    assert.ok(!(await similarWords('hersheys')).some(r => r.alternative === 'hershey'))
+    assert.equal(
+      (await pool.query("SELECT word_matches FROM search.similar_words('cheerioz')")).rows[0].word_matches,
+      1,
+    )
   })
 
   test('never lists the typed word, and counts the products that use it', async () => {
     assert.deepEqual(await similarWords('cheerioz'), [
-      { pos: 1, word: 'cheerioz', word_count: 1, alternative: 'cheerios', doc_count: 3 },
+      { pos: 1, word: 'cheerioz', word_matches: 1, alternative: 'cheerios', alternative_matches: 3 },
     ])
   })
 
@@ -287,7 +308,7 @@ describe('search.similar_words', () => {
     assert.deepEqual([...new Set((await similarWords('milc 16001 oat')).map(r => r.word))], ['milc'])
   })
 
-  test('per_word keeps the closest alternatives, the more common first on a tie', async () => {
+  test('per_word keeps the closest alternatives, words one edit away first', async () => {
     assert.deepEqual((await similarWords('cheerois', 1)).map(r => r.alternative), ['cheerios'])
   })
 
@@ -295,7 +316,7 @@ describe('search.similar_words', () => {
     assert.deepEqual(await similarWords('with'), [])
   })
 
-  test('offers only words that more products use than the typed word', async () => {
+  test('offers only words the search finds in more products than the typed word', async () => {
     assert.deepEqual(await similarWords('cheerios'), [])
     assert.deepEqual((await similarWords('cheerioz')).map(r => r.alternative), ['cheerios'])
   })

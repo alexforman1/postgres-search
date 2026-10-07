@@ -95,8 +95,10 @@ rules:
   threshold (default 0.3) to the bottom of the 10; never sort by score; skip the call when fewer
   than 2 results or all share one group;
 - spelling: one Choice question over the query as typed and the respellings built from
-  `search.similar_words`; send it while the search runs, since it needs only the query; offer a
-  respelling with 0.6 or more as a "Did you mean" link and never search it without a click;
+  `search.similar_words`, each option stating its edits from what was typed and how many products
+  the search finds for its words; send it while the search runs, since it needs only the query;
+  offer the likeliest respelling as a "Did you mean" link when it is at least twice as likely as
+  the spelling typed and at least 0.3 likely, and never search it without a click;
 - set the spelling question's `note` to say what the project's search holds;
 - say that nothing matches only when Jev sank every top result, none carries the typed words, and
   there is no suggestion;

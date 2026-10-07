@@ -1,8 +1,9 @@
-// Reads every results/compare-*.json that scripts/compare.ts wrote and produces the numbers the
-// README reports: results/report.md (tables and tests) and docs/figures/*.svg (each figure in a
-// light and a dark version). It calls neither Jev nor, once results/known.json exists, Postgres,
-// so it can be rerun at no cost.
-//   node scripts/report.ts
+// Reads every compare-*.json that scripts/compare.ts wrote to a directory and produces the numbers
+// the README reports: report.md in that directory (tables and tests) and, for results/, the
+// figures in docs/figures/ (each in a light and a dark version). It calls neither Jev nor, once
+// known.json exists in the directory, Postgres, so it can be rerun at no cost.
+//   node scripts/report.ts              # results/, the current version
+//   node scripts/report.ts results/v1   # the first version, kept for comparison
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { tokens } from '../src/tokens.ts'
 
@@ -17,7 +18,7 @@ interface Scored {
 
 interface Rec {
   q: string
-  set: 'hand-written' | 'held-out' | 'synthetic' | 'absent'
+  set: 'hand-written' | 'held-out' | 'synthetic' | 'synthetic-test' | 'wikipedia' | 'absent'
   kind: string
   edit?: string
   expect?: string
@@ -39,9 +40,10 @@ interface Rec {
       p: number
     }
   }
-  wide: { ran: boolean; tokens: number; options: string[]; probabilities: number[]; suggestion: string | null }
-  suggestions: Record<'jev' | 'wide' | 'norvig' | 'frequency', string | null>
-  followed: Record<'jev' | 'wide' | 'norvig' | 'frequency', Scored | null>
+  // Only in results/v1, which also asked the spelling question over a wider option list.
+  wide?: { ran: boolean; tokens: number; options: string[]; probabilities: number[]; suggestion: string | null }
+  suggestions: { jev: string | null; norvig: string | null; frequency: string | null; wide?: string | null }
+  followed: { jev: Scored | null; norvig: Scored | null; frequency: Scored | null; wide?: Scored | null }
 }
 
 interface Run {
@@ -58,15 +60,52 @@ interface Run {
     loadAfter: number[]
     products: number
     pricePerMillionInputTokens: number
+    // Missing in the runs made before the twice-as-likely rule, which used a bar of 0.6.
+    spellingRule?: { ratio: number; suggestAt: number }
   }
   records: Rec[]
 }
 
-const dir = new URL('../results/', import.meta.url)
-const files = (await readdir(dir)).filter(f => /^compare-.*\.json$/.test(f)).sort()
-if (files.length === 0) throw new Error('no results/compare-*.json; run scripts/compare.ts first')
-const runs: Run[] = await Promise.all(files.map(async f => JSON.parse(await readFile(new URL(f, dir), 'utf8'))))
+const dirName = (process.argv[2] ?? 'results').replace(/\/+$/, '')
+const dir = new URL(`../${dirName}/`, import.meta.url)
+const drawFigures = process.argv[2] === undefined
+async function loadRuns(from: URL): Promise<Run[]> {
+  const files = (await readdir(from)).filter(f => /^compare-.*\.json$/.test(f)).sort()
+  return Promise.all(files.map(async f => JSON.parse(await readFile(new URL(f, from), 'utf8'))))
+}
+const runs = await loadRuns(dir)
+if (runs.length === 0) throw new Error(`no ${dirName}/compare-*.json; run scripts/compare.ts first`)
 const PRICE = runs[0].meta.pricePerMillionInputTokens
+const hasWide = runs.every(run => run.records.every(r => r.wide !== undefined))
+
+// Which misspelled words are in search.words, read once from the database and kept in known.json
+// beside the runs, so the report rebuilds from the directory alone. A real-word error is a
+// misspelling that some product name also carries.
+const known = new Set<string>()
+{
+  const words = [
+    ...new Set(runs.flatMap(run => run.records).filter(r => r.kind === 'typo' && r.expect).flatMap(r => tokens(r.q))),
+  ].sort()
+  const cache = new URL('known.json', dir)
+  let saved: { checked: string[]; known: string[] } | null = null
+  try {
+    saved = JSON.parse(await readFile(cache, 'utf8'))
+  } catch {}
+  if (saved && words.every(w => saved!.checked.includes(w))) {
+    for (const w of saved.known) known.add(w)
+  } else {
+    const { connect } = await import('../src/db.ts')
+    const pool = connect()
+    try {
+      for (const row of (await pool.query<{ word: string }>('SELECT word FROM search.words WHERE word = ANY($1)', [words])).rows) known.add(row.word)
+    } finally {
+      await pool.end()
+    }
+    await writeFile(cache, `${JSON.stringify({ checked: words, known: [...known].sort() })}\n`)
+  }
+}
+const misspelled = (r: Rec) => tokens(r.q).filter(w => !tokens(r.expect ?? '').includes(w))
+const realWord = (r: Rec) => misspelled(r).length > 0 && misspelled(r).every(w => known.has(w))
 
 // ---------------------------------------------------------------- statistics
 
@@ -160,7 +199,8 @@ const outcome = (r: Rec, s: SystemId): Scored => {
 const DETERMINISTIC: SystemId[] = ['plain', 'sql', 'norvig', 'frequency']
 
 type Group = { name: string; take: (r: Rec) => boolean }
-const GROUPS: Group[] = [
+const isTest = (r: Rec) => r.set === 'synthetic-test' || r.set === 'wikipedia'
+const ALL_GROUPS: Group[] = [
   { name: 'hand-written', take: r => r.set === 'hand-written' },
   { name: 'hand-written, misspelled', take: r => r.set === 'hand-written' && r.kind === 'typo' },
   { name: 'held-out', take: r => r.set === 'held-out' },
@@ -170,7 +210,16 @@ const GROUPS: Group[] = [
   { name: 'synthetic, misspelled', take: r => r.set === 'synthetic' && r.kind === 'typo' },
   { name: 'synthetic, correctly spelled', take: r => r.set === 'synthetic' && r.kind === 'control' },
   { name: 'out-of-sample (held-out and synthetic)', take: r => r.set === 'held-out' || r.set === 'synthetic' },
+  { name: 'synthetic-test', take: r => r.set === 'synthetic-test' },
+  { name: 'synthetic-test, misspelled', take: r => r.set === 'synthetic-test' && r.kind === 'typo' },
+  { name: 'synthetic-test, correctly spelled', take: r => r.set === 'synthetic-test' && r.kind === 'control' },
+  { name: 'wikipedia', take: r => r.set === 'wikipedia' },
+  { name: 'wikipedia, real-word errors', take: r => r.set === 'wikipedia' && realWord(r) },
+  { name: 'wikipedia, non-word errors', take: r => r.set === 'wikipedia' && !realWord(r) },
+  { name: 'test (synthetic-test and wikipedia)', take: isTest },
 ]
+const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
+const hasTest = runs[0].records.some(isTest)
 
 interface Cell {
   n: number
@@ -232,7 +281,9 @@ line()
 line('Median run, with the lowest and highest run in parentheses when they differ, and the Wilson')
 line('95% interval of the median run in brackets.')
 line()
-const MAIN: SystemId[] = ['plain', 'sql', 'rerank', 'spellingOnly', 'jev', 'norvig', 'frequency', 'wide', 'cascade']
+const MAIN: SystemId[] = ['plain', 'sql', 'rerank', 'spellingOnly', 'jev', 'norvig', 'frequency', 'wide', 'cascade'].filter(
+  s => s !== 'wide' || hasWide,
+) as SystemId[]
 for (const metric of ['hit1', 'hit10'] as const) {
   line(`### ${metric === 'hit1' ? 'hit@1' : 'hit@10'}`)
   line()
@@ -250,7 +301,8 @@ const PRIMARY: [SystemId, SystemId][] = [
   ['spellingOnly', 'sql'],
   ['spellingOnly', 'norvig'],
 ]
-const outOfSample = GROUPS.find(g => g.name.startsWith('out-of-sample'))!
+// The test sets when present; in results/v1, which has none, the held-out and synthetic sets.
+const outOfSample = GROUPS.find(g => g.name.startsWith(hasTest ? 'test' : 'out-of-sample'))!
 const holmByRun = runs.map(run => {
   const rs = run.records.filter(outOfSample.take)
   const tests = PRIMARY.map(([a, b]) => mcnemar(rs.map(r => outcome(r, a).hit1), rs.map(r => outcome(r, b).hit1)))
@@ -265,7 +317,7 @@ const holmByRun = runs.map(run => {
 })
 line('## Primary comparisons')
 line()
-line(`On the ${runs[0].records.filter(outOfSample.take).length} out-of-sample queries (held-out and synthetic), hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the ${runs.length} runs.`)
+line(`On the ${runs[0].records.filter(outOfSample.take).length} queries of the group "${outOfSample.name}", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the ${runs.length} runs.`)
 line()
 table(
   ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'Holm-adjusted p, worst run'],
@@ -295,7 +347,7 @@ const PAIRS: [SystemId, SystemId][] = [
   ['wide', 'spellingOnly'],
   ['cascade', 'norvig'],
   ['cascade', 'jev'],
-]
+].filter(([a, b]) => hasWide || (a !== 'wide' && b !== 'wide')) as [SystemId, SystemId][]
 const pairRows: (string | number)[][] = []
 for (const g of GROUPS.filter(g => !g.name.includes('correctly'))) {
   for (const [a, b] of PAIRS) {
@@ -328,9 +380,12 @@ const CORRECTOR_LABEL: Record<Corrector, string> = {
   frequency: 'frequency rule',
   cascade: 'Norvig for unknown words, else Jev (post hoc)',
 }
-const CORRECTORS: Corrector[] = ['jev', 'norvig', 'frequency', 'wide']
-const suggestionOf = (r: Rec, c: Corrector) => (c === 'cascade' ? (r.suggestions.norvig ?? r.suggestions.jev) : r.suggestions[c])
-const spellingSets = ['held-out', 'synthetic'] as const
+const CORRECTORS: Corrector[] = (['jev', 'norvig', 'frequency', 'wide'] as Corrector[]).filter(c => c !== 'wide' || hasWide)
+const suggestionOf = (r: Rec, c: Corrector) => (c === 'cascade' ? (r.suggestions.norvig ?? r.suggestions.jev) : (r.suggestions[c] ?? null))
+const spellingSets = (['held-out', 'synthetic', 'synthetic-test', 'wikipedia'] as const).filter(set => runs[0].records.some(r => r.set === set))
+// Analyses of the spelling question use the test sets when present.
+const spellingScope = (r: Rec) => (hasTest ? isTest(r) : r.set === 'held-out' || r.set === 'synthetic')
+const scopeName = hasTest ? 'synthetic-test and wikipedia' : 'held-out and synthetic'
 
 interface Correction {
   typos: number
@@ -348,7 +403,7 @@ function correction(rs: Rec[], c: Corrector): Correction {
   const sug = (r: Rec) => norm(suggestionOf(r, c))
   const fixed = typos.filter(r => sug(r) === norm(r.expect)).length
   const wrong = typos.filter(r => sug(r) !== null && sug(r) !== norm(r.expect)).length
-  const options = (r: Rec) => (c === 'wide' ? r.wide.options : r.jev.spelling.options)
+  const options = (r: Rec) => (c === 'wide' ? r.wide!.options : r.jev.spelling.options)
   const offered = c === 'jev' || c === 'wide' ? typos.filter(r => options(r).map(o => norm(o)).includes(norm(r.expect))).length : NaN
   return {
     typos: typos.length,
@@ -391,13 +446,14 @@ for (const set of spellingSets) {
   table(['corrector', 'fixed', 'wrong', 'missed', 'false alarms', 'precision', 'offered'], rows)
 }
 
-line('### Synthetic misspellings by edit type (fixed, median run)')
+const editSet = runs[0].records.some(r => r.set === 'synthetic-test') ? 'synthetic-test' : 'synthetic'
+line(`### ${editSet} misspellings by edit type (fixed, median run)`)
 line()
 const EDIT_TYPES = ['deletion', 'insertion', 'substitution', 'transposition']
 const byEdit = EDIT_TYPES.map(e => {
-  const counts = CORRECTORS.map(c => runs.map(run => correction(run.records.filter(r => r.set === 'synthetic' && (r.edit === e || r.kind === 'control')), c).fixed))
-  const n = runs[0].records.filter(r => r.set === 'synthetic' && r.edit === e).length
-  const offered = runs.map(run => correction(run.records.filter(r => r.set === 'synthetic' && (r.edit === e || r.kind === 'control')), 'jev').offered)
+  const counts = CORRECTORS.map(c => runs.map(run => correction(run.records.filter(r => r.set === editSet && (r.edit === e || r.kind === 'control')), c).fixed))
+  const n = runs[0].records.filter(r => r.set === editSet && r.edit === e).length
+  const offered = runs.map(run => correction(run.records.filter(r => r.set === editSet && (r.edit === e || r.kind === 'control')), 'jev').offered)
   return { e, n, fixed: counts.map(median), offered: median(offered) }
 })
 table(
@@ -409,10 +465,12 @@ table(
 line('### When the intended word was offered')
 line()
 {
-  const rows = (['jev', 'wide'] as const).map(c => {
+  line(`Misspellings in ${scopeName}.`)
+  line()
+  const rows = ((hasWide ? ['jev', 'wide'] : ['jev']) as ('jev' | 'wide')[]).map(c => {
     const per = runs.map(run => {
-      const typos = run.records.filter(r => (r.set === 'synthetic' || r.set === 'held-out') && r.kind === 'typo')
-      const options = (r: Rec) => (c === 'wide' ? r.wide.options : r.jev.spelling.options).map(o => norm(o))
+      const typos = run.records.filter(r => spellingScope(r) && r.kind === 'typo' && !!r.expect)
+      const options = (r: Rec) => (c === 'wide' ? r.wide!.options : r.jev.spelling.options).map(o => norm(o))
       const offered = typos.filter(r => options(r).includes(norm(r.expect)))
       return { offered: offered.length, picked: offered.filter(r => norm(r.suggestions[c]) === norm(r.expect)).length }
     })
@@ -421,49 +479,22 @@ line()
   table(['options', 'typos with the word offered', 'Jev picked it', 'rate'], rows)
 }
 
-// Real-word errors are misspellings that some product also carries, so they are words in the index;
-// non-word errors are not. A corrector that keeps every known word cannot fix the first kind.
-// Which misspelled words are in search.words. Read once from the database and kept in
-// results/known.json, so the report rebuilds from results/ alone.
-const known = new Set<string>()
-{
-  const words = [...new Set(all.filter(r => r.kind === 'typo' && r.expect).flatMap(r => tokens(r.q)))].sort()
-  const cache = new URL('../results/known.json', import.meta.url)
-  let saved: { checked: string[]; known: string[] } | null = null
-  try {
-    saved = JSON.parse(await readFile(cache, 'utf8'))
-  } catch {}
-  if (saved && words.every(w => saved!.checked.includes(w))) {
-    for (const w of saved.known) known.add(w)
-  } else {
-    const { connect } = await import('../src/db.ts')
-    const pool = connect()
-    try {
-      for (const row of (await pool.query<{ word: string }>('SELECT word FROM search.words WHERE word = ANY($1)', [words])).rows) known.add(row.word)
-    } finally {
-      await pool.end()
-    }
-    await writeFile(cache, `${JSON.stringify({ checked: words, known: [...known].sort() })}\n`)
-  }
-}
-const misspelled = (r: Rec) => tokens(r.q).filter(w => !tokens(r.expect ?? '').includes(w))
-const realWord = (r: Rec) => misspelled(r).length > 0 && misspelled(r).every(w => known.has(w))
 const ERROR_TYPES = [
   { name: 'real-word errors', take: (r: Rec) => r.kind === 'typo' && !!r.expect && realWord(r) },
   { name: 'non-word errors', take: (r: Rec) => r.kind === 'typo' && !!r.expect && !realWord(r) },
 ]
 const SPLIT_CORRECTORS: Corrector[] = ['jev', 'norvig', 'cascade', 'frequency']
 const errorSplit = ERROR_TYPES.map(et => {
-  const n = runs[0].records.filter(r => (r.set === 'held-out' || r.set === 'synthetic') && et.take(r)).length
+  const n = runs[0].records.filter(r => spellingScope(r) && et.take(r)).length
   const fixed = SPLIT_CORRECTORS.map(c =>
-    median(runs.map(run => run.records.filter(r => (r.set === 'held-out' || r.set === 'synthetic') && et.take(r) && norm(suggestionOf(r, c)) === norm(r.expect)).length)),
+    median(runs.map(run => run.records.filter(r => spellingScope(r) && et.take(r) && norm(suggestionOf(r, c)) === norm(r.expect)).length)),
   )
   const wrong = SPLIT_CORRECTORS.map(c =>
     median(
       runs.map(
         run =>
           run.records.filter(
-            r => (r.set === 'held-out' || r.set === 'synthetic') && et.take(r) && suggestionOf(r, c) !== null && norm(suggestionOf(r, c)) !== norm(r.expect),
+            r => spellingScope(r) && et.take(r) && suggestionOf(r, c) !== null && norm(suggestionOf(r, c)) !== norm(r.expect),
           ).length,
       ),
     ),
@@ -471,10 +502,10 @@ const errorSplit = ERROR_TYPES.map(et => {
   return { name: et.name, n, fixed, wrong }
 })
 const controlAlarms = SPLIT_CORRECTORS.map(c =>
-  median(runs.map(run => run.records.filter(r => (r.set === 'held-out' || r.set === 'synthetic') && r.kind === 'control' && suggestionOf(r, c) !== null).length)),
+  median(runs.map(run => run.records.filter(r => spellingScope(r) && r.kind === 'control' && suggestionOf(r, c) !== null).length)),
 )
-const controlCount = runs[0].records.filter(r => (r.set === 'held-out' || r.set === 'synthetic') && r.kind === 'control').length
-line('### Real-word and non-word errors (held-out and synthetic, median run)')
+const controlCount = runs[0].records.filter(r => spellingScope(r) && r.kind === 'control').length
+line(`### Real-word and non-word errors (${scopeName}, median run)`)
 line()
 line('A real-word error is a misspelling that some product name also carries, so it is a word in the index.')
 line()
@@ -491,7 +522,9 @@ line()
 
 // ------------------------------------------------ threshold, calibration, stability
 
-const spellingRecs = all.filter(r => (r.set === 'held-out' || r.set === 'synthetic') && r.kind !== 'absent')
+const spellingRecs = all.filter(r => spellingScope(r) && r.kind !== 'absent' && (r.kind === 'control' || !!r.expect))
+const RULE = runs[0].meta.spellingRule ?? { ratio: 0, suggestAt: 0.6 }
+// The run's own rule with its floor moved to t.
 function suggestAt(r: Rec, t: number): string | null {
   const s = r.jev.spelling
   let best = 0
@@ -502,9 +535,9 @@ function suggestAt(r: Rec, t: number): string | null {
       p = pi
     }
   })
-  return best > 0 && p >= t ? norm(s.options[best]) : null
+  return best > 0 && p >= t && p >= RULE.ratio * (s.probabilities[0] ?? 0) ? norm(s.options[best]) : null
 }
-const thresholds = Array.from({ length: 14 }, (_, i) => +(0.3 + 0.05 * i).toFixed(2))
+const thresholds = Array.from({ length: 16 }, (_, i) => +(0.2 + 0.05 * i).toFixed(2))
 const sweep = thresholds.map(t => {
   const typos = spellingRecs.filter(r => r.kind === 'typo')
   const controls = spellingRecs.filter(r => r.kind === 'control')
@@ -515,7 +548,9 @@ const sweep = thresholds.map(t => {
 })
 line('## Spelling bar sensitivity (post hoc)')
 line()
-line(`Held-out and synthetic sets pooled over all runs (${spellingRecs.filter(r => r.kind === 'typo').length} misspelling and ${spellingRecs.filter(r => r.kind === 'control').length} control answers). The page uses 0.6, fixed before these sets were scored.`)
+line(
+  `The ${scopeName} sets pooled over all runs (${spellingRecs.filter(r => r.kind === 'typo').length} misspelling and ${spellingRecs.filter(r => r.kind === 'control').length} control answers). The rule is the one these runs used${RULE.ratio ? `, a respelling at least ${RULE.ratio} times as likely as the spelling typed,` : ''} with its floor moved; the runs used ${RULE.suggestAt}.`,
+)
 line()
 table(
   ['bar', 'misspellings fixed', 'controls respelled', 'precision'],
@@ -545,7 +580,7 @@ const ece = reliability.reduce((s, b) => s + (b.n ? (b.n / reliabilityItems.leng
 const brier = mean(reliabilityItems.map(x => (x.conf - (x.right ? 1 : 0)) ** 2))
 line('## Reliability of the spelling choice')
 line()
-line(`${reliabilityItems.length} answers where the spelling question ran (held-out and synthetic, all runs). Expected calibration error ${ece.toFixed(3)}; Brier score ${brier.toFixed(3)}.`)
+line(`${reliabilityItems.length} answers where the spelling question ran (${scopeName}, all runs). Expected calibration error ${ece.toFixed(3)}; Brier score ${brier.toFixed(3)}.`)
 line()
 table(
   ['confidence', 'answers', 'mean confidence', 'right'],
@@ -678,12 +713,11 @@ const costRows = GROUPS.filter(g => !g.name.includes(',')).concat([{ name: 'abse
 const allTokens = mean(all.map(r => r.jev.rerank.tokens + r.jev.spelling.tokens))
 costRows.push(['every query', all.length / runs.length, allTokens.toFixed(0), `$${((allTokens * PRICE) / 1e6).toFixed(6)}`, `$${((allTokens * PRICE) / 1e3).toFixed(4)}`])
 table(['queries', 'per run', 'input tokens per search', 'cost per search', 'cost per 1,000 searches'], costRows)
-const runTokens = runs.map(run => run.records.reduce((s, r) => s + r.jev.rerank.tokens + r.jev.spelling.tokens + r.wide.tokens, 0))
-line(`Each run sent ${median(runTokens).toLocaleString('en-US')} input tokens in all, including the research-only spelling variant: $${((median(runTokens) * PRICE) / 1e6).toFixed(3)} per run at $${PRICE} per million.`)
+const runTokens = runs.map(run => run.records.reduce((s, r) => s + r.jev.rerank.tokens + r.jev.spelling.tokens + (r.wide?.tokens ?? 0), 0))
+line(`Each run sent ${median(runTokens).toLocaleString('en-US')} input tokens in all${hasWide ? ', including the research-only spelling variant' : ''}: $${((median(runTokens) * PRICE) / 1e6).toFixed(3)} per run at $${PRICE} per million.`)
 line()
 
-await mkdir(new URL('../results/', import.meta.url), { recursive: true })
-await writeFile(new URL('../results/report.md', import.meta.url), `${out.join('\n')}\n`)
+await writeFile(new URL('report.md', dir), `${out.join('\n')}\n`)
 
 // ---------------------------------------------------------------- figures
 
@@ -840,18 +874,18 @@ figures['threshold'] = theme => {
   const right = 170
   const top = 70
   const bottom = 300
-  const x = (v: number) => left + ((v - 0.3) / (0.95 - 0.3)) * (W - left - right)
+  const x = (v: number) => left + ((v - 0.2) / (0.95 - 0.2)) * (W - left - right)
   const y = (v: number) => bottom - v * (bottom - top)
-  let body = text(24, 30, 'Where the suggestion bar sits (post hoc)', { fill: t.text, size: 16, weight: 600 })
-  body += text(24, 50, 'Held-out and synthetic sets, all runs pooled. The page uses 0.6, chosen before these sets were scored.', { fill: t.muted, size: 12 })
+  let body = text(24, 30, 'Where the suggestion floor sits (post hoc)', { fill: t.text, size: 16, weight: 600 })
+  body += text(24, 50, `The ${scopeName} sets, all runs pooled${RULE.ratio ? `, with the respelling at least ${RULE.ratio} times as likely as the spelling typed` : ''}. The page uses ${RULE.suggestAt}.`, { fill: t.muted, size: 12 })
   for (const v of [0, 0.25, 0.5, 0.75, 1]) {
     body += lineEl(left, y(v), W - right, y(v), t.grid)
     body += text(left - 8, y(v) + 4, pct(v), { fill: t.muted, size: 11, anchor: 'end' })
   }
-  for (const v of [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) body += text(x(v), bottom + 18, v.toFixed(1), { fill: t.muted, size: 11, anchor: 'middle' })
+  for (const v of [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]) body += text(x(v), bottom + 18, v.toFixed(1), { fill: t.muted, size: 11, anchor: 'middle' })
   body += text((left + W - right) / 2, bottom + 40, 'probability a respelling needs before it is suggested', { fill: t.muted, size: 12, anchor: 'middle' })
-  body += lineEl(x(0.6), top - 6, x(0.6), bottom, t.muted)
-  body += text(x(0.6) + 6, top + 4, 'bar used', { fill: t.muted, size: 11 })
+  body += lineEl(x(RULE.suggestAt), top - 6, x(RULE.suggestAt), bottom, t.muted)
+  body += text(x(RULE.suggestAt) + 6, top + 4, 'floor used', { fill: t.muted, size: 11 })
   const series = [
     { label: 'misspellings fixed', v: sweep.map(s => s.recall), color: t.series[0] },
     { label: 'correct words respelled', v: sweep.map(s => s.falseRate), color: t.series[1] },
@@ -863,8 +897,8 @@ figures['threshold'] = theme => {
     const last = pts[pts.length - 1]
     body += dot(last[0], last[1], s.color, t.surface, 4)
     body += text(last[0] + 10, last[1] + 4, `${s.label} ${pct(s.v[s.v.length - 1])}`, { fill: t.text, size: 12 })
-    const at6 = sweep.findIndex(p => p.t === 0.6)
-    body += dot(pts[at6][0], pts[at6][1], s.color, t.surface, 4)
+    const used = sweep.findIndex(p => p.t === RULE.suggestAt)
+    if (used >= 0) body += dot(pts[used][0], pts[used][1], s.color, t.surface, 4)
   }
   body += lineEl(left, bottom, W - right, bottom, t.muted)
   return svg(W, H, theme, 'Spelling suggestion rates by bar', body)
@@ -1159,10 +1193,12 @@ figures['cost'] = theme => {
   return svg(W, H, theme, 'Monthly cost against search volume', body)
 }
 
-await mkdir(new URL('../docs/figures/', import.meta.url), { recursive: true })
-for (const [name, draw] of Object.entries(figures)) {
-  for (const theme of ['light', 'dark'] as const) {
-    await writeFile(new URL(`../docs/figures/${name}-${theme}.svg`, import.meta.url), draw(theme))
+if (drawFigures) {
+  await mkdir(new URL('../docs/figures/', import.meta.url), { recursive: true })
+  for (const [name, draw] of Object.entries(figures)) {
+    for (const theme of ['light', 'dark'] as const) {
+      await writeFile(new URL(`../docs/figures/${name}-${theme}.svg`, import.meta.url), draw(theme))
+    }
   }
 }
 
@@ -1182,5 +1218,5 @@ tail.push('| searches per month | Algolia, 1 request per search | Algolia, 5 req
 tail.push('|---:|---:|---:|---:|')
 for (const r of costModel) tail.push(`| ${r.join(' | ')} |`)
 tail.push('')
-await writeFile(new URL('../results/report.md', import.meta.url), `${out.join('\n')}\n${tail.join('\n')}\n`)
-console.log(`read ${runs.length} runs; wrote results/report.md and ${Object.keys(figures).length * 2} figures`)
+await writeFile(new URL('report.md', dir), `${out.join('\n')}\n${tail.join('\n')}\n`)
+console.log(`read ${runs.length} runs; wrote ${dirName}/report.md${drawFigures ? ` and ${Object.keys(figures).length * 2} figures` : ''}`)
