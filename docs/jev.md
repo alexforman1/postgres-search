@@ -193,6 +193,11 @@ judges products, so for a brand typed alone (`general mills`) or an unfinished w
 scores every product low; the typed-words check keeps the line off those pages. The demo shows the
 line only when there is no suggestion, and the results stay on the page.
 
+The typed-words check was added after the eval showed the line on `general mills`, `kraft heinz`
+and `strawb`, so the one false line in 50 queries is a count after that fix. Before the check, the
+line also appeared for 12 of the 15 household goods; the check removed it from `toothpaste` and
+`light bulbs`, whose results carry those words.
+
 ## When a call is skipped
 
 Question 1 is skipped when fewer than 2 results come back, or when all of the top 10 share one

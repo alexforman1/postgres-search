@@ -24,7 +24,8 @@ On 50 hand-written queries against the full release, with `jev-1.13.0`
 
 All 18 misspelled queries show the right product first once the suggestion is followed, against
 13 without Jev. `parmesean` gets "Did you mean parmesan" and `dortios` gets "doritos", two cases the
-SQL cannot fix. On 50 more words written as a held-out test, Jev fixed 23 to 25 of 30
+SQL cannot fix. These 50 queries also shaped the spelling step's bar and two of its rules, so the
+table is not a clean test. On 50 more words written as a held-out test, Jev fixed 23 to 25 of 30
 misspellings, left all 20 correctly spelled words alone, and made no wrong suggestion; a rule that
 picks the most common close word made 16 wrong ones.
 

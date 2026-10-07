@@ -192,7 +192,9 @@ and $0.000065 per search.
 ### Spelling
 
 `eval/spelling.json` holds 30 misspellings and 20 correctly spelled words. It was written before
-any Jev call on it, and the 0.6 bar was not changed after it was scored. "offered" counts cases
+any Jev call on it, and the 0.6 bar was not changed after it was scored. `search.similar_words`
+did change after its first scoring, when it began to leave out words that only finish the typed
+word; that first run scored 77% and 100%, the same as two of the three runs below. "offered" counts cases
 where the intended spelling was among Jev's options (every control counts). The frequency rule
 respells a word to its most common close word when that word is used at least ten times as often
 as the typed word.
@@ -211,6 +213,7 @@ suggestions in each run, 8 on misspellings (such as `tostitoes` to "tomatoes") a
 ### No match
 
 `eval/absent.json` holds 15 household goods. In all three runs the line appeared for 10 of them.
+An earlier run, before `rerank` checked for the typed words, showed it for 12.
 `laundry detergent` and `paper towels` returned no results, `sunscreen` returned one result so
 keep or sink did not run, and `toothpaste` and `light bulbs` returned products carrying those
 words.
