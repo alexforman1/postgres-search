@@ -99,14 +99,14 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 
 ## Primary comparisons
 
-On the 500 queries of the group "synthetic-test-4", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
+On the 500 queries of the group "synthetic-test-4", hit@1, exact McNemar with Holm's correction across these four, run by run: the range of adjusted p over the 5 runs, and how many runs fall under 0.05.
 
-| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, worst run |
-|:---|:---|---:|---:|---:|---:|---:|
-| this SQL | plain Postgres full-text search | 66% | 36% | 161 | 11 | < 0.0001 |
-| this SQL + Jev keep or sink, as shown | this SQL | 70% | 66% | 21 to 23 | 3 to 4 | 0.002 |
-| this SQL + Jev "Did you mean", one click | this SQL | 82% | 66% | 96 to 100 | 16 to 18 | < 0.0001 |
-| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 82% | 84% | 4 to 6 | 12 to 17 | 0.238 |
+| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, range over runs | runs under 0.05 |
+|:---|:---|---:|---:|---:|---:|---:|---:|
+| this SQL | plain Postgres full-text search | 66% | 36% | 161 | 11 | < 0.0001 | 5 of 5 |
+| this SQL + Jev keep or sink, as shown | this SQL | 70% | 66% | 21 to 23 | 3 to 4 | 0.0003 to 0.002 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL | 82% | 66% | 96 to 100 | 16 to 18 | < 0.0001 to < 0.0001 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 82% | 84% | 4 to 6 | 12 to 17 | 0.012 to 0.238 | 2 of 5 |
 
 ### Words cut short
 
@@ -129,12 +129,12 @@ Version 2.2's code, run once on the sets made for version 2.3 (results/v22-new),
 | truncation-3, one letter cut | 88 | 88% / 91% | 90% / 93% | 89% / 91% | 91% / 93% |
 | truncation-3, two or more letters cut | 212 | 66% / 75% | 68% / 76% | 67% / 75% | 68% / 76% |
 
-On the truncation-3 queries, exact McNemar of this version against version 2.2, Holm's correction across these two, the worst of the 5 runs.
+On the truncation-3 queries, exact McNemar of this version against version 2.2, Holm's correction across these two, run by run.
 
-| system | right only in this version | right only in version 2.2 | Holm-adjusted p, worst run |
-|:---|---:|---:|---:|
-| this SQL | 24 | 0 | < 0.0001 |
-| this SQL + Jev, both questions, one click | 24 | 5 | 0.0005 |
+| system | right only in this version | right only in version 2.2 | Holm-adjusted p, range over runs | runs under 0.05 |
+|:---|---:|---:|---:|---:|
+| this SQL | 24 | 0 | < 0.0001 | 5 of 5 |
+| this SQL + Jev, both questions, one click | 24 | 5 | 0.0005 | 5 of 5 |
 
 ## Paired tests (exact McNemar, hit@1, exploratory)
 
@@ -655,6 +655,8 @@ Pooled over all 5 runs and 3988 queries per run. Milliseconds.
 | this SQL | 21 | 204 | 536 | 19, 18, 24, 22, 22 |
 | this SQL + Jev, whole page | 197 | 304 | 570 | 200, 197, 200, 198, 192 |
 | time Jev adds to the page | 165 | 214 | 336 | 168, 167, 167, 166, 160 |
+| this SQL + Jev, whole page, searches that sent a Jev call | 215 | 321 | 607 | 217, 212, 217, 216, 211 |
+| time Jev adds, searches that sent a Jev call | 174 | 222 | 349 | 177, 177, 175, 175, 168 |
 | Jev keep or sink call | 169 | 213 | 322 | 171, 171, 171, 170, 165 |
 | Jev spelling call | 163 | 205 | 318 | 166, 165, 165, 164, 158 |
 

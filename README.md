@@ -36,12 +36,12 @@ short as a user types them. Every system ran five times on 3,988 queries with th
 On the 500 misspellings and controls, the right product came first for 36% of queries with plain
 full-text search and 66% with this SQL. Jev's keep-or-sink reorder raised that to 70%, and its "Did
 you mean" link, when followed, to 82%; all three gains hold after Holm's correction (p ≤ 0.002).
-The dictionary corrector reached 84%, a difference that is not significant (p = 0.238) on errors
-made to fit the corrector's own model. On the 300 words cut short, version 2.3 finds the right
-product first for 81%, against 75% for version 2.2 on the same queries (24 gained, 5 lost, Holm p =
-0.0005) and 33% for the corrector, which respells what the user has not finished typing. On real
-misspellings from Wikipedia's list, a test set for version 2, Jev leads 70% to 64%, and 84% to 31%
-on the 32 that are themselves words some product uses.
+The dictionary corrector, on errors made to fit its own model, reached 84%; after Holm's correction
+its lead is significant in 2 of the 5 runs (adjusted p 0.012 to 0.238). On the 300 words cut short,
+version 2.3 finds the right product first for 81%, against 75% for version 2.2 on the same queries
+(24 gained, 5 lost, Holm p = 0.0005) and 33% for the corrector, which respells what the user has
+not finished typing. On real misspellings from Wikipedia's list, a test set for version 2, Jev
+leads 70% to 64%, and 84% to 31% on the 32 that are themselves words some product uses.
 
 Three failures shaped the design. The first version lost to the corrector (78% to 85%) because it
 withheld what the corrector uses: candidates one edit away, and how many products each spelling
@@ -54,14 +54,14 @@ word whose stem matched other words still went to the word step (`monke` found m
 reorder sank right results on pages the prefix step answered. Version 2.3 fixes both.
 
 Each Jev call returns all its judgments in one round trip: ten product judgments in 169 ms at the
-median, or a choice among seven spellings in 163 ms. The two calls run at the same time and add
-165 ms to the page; a word still being typed makes no call at all. They cost \$0.080 per 1,000
-searches on the hand-written queries. The spelling probabilities are well calibrated (expected
-calibration error 0.012; right 97.7% of the time at 0.9 or more), and the page says that nothing
-matches for 12 of 15 queries that have no answer in a grocery catalog against 123 of 3,973 that
-do. For this demo's 440,302 records, Algolia's published Grow price is \$136 a month for records
-alone, before any search; at 100,000 searches a month it is \$181 to \$381, against \$7.95 for the
-Jev step.
+median, or a choice among seven spellings in 163 ms. The two calls run at the same time and, on the
+searches that send them, add 174 ms to the page, as in version 2.2; a word still being typed sends
+neither. They cost \$0.080 per 1,000 searches on the hand-written queries. The spelling
+probabilities are well calibrated (expected calibration error 0.012; right 97.7% of the time at 0.9
+or more), and the page says that nothing matches for 12 of 15 queries that have no answer in a
+grocery catalog against 123 of 3,973 that do. For this demo's 440,302 records, Algolia's published
+Grow price is \$136 a month for records alone, before any search; at 100,000 searches a month it is
+\$181 to \$381, against \$7.95 for the Jev step.
 
 | median of five runs | plain Postgres full-text search | this SQL | this SQL + Jev | this SQL + Norvig corrector |
 |---------------------|--------------------------------:|---------:|---------------:|----------------------------:|
@@ -71,7 +71,7 @@ Jev step.
 | right product first, real-word errors among them (32) | 28% | 31% | **84%** | 31% |
 | says nothing matches, queries with no answer (15) | 12 | 2 | 12 | |
 | says nothing matches, queries with an answer (3,973) | 2,555 | 97 | 123 | |
-| time per search, median | 2 ms | 21 ms | 197 ms | |
+| time per search, median | 2 ms | 21 ms | 215 ms with a Jev call, 197 ms over all | |
 | cost per 1,000 searches, beyond the database | | | \$0.080 | |
 
 "This SQL + Jev" asks both questions and follows a "Did you mean" link when one appears.
@@ -166,7 +166,7 @@ stay on the page.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/figures/timeline-dark.svg">
-  <img alt="Timeline of one search at the medians: Postgres takes about 19 ms and the keep-or-sink call about 169 ms on one path; the spelling call takes about 163 ms on the other; the page median is 197 ms." src="docs/figures/timeline-light.svg" width="860">
+  <img alt="Timeline of one search at the medians: Postgres takes about 19 ms and the keep-or-sink call about 169 ms on one path; the spelling call takes about 163 ms on the other; the page median is 215 ms." src="docs/figures/timeline-light.svg" width="860">
 </picture>
 
 ## 3. Method
@@ -419,20 +419,20 @@ test 2 and 83% on synthetic test 3 (the corrector 83% on both).
 
 ### 4.4 Primary comparisons
 
-On synthetic test 4, exact McNemar with Holm's correction across these four, the largest adjusted
-p of the five runs:
+On synthetic test 4, exact McNemar with Holm's correction across these four, applied run by run:
 
-| comparison | hit@1 | right only in the first | right only in the second | adjusted p |
-|------------|------:|------------------------:|-------------------------:|-----------:|
-| this SQL vs plain full-text search | 66% vs 36% | 161 | 11 | < 0.0001 |
-| + keep or sink vs this SQL | 70% vs 66% | 21 to 23 | 3 to 4 | 0.002 |
-| + Did you mean vs this SQL | 82% vs 66% | 96 to 100 | 16 to 18 | < 0.0001 |
-| + Did you mean vs Norvig corrector | 82% vs 84% | 4 to 6 | 12 to 17 | 0.238 |
+| comparison | hit@1 | right only in the first | right only in the second | adjusted p, range over runs | runs under 0.05 |
+|------------|------:|------------------------:|-------------------------:|----------------------------:|----------------:|
+| this SQL vs plain full-text search | 66% vs 36% | 161 | 11 | < 0.0001 | 5 of 5 |
+| + keep or sink vs this SQL | 70% vs 66% | 21 to 23 | 3 to 4 | 0.0003 to 0.002 | 5 of 5 |
+| + Did you mean vs this SQL | 82% vs 66% | 96 to 100 | 16 to 18 | < 0.0001 | 5 of 5 |
+| + Did you mean vs Norvig corrector | 82% vs 84% | 4 to 6 | 12 to 17 | 0.012 to 0.238 | 2 of 5 |
 
-Three favor the method. The fourth is not significant, and its direction has moved between test
-sets made the same way, each scored by the version it was made for: 85% to 86% on synthetic test,
-83% to 83% on synthetic tests 2 and 3, and 82% to 84% here. Section 4.5 shows where the queries the
-corrector wins come from.
+Three favor the method in every run. In the fourth the corrector is ahead, significantly so after
+correction in 2 of the 5 runs, and the direction has moved between test sets made the same way,
+each scored by the version it was made for: 85% to 86% on synthetic test, 83% to 83% on synthetic
+tests 2 and 3, and 82% to 84% here. Section 4.5 shows where the queries the corrector wins come
+from.
 
 ### 4.5 Spelling correction against classical correctors
 
@@ -582,15 +582,19 @@ Five runs pooled, 19,940 queries per system, milliseconds:
 | this SQL | 21 | 204 | 536 |
 | this SQL + Jev, whole page | 197 | 304 | 570 |
 | time Jev adds to the page | 165 | 214 | 336 |
+| this SQL + Jev, whole page, searches that sent a Jev call | 215 | 321 | 607 |
+| time Jev adds, searches that sent a Jev call | 174 | 222 | 349 |
 | one keep-or-sink call (10 results judged) | 169 | 213 | 322 |
 | one spelling call (median 7 options) | 163 | 205 | 318 |
 
 Plain full-text search is the fastest system by a wide margin, and Jev is the slowest. Each Jev
 call returns its whole set of judgments in one round trip, and the two calls run at the same time,
-so the page waits for the slower one. A word still being typed now makes neither call: keep or
-sink was sent on 73% of searches and the spelling question on 68%, and a search on truncation 3
-cost \$0.010 per 1,000 against \$0.093 on synthetic test 4. The close-word lookup takes 2 to 22 ms
-in psql, and the test for a word still being typed adds about 0.1 to 0.25 ms to the search
+so the page waits for the slower one. On the 77.5% of searches that sent a call, the page median is
+215 ms and Jev adds 174 ms, as in version 2.2 (209 and 173 ms); the medians over all searches are
+lower only because a word still being typed now makes neither call: keep or sink was sent on 73% of
+searches and the spelling question on 68%, and a search on truncation 3 cost \$0.010 per 1,000
+against \$0.093 on synthetic test 4. The close-word lookup takes 2 to 22 ms in psql, and the test
+for a word still being typed adds about 0.1 to 0.25 ms to the search
 ([measurements](docs/measurements.md)).
 
 ## 5. Failure analysis
@@ -621,14 +625,14 @@ common words.
 ## 6. Discussion
 
 The first version gave Jev less information than a 2007 spelling corrector uses, and lost. Given
-the same evidence, edit distance and how often the catalog uses each spelling, it matches the
-corrector on errors made to fit the corrector's assumptions (85% against 86%, 83% against 83%
-twice, and 82% against 84% on the four synthetic test sets) and beats it on errors people made (70%
-against 64% on Wikipedia's list). Its advantage concentrates where the decision is a judgment
-rather than a lookup: a misspelling that is itself a word in some product name (84% against 31%), a
-possessive that only looks misspelled, a word the user has not finished typing (81% against 33%), a
-list of results where some are wrong, and a query with no answer at all. Its probabilities are
-calibrated well enough to act on.
+the same evidence, edit distance and how often the catalog uses each spelling, it comes within two
+points of the corrector on errors made to fit the corrector's assumptions (85% against 86%, 83%
+against 83% twice, and 82% against 84% on the four synthetic test sets, the last significant in 2
+of 5 runs) and beats it on errors people made (70% against 64% on Wikipedia's list). Its advantage
+concentrates where the decision is a judgment rather than a lookup: a misspelling that is itself a
+word in some product name (84% against 31%), a possessive that only looks misspelled, a word the
+user has not finished typing (81% against 33%), a list of results where some are wrong, and a query
+with no answer at all. Its probabilities are calibrated well enough to act on.
 
 The lesson for building with a model like this is the one the first version taught, and the later
 versions taught it again. The model was not short of judgment; it was short of evidence, or it was
@@ -727,7 +731,7 @@ close to \$200 with about 500,000, the record charge plus requests.
 None of these was measured here, and each should weigh in a choice between the two:
 
 - **Latency and scaling.** Algolia serves from its own clusters. Here the search load lands on your
-  database, and the Jev step adds 165 ms to the page at the median.
+  database, and the Jev step adds 174 ms to the page at the median when it calls Jev.
 - **Tools around search.** Analytics, A/B tests, merchandising rules, and Query Suggestions built
   from search history.
 - **Typo tolerance inside retrieval.** Algolia counts a swap of two letters as one typo while it

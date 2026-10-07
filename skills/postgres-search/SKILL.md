@@ -105,7 +105,7 @@ rules:
 - on any error, timeout (1.5 s), or missing answer, keep the original page;
 - the key never reaches the browser.
 
-On the demo data the step costs about 8 cents per 1,000 searches and adds 165 ms at the median.
+On the demo data the step costs about 8 cents per 1,000 searches and adds 174 ms at the median when it calls Jev.
 With the edit counts and product counts in its options, the spelling question tied a Norvig-style
 dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
 misspellings that are themselves words in the index. Without that evidence it lost; keep it.

@@ -87,14 +87,14 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 
 ## Primary comparisons
 
-On the 500 queries of the group "synthetic-test-3", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
+On the 500 queries of the group "synthetic-test-3", hit@1, exact McNemar with Holm's correction across these four, run by run: the range of adjusted p over the 5 runs, and how many runs fall under 0.05.
 
-| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, worst run |
-|:---|:---|---:|---:|---:|---:|---:|
-| this SQL | plain Postgres full-text search | 62% | 35% | 143 | 7 | < 0.0001 |
-| this SQL + Jev keep or sink, as shown | this SQL | 69% | 62% | 34 to 37 | 3 to 4 | < 0.0001 |
-| this SQL + Jev "Did you mean", one click | this SQL | 83% | 62% | 115 to 116 | 14 | < 0.0001 |
-| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 83% | 83% | 11 to 12 | 11 to 12 | 1.000 |
+| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, range over runs | runs under 0.05 |
+|:---|:---|---:|---:|---:|---:|---:|---:|
+| this SQL | plain Postgres full-text search | 62% | 35% | 143 | 7 | < 0.0001 | 5 of 5 |
+| this SQL + Jev keep or sink, as shown | this SQL | 69% | 62% | 34 to 37 | 3 to 4 | < 0.0001 to < 0.0001 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL | 83% | 62% | 115 to 116 | 14 | < 0.0001 to < 0.0001 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 83% | 83% | 11 to 12 | 11 to 12 | 1.000 to 1.000 | 0 of 5 |
 
 ### Words cut short
 
@@ -328,44 +328,6 @@ that call Jev, each run gives its own test; the table shows the range over runs.
 | truncation-2, two or more letters cut | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Norvig corrector, one click | 0 | 0 | 1.000 |
 | truncation-2, two or more letters cut | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Jev, both questions, one click | 1 | 128 to 130 | < 0.0001 to < 0.0001 |
 
-## Versions compared
-
-Version 1 (results/v1) offered trigram neighbors only, with bare spellings and a bar of 0.6. Version 2 (results/v2) added one-edit candidates, product counts, edit counts and the twice-as-likely rule. Version 2.1 (results/v21, one run) added the completion test. Hit@1, median run; a set a version was not run on is blank.
-
-| group | v1, "Did you mean" | v2, "Did you mean" | v2.1, "Did you mean" | this version, "Did you mean" | Norvig corrector |
-|:---|---:|---:|---:|---:|---:|
-| hand-written | 92% | 90% | 92% | 92% | 82% |
-| held-out | 86% | 92% | 92% | 92% | 66% |
-| synthetic | 77% | 84% | 85% | 85% | 87% |
-| synthetic-test |  | 85% | 85% | 85% | 86% |
-| wikipedia |  | 70% | 71% | 70% | 64% |
-| synthetic-test-2 |  |  | 83% | 83% | 83% |
-| truncation |  |  | 57% | 82% | 40% |
-
-| group | v1, both questions | v2, both questions | v2.1, both questions | this version, both questions | Norvig corrector |
-|:---|---:|---:|---:|---:|---:|
-| hand-written | 96% | 94% | 96% | 96% | 82% |
-| held-out | 90% | 94% | 94% | 94% | 66% |
-| synthetic | 79% | 86% | 87% | 87% | 87% |
-| synthetic-test |  | 85% | 85% | 86% | 86% |
-| wikipedia |  | 71% | 72% | 70% | 64% |
-| synthetic-test-2 |  |  | 83% | 83% | 83% |
-| truncation |  |  | 56% | 82% | 40% |
-
-| synthetic development set (300 misspellings, 200 controls) | fixed | wrong | missed | false alarms | intended word offered |
-|:---|---:|---:|---:|---:|---:|
-| v1 | 174 | 15 | 111 | 2 | 260 |
-| v2 | 248 | 35 | 17 | 2 | 282 |
-| v2.1 | 260 | 29 | 11 | 2 | 293 |
-| this version | 247 | 29 | 24 | 2 | 280 |
-
-| synthetic development set, last letters cut | cases | this SQL, hit@1 | with "Did you mean", hit@1 |
-|:---|---:|---:|---:|
-| v1 | 16 | 16 | 16 |
-| v2 | 16 | 16 | 10 |
-| v2.1 | 16 | 16 | 15 |
-| this version | 16 | 16 | 16 |
-
 ## Words cut short
 
 A suggestion is right when it is the full word.
@@ -559,6 +521,8 @@ Pooled over all 5 runs and 3188 queries per run. Milliseconds.
 | this SQL | 23 | 222 | 560 | 23, 27, 23, 21, 21 |
 | this SQL + Jev, whole page | 209 | 311 | 581 | 216, 210, 210, 202, 206 |
 | time Jev adds to the page | 173 | 223 | 347 | 181, 172, 174, 168, 173 |
+| this SQL + Jev, whole page, searches that sent a Jev call | 209 | 312 | 584 | 216, 210, 210, 202, 206 |
+| time Jev adds, searches that sent a Jev call | 173 | 223 | 347 | 181, 172, 174, 168, 173 |
 | Jev keep or sink call | 168 | 214 | 334 | 175, 167, 170, 164, 168 |
 | Jev spelling call | 165 | 208 | 321 | 172, 163, 165, 162, 164 |
 

@@ -34,8 +34,9 @@ Version 2.3 was frozen before its two test sets, synthetic test 4 and truncation
 | Norvig-style corrector instead, one click | 82% | 84% | 33% | 64% |
 
 On synthetic test 4, keep or sink (70% against 66%) and "Did you mean" (82% against 66%) are both
-significant after Holm's correction; the dictionary corrector's 84% is not significantly different
-(p = 0.238). That set matches the corrector's own error model. On words cut short as a user types
+significant after Holm's correction. The dictionary corrector's 84% is ahead, significantly so after
+correction in 2 of the 5 runs (adjusted p 0.012 to 0.238); that set matches the corrector's own
+error model. On words cut short as a user types
 them, version 2.3 finds the right product for 81%, against 75% for version 2.2 on the same queries,
 while the corrector respells them and finds it for 33%. On real misspellings from Wikipedia, a
 test set for version 2, Jev leads 70% to 64%, and 84% to 31% on the 32 misspellings that are
@@ -54,8 +55,8 @@ TypeSafe charges \$0.042 per million input tokens for `jev-1.13.0`; output token
 On the hand-written queries a search used 1,892 input tokens on average, \$0.080 per 1,000
 searches; on the sets of misspellings it was \$0.085 to \$0.095 per 1,000. A word still being typed
 makes neither call, so the truncation sets cost \$0.010 to \$0.013 per 1,000. The two calls run at
-the same time, so the page waits for the slower one: the step adds 165 ms at the median and 214 ms
-at the 90th percentile to the Postgres query. These are round trips from one machine; measure from
+the same time, so the page waits for the slower one: on searches that send a call, the step adds
+174 ms at the median and 222 ms at the 90th percentile to the Postgres query, as in version 2.2. These are round trips from one machine; measure from
 your own servers.
 
 ## Question 1: keep or sink, never sort

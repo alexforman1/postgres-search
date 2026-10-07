@@ -175,6 +175,8 @@ to 7.3, which makes the Postgres times noisier than the table above.
 | this SQL | 21 | 204 | 536 |
 | this SQL + Jev, whole page | 197 | 304 | 570 |
 | time Jev adds to the page | 165 | 214 | 336 |
+| whole page, searches that sent a Jev call | 215 | 321 | 607 |
+| time Jev adds, searches that sent a Jev call | 174 | 222 | 349 |
 | one keep-or-sink call | 169 | 213 | 322 |
 | one spelling call | 163 | 205 | 318 |
 

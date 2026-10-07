@@ -63,14 +63,14 @@ Median run, with the lowest and highest run in parentheses when they differ, and
 
 ## Primary comparisons
 
-On the 973 queries of the group "test (synthetic-test and wikipedia)", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the 5 runs.
+On the 973 queries of the group "test (synthetic-test and wikipedia)", hit@1, exact McNemar with Holm's correction across these four, run by run: the range of adjusted p over the 5 runs, and how many runs fall under 0.05.
 
-| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, worst run |
-|:---|:---|---:|---:|---:|---:|---:|
-| this SQL | plain Postgres full-text search | 54% | 22% | 325 | 11 | < 0.0001 |
-| this SQL + Jev keep or sink, as shown | this SQL | 59% | 54% | 53 to 55 | 2 to 4 | < 0.0001 |
-| this SQL + Jev "Did you mean", one click | this SQL | 78% | 54% | 276 to 278 | 46 to 48 | < 0.0001 |
-| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 78% | 75% | 48 to 49 | 26 to 29 | 0.040 |
+| A | B | A hit@1 | B hit@1 | only A | only B | Holm-adjusted p, range over runs | runs under 0.05 |
+|:---|:---|---:|---:|---:|---:|---:|---:|
+| this SQL | plain Postgres full-text search | 54% | 22% | 325 | 11 | < 0.0001 | 5 of 5 |
+| this SQL + Jev keep or sink, as shown | this SQL | 59% | 54% | 53 to 55 | 2 to 4 | < 0.0001 to < 0.0001 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL | 78% | 54% | 276 to 278 | 46 to 48 | < 0.0001 to < 0.0001 | 5 of 5 |
+| this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click | 78% | 75% | 48 to 49 | 26 to 29 | 0.014 to 0.040 | 5 of 5 |
 
 ## Paired tests (exact McNemar, hit@1, exploratory)
 
@@ -206,22 +206,6 @@ that call Jev, each run gives its own test; the table shows the range over runs.
 | test (synthetic-test and wikipedia) | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Norvig corrector, one click | 21 to 22 | 1 to 2 | < 0.0001 to < 0.0001 |
 | test (synthetic-test and wikipedia) | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Jev, both questions, one click | 23 to 26 | 31 to 33 | 0.281 to 0.597 |
 
-## Version 1 and version 2 on the development sets
-
-Version 1 (5 runs in results/v1) used trigram candidates only, no counts or edits in the options, and a bar of 0.6. Hit@1, median run.
-
-| group | n | v1 "Did you mean" | v2 "Did you mean" | v1 both questions | v2 both questions | Norvig corrector |
-|:---|---:|---:|---:|---:|---:|---:|
-| hand-written | 50 | 92% | 90% | 96% | 94% | 82% |
-| held-out | 50 | 86% | 92% | 90% | 94% | 66% |
-| synthetic | 500 | 77% | 84% | 79% | 86% | 87% |
-| out-of-sample (held-out and synthetic) | 550 | 78% | 85% | 80% | 87% | 85% |
-
-| synthetic development set (300 misspellings, 200 controls) | fixed | wrong | missed | false alarms | intended word offered |
-|:---|---:|---:|---:|---:|---:|
-| version 1 | 174 | 15 | 111 | 2 | 260 |
-| version 2 | 248 | 35 | 17 | 2 | 282 |
-
 ## Spelling correction
 
 "fixed" is a suggestion equal to the intended word, "wrong" a different suggestion, "false
@@ -270,12 +254,25 @@ was among the options Jev chose from. Medians over runs, range in parentheses.
 
 ### synthetic-test misspellings by edit type (fixed, median run)
 
+A word missing its last letter is also a word being typed, which the prefix step finds.
+
 | edit | n | Jev (shipped options) | Norvig corrector | frequency rule | offered (shipped options) |
 |:---|---:|---:|---:|---:|---:|
-| deletion | 75 | 48 (64%) | 53 (71%) | 28 (37%) | 61 (81%) |
+| deletion, last letter | 14 | 0 (0%) | 7 (50%) | 0 (0%) | 0 (0%) |
+| deletion, other letter | 61 | 48 (79%) | 46 (75%) | 28 (46%) | 61 (100%) |
 | insertion | 75 | 71 (95%) | 75 (100%) | 43 (57%) | 75 (100%) |
 | substitution | 75 | 70 (93%) | 74 (99%) | 35 (47%) | 73 (97%) |
 | transposition | 75 | 67 (89%) | 70 (93%) | 34 (45%) | 75 (100%) |
+
+### synthetic-test misspellings by edit type (right product first, median run)
+
+| edit | n | this SQL | this SQL + Jev "Did you mean", one click | this SQL + Norvig corrector, one click |
+|:---|---:|---:|---:|---:|
+| deletion, last letter | 14 | 11 (79%) | 7 (50%) | 7 (50%) |
+| deletion, other letter | 61 | 32 (52%) | 46 (75%) | 45 (74%) |
+| insertion | 75 | 51 (68%) | 63 (84%) | 66 (88%) |
+| substitution | 75 | 37 (49%) | 68 (91%) | 69 (92%) |
+| transposition | 75 | 14 (19%) | 62 (83%) | 64 (85%) |
 
 ### When the intended word was offered
 
@@ -369,6 +366,8 @@ Pooled over all 5 runs and 1588 queries per run. Milliseconds.
 | this SQL | 26 | 231 | 688 | 27, 16, 24, 32, 39 |
 | this SQL + Jev, whole page | 201 | 324 | 698 | 202, 192, 200, 198, 214 |
 | time Jev adds to the page | 165 | 213 | 332 | 168, 166, 167, 157, 166 |
+| this SQL + Jev, whole page, searches that sent a Jev call | 201 | 324 | 699 | 202, 192, 200, 198, 214 |
+| time Jev adds, searches that sent a Jev call | 165 | 213 | 332 | 168, 166, 167, 157, 166 |
 | Jev keep or sink call | 159 | 203 | 312 | 162, 159, 161, 153, 159 |
 | Jev spelling call | 155 | 199 | 332 | 158, 155, 157, 149, 157 |
 

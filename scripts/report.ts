@@ -362,17 +362,19 @@ const holmByRun = runs.map(run => {
 })
 line('## Primary comparisons')
 line()
-line(`On the ${runs[0].records.filter(outOfSample.take).length} queries of the group "${outOfSample.name}", hit@1, exact McNemar with Holm's correction across these four, the largest adjusted p over the ${runs.length} runs.`)
+line(`On the ${runs[0].records.filter(outOfSample.take).length} queries of the group "${outOfSample.name}", hit@1, exact McNemar with Holm's correction across these four, run by run: the range of adjusted p over the ${runs.length} runs, and how many runs fall under 0.05.`)
 line()
 table(
-  ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'Holm-adjusted p, worst run'],
+  ['A', 'B', 'A hit@1', 'B hit@1', 'only A', 'only B', 'Holm-adjusted p, range over runs', 'runs under 0.05'],
   PRIMARY.map(([a, b], i) => {
     const ca = cell(outOfSample, a, 'hit1')
     const cb = cell(outOfSample, b, 'hit1')
     const onlyA = holmByRun.map(r => r[i].onlyA)
     const onlyB = holmByRun.map(r => r[i].onlyB)
     const sp = (v: number[]) => (Math.min(...v) === Math.max(...v) ? `${v[0]}` : `${Math.min(...v)} to ${Math.max(...v)}`)
-    return [SYSTEM_LABEL[a], SYSTEM_LABEL[b], pct(ca.k / ca.n), pct(cb.k / cb.n), sp(onlyA), sp(onlyB), fmtP(Math.max(...holmByRun.map(r => r[i].adjusted)))]
+    const ps = holmByRun.map(r => r[i].adjusted)
+    const range = Math.min(...ps) === Math.max(...ps) ? fmtP(ps[0]) : `${fmtP(Math.min(...ps))} to ${fmtP(Math.max(...ps))}`
+    return [SYSTEM_LABEL[a], SYSTEM_LABEL[b], pct(ca.k / ca.n), pct(cb.k / cb.n), sp(onlyA), sp(onlyB), range, `${ps.filter(p => p < 0.05).length} of ${ps.length}`]
   }),
   ['l', 'l'],
 )
@@ -444,11 +446,15 @@ if (previous.length && runs[0].records.some(r => r.set === 'truncation-3')) {
       ...SYS.map(s => `${pct(cell(g, s, 'hit1', previous).k / cell(g, s, 'hit1', previous).n)} / ${pct(cell(g, s, 'hit1').k / cell(g, s, 'hit1').n)}`),
     ]),
   )
-  line(`On the ${cut.name} queries, exact McNemar of this version against version 2.2, Holm's correction across these two, the worst of the ${runs.length} runs.`)
+  line(`On the ${cut.name} queries, exact McNemar of this version against version 2.2, Holm's correction across these two, run by run.`)
   line()
   table(
-    ['system', 'right only in this version', 'right only in version 2.2', 'Holm-adjusted p, worst run'],
-    claims.map((c, j) => [SYSTEM_LABEL[c.s], sp(c.tests.map(t => t.onlyA)), sp(c.tests.map(t => t.onlyB)), fmtP(Math.max(...adjusted.map(a => a[j])))]),
+    ['system', 'right only in this version', 'right only in version 2.2', 'Holm-adjusted p, range over runs', 'runs under 0.05'],
+    claims.map((c, j) => {
+      const ps = adjusted.map(a => a[j])
+      const range = Math.min(...ps) === Math.max(...ps) ? fmtP(ps[0]) : `${fmtP(Math.min(...ps))} to ${fmtP(Math.max(...ps))}`
+      return [SYSTEM_LABEL[c.s], sp(c.tests.map(t => t.onlyA)), sp(c.tests.map(t => t.onlyB)), range, `${ps.filter(p => p < 0.05).length} of ${ps.length}`]
+    }),
     ['l'],
   )
 }
@@ -917,6 +923,9 @@ const lat = {
   sql: pooled(r => r.sql.ms),
   page: pooled(r => r.jev.pageMs),
   added: pooled(r => r.jev.pageMs - r.jev.searchMs),
+  // Searches that sent at least one Jev call; a word still being typed sends none.
+  pageCalled: pooled(r => (r.jev.rerank.ran || r.jev.spelling.ran ? r.jev.pageMs : null)),
+  addedCalled: pooled(r => (r.jev.rerank.ran || r.jev.spelling.ran ? r.jev.pageMs - r.jev.searchMs : null)),
   rerank: pooled(r => (r.jev.rerank.ran ? r.jev.rerank.ms : null)),
   spelling: pooled(r => (r.jev.spelling.ran ? r.jev.spelling.ms : null)),
   search: pooled(r => r.jev.searchMs),
@@ -935,6 +944,8 @@ table(
       ['this SQL', lat.sql, (r: Rec) => r.sql.ms],
       ['this SQL + Jev, whole page', lat.page, (r: Rec) => r.jev.pageMs],
       ['time Jev adds to the page', lat.added, (r: Rec) => r.jev.pageMs - r.jev.searchMs],
+      ['this SQL + Jev, whole page, searches that sent a Jev call', lat.pageCalled, (r: Rec) => (r.jev.rerank.ran || r.jev.spelling.ran ? r.jev.pageMs : null)],
+      ['time Jev adds, searches that sent a Jev call', lat.addedCalled, (r: Rec) => (r.jev.rerank.ran || r.jev.spelling.ran ? r.jev.pageMs - r.jev.searchMs : null)],
       ['Jev keep or sink call', lat.rerank, (r: Rec) => (r.jev.rerank.ran ? r.jev.rerank.ms : null)],
       ['Jev spelling call', lat.spelling, (r: Rec) => (r.jev.spelling.ran ? r.jev.spelling.ms : null)],
     ] as [string, number[], (r: Rec) => number | null][]
@@ -1312,10 +1323,10 @@ figures['timeline'] = theme => {
   const s = median(lat.search)
   const r = median(lat.rerank)
   const sp = median(lat.spelling)
-  const pageEnd = median(lat.page)
+  const pageEnd = median(lat.pageCalled)
   const end = Math.ceil((Math.max(pageEnd, s + r, sp) * 1.1) / 50) * 50
   const x = (v: number) => left + (v / end) * (W - left - right)
-  let body = text(24, 30, 'What one search waits for (medians)', { fill: t.text, size: 16, weight: 600 })
+  let body = text(24, 30, 'What one search waits for (medians of searches that send a Jev call)', { fill: t.text, size: 16, weight: 600 })
   body += text(24, 50, 'Both paths start when the query arrives. Orange is Postgres, blue is a Jev call; the page waits for the slower path.', { fill: t.muted, size: 12 })
   for (let v = 0; v <= end; v += 50) {
     body += lineEl(x(v), 80, x(v), 206, t.grid)
