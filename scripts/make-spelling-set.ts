@@ -1,12 +1,19 @@
 // Writes eval/synthetic.json: misspellings made by one Damerau edit of words that product names
 // use, and correctly spelled controls, both sampled with a fixed seed. Rerunning it on the same
-// load writes the same file.
-//   node scripts/make-spelling-set.ts
+// load writes the same file. Words in any other eval file are left out, so a second set made with
+// another seed shares no word with the first:
+//   node scripts/make-spelling-set.ts                                          # the development set
+//   node scripts/make-spelling-set.ts --seed 20261008 --out synthetic-test.json   # the test set
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
 
-const SEED = 20261007
+const arg = (name: string, fallback: string) => {
+  const i = process.argv.indexOf(name)
+  return i >= 0 ? process.argv[i + 1] : fallback
+}
+const SEED = Number(arg('--seed', '20261007'))
+const OUT = arg('--out', 'synthetic.json')
 const TYPOS = 300
 const CONTROLS = 200
 // A word must appear in this many product names, so the sample holds words, not stray tokens.
@@ -50,9 +57,19 @@ function misspell(word: string, edit: (typeof EDITS)[number]): string {
   }
 }
 
+// The development set excludes the files that existed when it was made, so it still regenerates
+// the same; any later set also excludes the development and Wikipedia sets.
+const EXCLUDE = ['queries.json', 'spelling.json', 'suggest.json', 'absent.json']
+if (OUT !== 'synthetic.json') EXCLUDE.push('synthetic.json', 'wikipedia.json')
 const used = new Set<string>()
-for (const file of ['queries.json', 'spelling.json', 'suggest.json', 'absent.json']) {
-  const cases: { q: string; expect?: string }[] = JSON.parse(await readFile(new URL(`../eval/${file}`, import.meta.url), 'utf8'))
+for (const file of EXCLUDE) {
+  let data: unknown
+  try {
+    data = JSON.parse(await readFile(new URL(`../eval/${file}`, import.meta.url), 'utf8'))
+  } catch {
+    continue
+  }
+  const cases = (Array.isArray(data) ? data : (data as { cases: unknown[] }).cases) as { q: string; expect?: string }[]
   for (const c of cases) for (const w of tokens(`${c.q} ${c.expect ?? ''}`)) used.add(w)
 }
 
@@ -88,7 +105,7 @@ try {
     if (q !== word && !vocabulary.has(q)) typos.push({ q, kind: 'typo', edit, expect: word })
   }
   const controls = words.slice(next, next + CONTROLS).map(q => ({ q, kind: 'control' as const }))
-  await writeFile(new URL('../eval/synthetic.json', import.meta.url), `${JSON.stringify([...typos, ...controls], null, 1)}\n`)
+  await writeFile(new URL(`../eval/${OUT}`, import.meta.url), `${JSON.stringify([...typos, ...controls], null, 1)}\n`)
   console.log(`${rows.length} eligible words, ${words.length} after removing eval words; wrote ${typos.length} typos and ${controls.length} controls`)
 } finally {
   await pool.end()
