@@ -531,12 +531,12 @@ if (earlier.length) {
   const endOfWord = (from: Run[]) => {
     const per = from.map(run => {
       const rs = run.records.filter(r => r.set === 'synthetic' && r.kind === 'typo' && (r.expect ?? '').startsWith(r.q))
-      return { n: rs.length, sql: rs.filter(r => r.sql.hit1).length, jev: rs.filter(r => outcome(r, 'jev').hit1).length }
+      return { n: rs.length, sql: rs.filter(r => r.sql.hit1).length, jev: rs.filter(r => outcome(r, 'spellingOnly').hit1).length }
     })
     return [per[0].n, median(per.map(x => x.sql)), median(per.map(x => x.jev))]
   }
   table(
-    ['synthetic development set, last letters cut', 'cases', 'this SQL, hit@1', 'with Jev, hit@1'],
+    ['synthetic development set, last letters cut', 'cases', 'this SQL, hit@1', 'with "Did you mean", hit@1'],
     versions.map(v => [v.name, ...endOfWord(v.runs)]),
   )
 }

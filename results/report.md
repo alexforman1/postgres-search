@@ -359,7 +359,7 @@ Version 1 (results/v1) offered trigram neighbors only, with bare spellings and a
 | v2.1 | 260 | 29 | 11 | 2 | 293 |
 | this version | 247 | 29 | 24 | 2 | 280 |
 
-| synthetic development set, last letters cut | cases | this SQL, hit@1 | with Jev, hit@1 |
+| synthetic development set, last letters cut | cases | this SQL, hit@1 | with "Did you mean", hit@1 |
 |:---|---:|---:|---:|
 | v1 | 16 | 16 | 16 |
 | v2 | 16 | 16 | 10 |

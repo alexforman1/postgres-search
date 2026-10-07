@@ -47,9 +47,9 @@ withheld what the corrector uses: candidates one edit away, and how many product
 finds. Given both, Jev went from picking the intended word 68% of the time it was offered to 88%.
 Version 2.1 then tried to stop the spelling question overriding the prefix step on unfinished words
 (version 2 offered "straw" for `strawb`, while the prefix step finds 11,646 products for it), and
-failed on a test set made for it: on 300 words cut short it found the right product for 57%,
-against 81% for this SQL alone. Version 2.2 gives no candidates to a word that finds nothing but
-starts a word in the index.
+failed on a test set made for it: on 300 words cut short it found the right product for 57% in its
+one run, against 81% for this SQL alone. Version 2.2 gives no candidates to a word that finds
+nothing but starts a word in the index.
 
 Each Jev call returns all its judgments in one round trip: ten product judgments in 168 ms at the
 median, or a choice among seven spellings in 165 ms. The two calls run at the same time and add
@@ -308,16 +308,16 @@ Version 2.1 admitted such a candidate only when the search finds it in more prod
 common completion of the typed word, and allowed completions one letter longer. On the development
 sets it looked fixed, 15 of those 16. On the truncation set, made after it was frozen, it failed:
 it suggested a word for 194 of the 300 words cut short, 86 of them the full word, and "Did you
-mean" found the right product for 57% of queries, against 81% for this SQL alone. Its wrong
-suggestions were nearby words common enough to pass the test: `yellowf` to "yellow" (meant
-yellowfin), `orna` to "orca" (meant ornaments).
+mean" found the right product for 57% of queries in its one run, against 81% for this SQL alone.
+Its wrong suggestions were nearby words common enough to pass the test: `yellowf` to "yellow"
+(meant yellowfin), `orna` to "orca" (meant ornaments).
 
 Version 2.2 gives no candidates to a word that the search finds in no product but that starts some
 word in the index. A word that finds products, such as `straw`, is still checked, and its
 candidates must still beat its completions.
 
-| right product first, "Did you mean" | version 2 | version 2.1 | version 2.2 | this SQL | Norvig corrector |
-|-------------------------------------|----------:|------------:|------------:|---------:|-----------------:|
+| right product first, "Did you mean" | version 2 | version 2.1, one run | version 2.2 | this SQL | Norvig corrector |
+|-------------------------------------|----------:|---------------------:|------------:|---------:|-----------------:|
 | synthetic development set, last letter cut (16) | 10 | 15 | 16 | 16 | |
 | truncation (300), made for 2.1, informed 2.2 | | 57% | 82% | 81% | 40% |
 | truncation 2 (300), made for 2.2 | | | 76% | 75% | 30% |
@@ -366,7 +366,7 @@ FREIHOFER'S for `frei` at 0.28, MANITOBA HARVEST for `manit` at 0.26.
 The sets made for earlier versions, rescored: on version 2's 973 test queries, "Did you mean"
 reaches 78% (77% to 78%) and the corrector 75%, as in version 2 (78% against 75%, Holm p ≤ 0.040 in
 [`results/v2/`](results/v2/report.md)); on synthetic test 2 the two reach 83% each. Version 2.2
-moved no set that version 2 also ran by more than a point.
+moved neither of version 2's test sets by more than a point.
 
 ### 4.4 Primary comparisons
 
@@ -477,7 +477,7 @@ Over 8,514 spelling answers on the four sets of misspellings made after a freeze
 probability of the option Jev ranked first tracks how often it was right: expected calibration
 error 0.014, Brier score 0.067. Most answers (5,999) fall between 0.9 and 1.0, where Jev was right
 97.7% of the time. From 0.5 up, every bin is within 6 points of its mean probability; in the 232
-answers under 0.5 it is overconfident by about 10 points.
+answers between 0.3 and 0.5 it is overconfident by about 10 points.
 
 | Jev's probability | answers | right |
 |-------------------|--------:|------:|
