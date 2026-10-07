@@ -9,8 +9,9 @@
 // frequency rule (the most common close word, if used ten times as often) and a Norvig-style
 // corrector (the most common known word within two edits; a known word is kept).
 // The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
-// when present, the test sets eval/synthetic-test.json, eval/wikipedia.json,
-// eval/synthetic-test-2.json and eval/truncation.json.
+// when present, the later sets eval/synthetic-test.json, eval/wikipedia.json,
+// eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json and
+// eval/truncation-2.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -24,7 +25,17 @@ import { carries, tokens } from '../src/tokens.ts'
 
 if (!process.env.TYPESAFE_API_KEY) throw new Error('set TYPESAFE_API_KEY; the third search needs Jev')
 
-type QuerySet = 'hand-written' | 'held-out' | 'synthetic' | 'synthetic-test' | 'wikipedia' | 'synthetic-test-2' | 'truncation' | 'absent'
+type QuerySet =
+  | 'hand-written'
+  | 'held-out'
+  | 'synthetic'
+  | 'synthetic-test'
+  | 'wikipedia'
+  | 'synthetic-test-2'
+  | 'truncation'
+  | 'synthetic-test-3'
+  | 'truncation-2'
+  | 'absent'
 
 interface Case {
   q: string
@@ -53,6 +64,8 @@ for (const [file, set] of [
   ['wikipedia.json', 'wikipedia'],
   ['synthetic-test-2.json', 'synthetic-test-2'],
   ['truncation.json', 'truncation'],
+  ['synthetic-test-3.json', 'synthetic-test-3'],
+  ['truncation-2.json', 'truncation-2'],
 ] as const) {
   if (!(await exists(file))) continue
   const data = await read(file)
