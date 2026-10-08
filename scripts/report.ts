@@ -275,6 +275,7 @@ const ALL_GROUPS: Group[] = [
   { name: 'near-words-test', take: r => r.set === 'near-words-test' },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
+const countOf = (set: string) => runs[0].records.filter(r => r.set === set).length
 const hasTest = runs[0].records.some(isTest)
 
 interface Cell {
@@ -722,7 +723,8 @@ for (const set of spellingSets) {
       span(per.map(x => x.wrong)),
       span(per.map(x => x.missed)),
       span(per.map(x => x.falseAlarms)),
-      pct(median(precision)),
+      // A corrector that suggests nothing has no precision.
+      per.every(x => x.fixed + x.wrong + x.falseAlarms === 0) ? 'n/a' : pct(median(precision)),
       c === 'jev' || c === 'wide' ? span(per.map(x => x.offered)) : 'n/a',
     ]
   })
@@ -1110,9 +1112,9 @@ figures['accuracy'] = theme => {
   const sets = [
     ...(runs[0].records.some(r => r.set === 'synthetic-test-5')
       ? [
-          { g: GROUPS.find(g => g.name === 'synthetic-test-5')!, title: 'Clean test: synthetic one-edit misspellings and controls (n = 500)' },
-          { g: GROUPS.find(g => g.name === 'truncation-4')!, title: 'Clean test: words cut short as a user types them (n = 300)' },
-          { g: GROUPS.find(g => g.name === 'near-words-test')!, title: 'Clean test: correct words one edit from a far more common word (n = 200)' },
+          { g: GROUPS.find(g => g.name === 'synthetic-test-5')!, title: `Clean test: synthetic one-edit misspellings and controls (n = ${countOf('synthetic-test-5')})` },
+          { g: GROUPS.find(g => g.name === 'truncation-4')!, title: `Clean test: words cut short as a user types them (n = ${countOf('truncation-4')})` },
+          { g: GROUPS.find(g => g.name === 'near-words-test')!, title: `Clean test: correct words one edit from a far more common word (n = ${countOf('near-words-test')})` },
         ]
       : runs[0].records.some(r => r.set === 'synthetic-test-4')
       ? [

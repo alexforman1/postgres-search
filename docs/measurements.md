@@ -2,12 +2,12 @@
 
 Measured on 2026-09-22 against the USDA FoodData Central Branded Foods release of 2025-12-18,
 loaded with `npm run load -- --full`, without Jev. `search.words`, `search.similar_words` and the
-[Jev](#jev-and-the-three-way-comparison) numbers were measured on 2026-10-07 on the same machine
-and load; the `search.similar_words` times were taken after version 2.2's runs, with a load average
-of 6 from other programs. `strawb` is fast because a word the user may still be typing gets no
-candidates. `search.edits1` alone takes 0.5 to 0.6 ms per word. Machine: Intel Core i5-10500H (12
-logical CPUs, 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker image on a local
-disk, default settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
+[Jev](#jev-and-the-three-way-comparison) numbers were measured on 2026-10-07 and 2026-10-08 on the
+same machine and load; the `search.similar_words` times were taken after version 2.2's runs, with a
+load average of 6 from other programs. `strawb` is fast because a word the user may still be typing
+gets no candidates. `search.edits1` alone takes 0.5 to 0.6 ms per word. Machine: Intel Core
+i5-10500H (12 logical CPUs, 2.50 GHz), 7 GB of RAM, PostgreSQL 16.12 in the `postgres:16` Docker
+image on a local disk, default settings (`shared_buffers` 128MB, `work_mem` 4MB), Node 22.23.
 
 ## Data
 
@@ -138,53 +138,51 @@ before autoanalyze ran after a reload.
 
 ## Jev and the three-way comparison
 
-Measured on 2026-10-07 with `jev-1.13.0`, the model every answer reported, in five runs of:
+Measured on 2026-10-08 with `jev-1.13.0`, the model every answer reported, in five runs of:
 
 ```sh
 JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
 node scripts/report.ts
 ```
 
-`scripts/compare.ts` runs 3,988 queries (`eval/queries.json`, `eval/spelling.json`,
-`eval/synthetic.json`, `eval/synthetic-test.json`, `eval/wikipedia.json`,
-`eval/synthetic-test-2.json`, `eval/truncation.json`, `eval/synthetic-test-3.json`,
-`eval/truncation-2.json`, `eval/synthetic-test-4.json`, `eval/truncation-3.json`,
+`scripts/compare.ts` runs 5,067 queries (`eval/queries.json`, `eval/spelling.json`, the six
+synthetic sets, `eval/wikipedia.json`, the four truncation sets, the two near-word sets and
 `eval/absent.json`) through plain Postgres full-text search, this SQL, and this SQL with the Jev
 step, and writes every query's outcome to `results/`. `scripts/report.ts` turns those files into
 [`results/report.md`](../results/report.md), the full record with every group, system and test,
-and into the figures in `docs/figures/`. Earlier versions of the Jev step are in `results/v1/`,
-`results/v2/`, `results/v21/` and `results/v22/`. The [README](../README.md#3-method) gives the
-method and discusses the results; the numbers below are copied from `results/report.md`.
+and into the figures in `docs/figures/`. Earlier versions of the Jev step are in `results/v1/` to
+`results/v23/`. The [README](../README.md#3-method) gives the method and discusses the results;
+the numbers below are copied from `results/report.md`.
 
 The Jev calls are network round trips from this machine to `api.typesafe.ai`, so their times
-depend on where the server runs. A browser was running during the runs, with a load average of 1.8
-to 7.3, which makes the Postgres times noisier than the table above.
+depend on where the server runs. A browser was running during the runs, with a load average of 1.4
+to 4.5, which makes the Postgres times noisier than the table above.
 
-| hit@1, median of five runs | hand-written (50) | synthetic test 4 (500) | truncation 3 (300) | Wikipedia (473) |
-|----------------------------|------------------:|-----------------------:|-------------------:|----------------:|
-| plain Postgres full-text search | 52% | 36% | 9% | 5% |
-| this SQL | 82% | 66% | 80% | 43% |
-| this SQL + Jev keep or sink | 86% | 70% | 81% | 48% |
-| this SQL + Jev "Did you mean", one click | 92% | 82% | 80% | 70% |
-| this SQL + both, one click | 96% | 82% | 81% | 70% |
-| this SQL + Norvig corrector, one click | 82% | 84% | 33% | 64% |
+| hit@1, median of five runs | hand-written (50) | synthetic test 5 (500) | truncation 4 (179) | near words test (200) | Wikipedia (473) |
+|----------------------------|------------------:|-----------------------:|-------------------:|----------------------:|----------------:|
+| plain Postgres full-text search | 52% | 35% | 11% | 94% | 5% |
+| this SQL | 82% | 63% | 76% | 93% | 43% |
+| this SQL + Jev keep or sink | 86% | 66% | 76% | 94% | 48% |
+| this SQL + Jev "Did you mean", one click | 92% | 81% | 75% | 89% | 70% |
+| this SQL + both, one click | 96% | 82% | 75% | 91% | 71% |
+| this SQL + Norvig corrector, one click | 82% | 80% | 28% | 93% | 64% |
 
 | ms, five runs pooled | median | p90 | p99 |
 |----------------------|-------:|----:|----:|
-| plain Postgres full-text search | 2 | 9 | 166 |
-| this SQL | 21 | 204 | 536 |
-| this SQL + Jev, whole page | 197 | 304 | 570 |
-| time Jev adds to the page | 165 | 214 | 336 |
-| whole page, searches that sent a Jev call | 215 | 321 | 607 |
-| time Jev adds, searches that sent a Jev call | 174 | 222 | 349 |
-| one keep-or-sink call | 169 | 213 | 322 |
-| one spelling call | 163 | 205 | 318 |
+| plain Postgres full-text search | 1 | 6 | 85 |
+| this SQL | 10 | 110 | 435 |
+| this SQL + Jev, whole page | 177 | 265 | 505 |
+| time Jev adds to the page | 158 | 197 | 285 |
+| whole page, searches that sent a Jev call | 186 | 279 | 544 |
+| time Jev adds, searches that sent a Jev call | 164 | 201 | 301 |
+| one keep-or-sink call | 159 | 194 | 270 |
+| one spelling call | 155 | 189 | 258 |
 
 Cost is input tokens times \$0.042 per million ([TypeSafe models](https://docs.typesafe.ai/models));
-output tokens are free. On the hand-written queries a search used 1,892 input tokens on average,
-\$0.080 per 1,000 searches; on the sets of misspellings it was \$0.085 to \$0.095 per 1,000, and
-on the truncation sets, where a word still being typed makes no call, \$0.010 to \$0.013. One run
-of `scripts/compare.ts` sends about 7.0 million input tokens and costs \$0.295.
+output tokens are free. On the hand-written queries a search used 1,937 input tokens on average,
+\$0.081 per 1,000 searches; on the sets of misspellings it was \$0.087 to \$0.096 per 1,000, and
+on the truncation sets, where a word still being typed usually makes no call, \$0.012 to \$0.017.
+One run of `scripts/compare.ts` sends about 9.4 million input tokens and costs \$0.393.
 
 The test in `search.query` for a word still being typed is one or two index probes on
 `search.words`: 0.1 to 0.25 ms in psql (`EXPLAIN ANALYZE` shows index-only scans).

@@ -105,15 +105,17 @@ rules:
 - on any error, timeout (1.5 s), or missing answer, keep the original page;
 - the key never reaches the browser.
 
-On the demo data the step costs about 8 cents per 1,000 searches and adds 174 ms at the median when it calls Jev.
-With the edit counts and product counts in its options, the spelling question tied a Norvig-style
-dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most of all on
-misspellings that are themselves words in the index. Without that evidence it lost; keep it.
-A word that no name uses but that starts a word some name uses is one the user may still be
-typing: `search.query` skips the word step for it and `search.similar_words` gives it no
-candidates, so the prefix step answers it. A version without that rule found the right product
-less often than the SQL alone on such words. Measure it on the project's own
-queries before relying on the thresholds.
+On the demo data the step costs about 8 cents per 1,000 searches and adds 164 ms at the median when
+it calls Jev. With the edit counts and product counts in its options, the spelling question tied a
+Norvig-style dictionary corrector on synthetic one-edit misspellings and beat it on real ones, most
+of all on misspellings that are themselves words in the index. Without that evidence it lost; keep
+it. A word that no name uses, when the most common word starting with it has another stem, is one
+the user may still be typing: `search.query` skips the word step for it and `search.similar_words`
+gives it no candidates, so the prefix step answers it, unless a candidate is found in 100 times as
+many products as the most common word that starts with it. Then the completion comes with the
+candidates, marked `completes`; count Jev's probability for it with the spelling typed, so choosing
+it suggests nothing. A version that respelled such words found the right product less often than
+the SQL alone. Measure it on the project's own queries before relying on the thresholds.
 
 ### 6. Verify
 
