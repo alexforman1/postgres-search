@@ -155,8 +155,8 @@ test('reports the model that answered and the input tokens it billed', async () 
 })
 
 const healht: SimilarWord[] = [
-  { pos: 1, word: 'healht', word_matches: 0, word_example: null, alternative: 'healhty', alternative_matches: 1, completes: true },
-  { pos: 1, word: 'healht', word_matches: 0, word_example: null, alternative: 'health', alternative_matches: 1532 },
+  { pos: 1, word: 'healht', word_matches: 0, alternative: 'healhty', alternative_matches: 1, completes: true },
+  { pos: 1, word: 'healht', word_matches: 0, alternative: 'health', alternative_matches: 1532 },
 ]
 
 test('an option that finishes the typed word counts with the spelling typed', async () => {
@@ -169,18 +169,9 @@ test('an option that finishes the typed word counts with the spelling typed', as
   assert.equal((await checkSpelling('healht', healht, answering({ s0: 0.01, s1: 0.98, s2: 0.01 }))).suggestion, null)
 })
 
-test('tells Jev which option finishes the typed word, and names a product that uses the word typed', async () => {
+test('tells Jev which option finishes the typed word', async () => {
   const { ask, calls } = answering({ s0: 0.9, s1: 0.1 })
   await checkSpelling('healht', healht, { ask })
-  const healhtQuestion = calls[0].questions.meant
-  assert.equal(healhtQuestion.type === 'choice' && healhtQuestion.criteria.s1, '"healhty", what was typed, finished. The search finds healhty in 1 product.')
-  const salada: SimilarWord[] = [
-    { pos: 1, word: 'salada', word_matches: 87, word_example: 'SALADA GREEN TEA', alternative: 'salad', alternative_matches: 9000 },
-  ]
-  await checkSpelling('salada', salada, { ask })
-  const saladaQuestion = calls[1].questions.meant
-  assert.equal(
-    saladaQuestion.type === 'choice' && saladaQuestion.criteria.s0,
-    '"salada", exactly as typed. The search finds salada in 87 products, such as SALADA GREEN TEA.',
-  )
+  const question = calls[0].questions.meant
+  assert.equal(question.type === 'choice' && question.criteria.s1, '"healhty", what was typed, finished. The search finds healhty in 1 product.')
 })

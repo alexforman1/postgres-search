@@ -14,6 +14,9 @@
 //   node scripts/make-spelling-set.ts --seed 20261013 --out synthetic-test-4.json   # test, version 2.3
 //   node scripts/make-spelling-set.ts --seed 20261014 --out truncation-3.json --truncate --min-length 7
 //   node scripts/make-spelling-set.ts --seed 20261015 --out near-words.json --near --min-length 4   # development
+//   node scripts/make-spelling-set.ts --seed 20261016 --out synthetic-test-5.json   # test, version 2.4
+//   node scripts/make-spelling-set.ts --seed 20261017 --out truncation-4.json --truncate --min-length 7
+//   node scripts/make-spelling-set.ts --seed 20261018 --out near-words-test.json --near --min-length 4
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
@@ -86,6 +89,9 @@ const ORDER = [
   'synthetic-test-4.json',
   'truncation-3.json',
   'near-words.json',
+  'synthetic-test-5.json',
+  'truncation-4.json',
+  'near-words-test.json',
 ]
 const EXCLUDE = ORDER.includes(OUT) ? ORDER.slice(0, ORDER.indexOf(OUT)) : ORDER
 const used = new Set<string>()

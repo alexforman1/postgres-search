@@ -225,12 +225,11 @@ $$;
 -- A word still being typed (see search.query) gets none, so the prefix step answers ("strawb" finds
 -- strawberries, and is not offered "straw"), unless an alternative is found in finish_ratio times
 -- as many products as the most common word that starts with it. Then the alternatives come with
--- that word, marked completes, so Jev can weigh "health" against HEALHTY for "healht". word_example
--- names the most popular product whose name uses the typed word as typed. Words under four
--- letters, words with digits and stop words get none.
+-- that word, marked completes, so Jev can weigh "health" against HEALHTY for "healht". Words
+-- under four letters, words with digits and stop words get none.
 DROP FUNCTION IF EXISTS search.similar_words(text, int);
 CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8, finish_ratio int DEFAULT 100)
-RETURNS TABLE (pos int, word text, word_matches int, word_example text, alternative text, alternative_matches int, completes boolean)
+RETURNS TABLE (pos int, word text, word_matches int, alternative text, alternative_matches int, completes boolean)
 LANGUAGE sql STABLE
 SET search_path = search, public, extensions
 SET pg_trgm.similarity_threshold = 0.3
@@ -302,18 +301,9 @@ AS $$
     WHERE c.unfinished
       AND EXISTS (SELECT 1 FROM offered o WHERE o.pos = c.pos
                   AND o.best >= greatest(coalesce(finish_ratio, 100), 1)::bigint * c.completion_counts[1])
-  ), examples AS (
-    SELECT k.pos, (
-      SELECT d.name FROM search.documents d
-      WHERE d.prefix_vector @@ to_tsquery('simple', quote_literal(k.word))
-      ORDER BY d.rank DESC NULLS LAST, d.id
-      LIMIT 1
-    ) AS name
-    FROM (SELECT DISTINCT pos, word FROM kept) k
   )
-  SELECT k.pos, k.word, k.matches, e.name, k.alternative, k.alternative_matches, k.completes
+  SELECT k.pos, k.word, k.matches, k.alternative, k.alternative_matches, k.completes
   FROM kept k
-  JOIN examples e ON e.pos = k.pos
   ORDER BY k.pos, k.n
 $$;
 

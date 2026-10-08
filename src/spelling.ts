@@ -6,8 +6,6 @@ export interface SimilarWord {
   pos: number
   word: string
   word_matches: number
-  // The most popular product whose name uses the typed word as typed, if any.
-  word_example?: string | null
   alternative: string
   alternative_matches: number
   // The alternative finishes the typed word: the user may still be typing it.
@@ -18,7 +16,7 @@ export interface SimilarWord {
 // and, for a respelling, how many edits separate it from what was typed.
 interface Option {
   text: string
-  found: { word: string; matches: number; example?: string }[]
+  found: { word: string; matches: number }[]
   edits?: number
   completes?: boolean
 }
@@ -76,10 +74,7 @@ function options(query: string, similar: SimilarWord[], max = 16): Option[] {
   }
   const positions = [...byPos.keys()].sort((a, b) => a - b)
   const depth = Math.max(0, ...[...byPos.values()].map(rows => rows.length))
-  const typed = positions.map(pos => {
-    const row = byPos.get(pos)![0]
-    return { word: words[pos - 1], matches: row.word_matches, ...(row.word_example ? { example: row.word_example } : {}) }
-  })
+  const typed = positions.map(pos => ({ word: words[pos - 1], matches: byPos.get(pos)![0].word_matches }))
   const out: Option[] = [{ text: words.join(' '), found: typed }]
   for (let rank = 0; rank < depth; rank++) {
     for (const pos of positions) {
@@ -167,7 +162,7 @@ const products = (n: number) => `${n.toLocaleString('en-US')} ${n === 1 ? 'produ
 function buildSpellingRequest(query: string, offered: Option[], note = 'A user typed `query` into a product search box.'): JevRequest {
   const criteria: Record<string, string> = {}
   offered.forEach((o, i) => {
-    const found = o.found.map(f => `${f.word} in ${products(f.matches)}${f.example ? `, such as ${f.example}` : ''}`).join(' and ')
+    const found = o.found.map(f => `${f.word} in ${products(f.matches)}`).join(' and ')
     const how =
       i === 0 ? 'exactly as typed' : o.completes ? 'what was typed, finished' : `${o.edits} ${o.edits === 1 ? 'edit' : 'edits'} from what was typed`
     criteria[`s${i}`] = `"${o.text}", ${how}. The search finds ${found}.`
@@ -177,7 +172,7 @@ function buildSpellingRequest(query: string, offered: Option[], note = 'A user t
       query,
       note,
       evidence:
-        "Each option says how many edits separate it from what was typed, where an edit is one letter added, removed or replaced or two neighboring letters swapped, and how many of the catalog's products the search finds for the words it changes. A word the search finds in no product is not a word this catalog uses, so searching it shows nothing. For the spelling typed, it names a product whose name uses that word, so a brand or a style of spelling shows as such. An option that finishes what was typed means the user stopped typing early; the search already shows its products.",
+        "Each option says how many edits separate it from what was typed, where an edit is one letter added, removed or replaced or two neighboring letters swapped, and how many of the catalog's products the search finds for the words it changes. A word the search finds in no product is not a word this catalog uses, so searching it shows nothing. An option that finishes what was typed means the user stopped typing early; the search already shows its products.",
     },
     questions: {
       meant: {

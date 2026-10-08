@@ -361,11 +361,6 @@ describe('search.similar_words', () => {
     assert.equal(offered.filter(r => r.alternative === 'healhty').length, 1)
   })
 
-  test('names the most popular product that uses the typed word as typed', async () => {
-    const { rows } = await pool.query("SELECT DISTINCT word_example FROM search.similar_words('cheerioz')")
-    assert.deepEqual(rows, [{ word_example: 'Cheerioz Oat Rings' }])
-  })
-
   test('blocks a one-letter completion when a more common completion has another stem', async () => {
     // "cheerioz" starts with "cheerio", and so does "cheerios" (stem cheerio, 3 products); the
     // one-letter completion cheerioz, found in 1, is blocked by it.

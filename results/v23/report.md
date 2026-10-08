@@ -116,26 +116,6 @@ On the 300 queries of truncation-3, exact McNemar per run, not part of the Holm 
 |:---|:---|---:|---:|---:|---:|---:|
 | this SQL + Jev "Did you mean", one click | this SQL | 80% | 80% | 0 | 0 | 1.000 |
 
-## Version 2.3 against version 2.2
-
-Version 2.2's code, run once on the sets made for version 2.3 (results/v22-new), against this version's 5 runs. Hit@1; for this version the median run.
-
-| group | n | this SQL: v2.2 / this version | this SQL + Jev keep or sink, as shown: v2.2 / this version | this SQL + Jev "Did you mean", one click: v2.2 / this version | this SQL + Jev, both questions, one click: v2.2 / this version |
-|:---|---:|---:|---:|---:|---:|
-| synthetic-test-4 | 500 | 66% / 66% | 70% / 70% | 82% / 82% | 82% / 82% |
-| synthetic-test-4, misspelled | 300 | 52% / 52% | 58% / 58% | 80% / 80% | 80% / 80% |
-| synthetic-test-4, correctly spelled | 200 | 88% / 88% | 88% / 88% | 86% / 86% | 86% / 86% |
-| truncation-3 | 300 | 72% / 80% | 74% / 81% | 73% / 80% | 75% / 81% |
-| truncation-3, one letter cut | 88 | 88% / 91% | 90% / 93% | 89% / 91% | 91% / 93% |
-| truncation-3, two or more letters cut | 212 | 66% / 75% | 68% / 76% | 67% / 75% | 68% / 76% |
-
-On the truncation-3 queries, exact McNemar of this version against version 2.2, Holm's correction across these two, run by run.
-
-| system | right only in this version | right only in version 2.2 | Holm-adjusted p, range over runs | runs under 0.05 |
-|:---|---:|---:|---:|---:|
-| this SQL | 24 | 0 | < 0.0001 | 5 of 5 |
-| this SQL + Jev, both questions, one click | 24 | 5 | 0.0005 | 5 of 5 |
-
 ## Paired tests (exact McNemar, hit@1, exploratory)
 
 "only A" counts queries the first system gets right and the second gets wrong. For systems
@@ -404,50 +384,6 @@ that call Jev, each run gives its own test; the table shows the range over runs.
 | truncation-3, two or more letters cut | this SQL + Jev "Did you mean", one click vs this SQL + frequency rule, one click | 3 | 0 | 0.250 |
 | truncation-3, two or more letters cut | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Norvig corrector, one click | 0 | 0 | 1.000 |
 | truncation-3, two or more letters cut | this SQL + Jev, Norvig first for unknown words (post hoc), one click vs this SQL + Jev, both questions, one click | 1 | 138 | < 0.0001 |
-
-## Versions compared
-
-Version 1 (results/v1) offered trigram neighbors only, with bare spellings and a bar of 0.6. Version 2 (results/v2) added one-edit candidates, product counts, edit counts and the twice-as-likely rule. Version 2.1 (results/v21, one run) added the completion test. Version 2.2 (results/v22) gave no candidates to a word that finds nothing but starts an index word. Hit@1, median run; a set a version was not run on is blank.
-
-| group | v1, "Did you mean" | v2, "Did you mean" | v2.1, "Did you mean" | v2.2, "Did you mean" | this version, "Did you mean" | Norvig corrector |
-|:---|---:|---:|---:|---:|---:|---:|
-| hand-written | 92% | 90% | 92% | 92% | 92% | 82% |
-| held-out | 86% | 92% | 92% | 92% | 92% | 66% |
-| synthetic | 77% | 84% | 85% | 85% | 85% | 87% |
-| synthetic-test |  | 85% | 85% | 85% | 86% | 86% |
-| wikipedia |  | 70% | 71% | 70% | 70% | 64% |
-| synthetic-test-2 |  |  | 83% | 83% | 83% | 83% |
-| truncation |  |  | 57% | 82% | 86% | 40% |
-| synthetic-test-3 |  |  |  | 83% | 83% | 83% |
-| truncation-2 |  |  |  | 76% | 81% | 30% |
-
-| group | v1, both questions | v2, both questions | v2.1, both questions | v2.2, both questions | this version, both questions | Norvig corrector |
-|:---|---:|---:|---:|---:|---:|---:|
-| hand-written | 96% | 94% | 96% | 96% | 96% | 82% |
-| held-out | 90% | 94% | 94% | 94% | 94% | 66% |
-| synthetic | 79% | 86% | 87% | 87% | 87% | 87% |
-| synthetic-test |  | 85% | 85% | 86% | 86% | 86% |
-| wikipedia |  | 71% | 72% | 70% | 70% | 64% |
-| synthetic-test-2 |  |  | 83% | 83% | 83% | 83% |
-| truncation |  |  | 56% | 82% | 86% | 40% |
-| synthetic-test-3 |  |  |  | 84% | 84% | 83% |
-| truncation-2 |  |  |  | 74% | 81% | 30% |
-
-| synthetic development set (300 misspellings, 200 controls) | fixed | wrong | missed | false alarms | intended word offered |
-|:---|---:|---:|---:|---:|---:|
-| v1 | 174 | 15 | 111 | 2 | 260 |
-| v2 | 248 | 35 | 17 | 2 | 282 |
-| v2.1 | 260 | 29 | 11 | 2 | 293 |
-| v2.2 | 247 | 29 | 24 | 2 | 280 |
-| this version | 247 | 29 | 24 | 2 | 280 |
-
-| synthetic development set, last letters cut | cases | this SQL, hit@1 | with "Did you mean", hit@1 |
-|:---|---:|---:|---:|
-| v1 | 16 | 16 | 16 |
-| v2 | 16 | 16 | 10 |
-| v2.1 | 16 | 16 | 15 |
-| v2.2 | 16 | 16 | 16 |
-| this version | 16 | 16 | 16 |
 
 ## Words cut short
 

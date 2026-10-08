@@ -11,8 +11,8 @@
 // The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
 // when present, the later sets eval/synthetic-test.json, eval/wikipedia.json,
 // eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json,
-// eval/truncation-2.json, eval/synthetic-test-4.json, eval/truncation-3.json, eval/near-words.json
-// and eval/near-words-test.json.
+// eval/truncation-2.json, eval/synthetic-test-4.json, eval/truncation-3.json, eval/near-words.json,
+// eval/synthetic-test-5.json, eval/truncation-4.json and eval/near-words-test.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -39,6 +39,8 @@ type QuerySet =
   | 'synthetic-test-4'
   | 'truncation-3'
   | 'near-words'
+  | 'synthetic-test-5'
+  | 'truncation-4'
   | 'near-words-test'
   | 'absent'
 
@@ -74,6 +76,8 @@ for (const [file, set] of [
   ['synthetic-test-4.json', 'synthetic-test-4'],
   ['truncation-3.json', 'truncation-3'],
   ['near-words.json', 'near-words'],
+  ['synthetic-test-5.json', 'synthetic-test-5'],
+  ['truncation-4.json', 'truncation-4'],
   ['near-words-test.json', 'near-words-test'],
 ] as const) {
   if (!(await exists(file))) continue
