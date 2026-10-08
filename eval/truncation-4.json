@@ -1,0 +1,897 @@
+[
+ {
+  "q": "afric",
+  "kind": "truncation",
+  "expect": "african"
+ },
+ {
+  "q": "miniatur",
+  "kind": "truncation",
+  "expect": "miniatures"
+ },
+ {
+  "q": "yamamot",
+  "kind": "truncation",
+  "expect": "yamamotoyama"
+ },
+ {
+  "q": "homekis",
+  "kind": "truncation",
+  "expect": "homekist"
+ },
+ {
+  "q": "meri",
+  "kind": "truncation",
+  "expect": "meringues"
+ },
+ {
+  "q": "cerulea",
+  "kind": "truncation",
+  "expect": "cerulean"
+ },
+ {
+  "q": "fant",
+  "kind": "truncation",
+  "expect": "fantasy"
+ },
+ {
+  "q": "fingerlin",
+  "kind": "truncation",
+  "expect": "fingerling"
+ },
+ {
+  "q": "whoop",
+  "kind": "truncation",
+  "expect": "whoopie"
+ },
+ {
+  "q": "harmo",
+  "kind": "truncation",
+  "expect": "harmony"
+ },
+ {
+  "q": "slid",
+  "kind": "truncation",
+  "expect": "sliders"
+ },
+ {
+  "q": "cucumbe",
+  "kind": "truncation",
+  "expect": "cucumbers"
+ },
+ {
+  "q": "dige",
+  "kind": "truncation",
+  "expect": "digestive"
+ },
+ {
+  "q": "cranberr",
+  "kind": "truncation",
+  "expect": "cranberries"
+ },
+ {
+  "q": "ranc",
+  "kind": "truncation",
+  "expect": "ranchero"
+ },
+ {
+  "q": "servin",
+  "kind": "truncation",
+  "expect": "serving"
+ },
+ {
+  "q": "buckl",
+  "kind": "truncation",
+  "expect": "buckley"
+ },
+ {
+  "q": "berr",
+  "kind": "truncation",
+  "expect": "berries"
+ },
+ {
+  "q": "molass",
+  "kind": "truncation",
+  "expect": "molasses"
+ },
+ {
+  "q": "mors",
+  "kind": "truncation",
+  "expect": "morsels"
+ },
+ {
+  "q": "biscott",
+  "kind": "truncation",
+  "expect": "biscotti"
+ },
+ {
+  "q": "flapj",
+  "kind": "truncation",
+  "expect": "flapjacked"
+ },
+ {
+  "q": "rachae",
+  "kind": "truncation",
+  "expect": "rachael"
+ },
+ {
+  "q": "elde",
+  "kind": "truncation",
+  "expect": "elderberry"
+ },
+ {
+  "q": "birt",
+  "kind": "truncation",
+  "expect": "birthday"
+ },
+ {
+  "q": "envel",
+  "kind": "truncation",
+  "expect": "envelopes"
+ },
+ {
+  "q": "schnu",
+  "kind": "truncation",
+  "expect": "schnucks"
+ },
+ {
+  "q": "marasc",
+  "kind": "truncation",
+  "expect": "maraschino"
+ },
+ {
+  "q": "pressu",
+  "kind": "truncation",
+  "expect": "pressured"
+ },
+ {
+  "q": "medallio",
+  "kind": "truncation",
+  "expect": "medallions"
+ },
+ {
+  "q": "smokeho",
+  "kind": "truncation",
+  "expect": "smokehouse"
+ },
+ {
+  "q": "clea",
+  "kind": "truncation",
+  "expect": "cleaned"
+ },
+ {
+  "q": "superfru",
+  "kind": "truncation",
+  "expect": "superfruit"
+ },
+ {
+  "q": "wildf",
+  "kind": "truncation",
+  "expect": "wildfare"
+ },
+ {
+  "q": "crysta",
+  "kind": "truncation",
+  "expect": "crystals"
+ },
+ {
+  "q": "dita",
+  "kind": "truncation",
+  "expect": "ditalini"
+ },
+ {
+  "q": "steama",
+  "kind": "truncation",
+  "expect": "steamable"
+ },
+ {
+  "q": "cordia",
+  "kind": "truncation",
+  "expect": "cordials"
+ },
+ {
+  "q": "frankfur",
+  "kind": "truncation",
+  "expect": "frankfurters"
+ },
+ {
+  "q": "bellat",
+  "kind": "truncation",
+  "expect": "bellatoria"
+ },
+ {
+  "q": "safflo",
+  "kind": "truncation",
+  "expect": "safflower"
+ },
+ {
+  "q": "amarill",
+  "kind": "truncation",
+  "expect": "amarillo"
+ },
+ {
+  "q": "skinn",
+  "kind": "truncation",
+  "expect": "skinnygirl"
+ },
+ {
+  "q": "enriche",
+  "kind": "truncation",
+  "expect": "enriched"
+ },
+ {
+  "q": "sustainab",
+  "kind": "truncation",
+  "expect": "sustainable"
+ },
+ {
+  "q": "breaka",
+  "kind": "truncation",
+  "expect": "breakaway"
+ },
+ {
+  "q": "simi",
+  "kind": "truncation",
+  "expect": "similac"
+ },
+ {
+  "q": "comstoc",
+  "kind": "truncation",
+  "expect": "comstock"
+ },
+ {
+  "q": "butterfli",
+  "kind": "truncation",
+  "expect": "butterflies"
+ },
+ {
+  "q": "battere",
+  "kind": "truncation",
+  "expect": "battered"
+ },
+ {
+  "q": "clus",
+  "kind": "truncation",
+  "expect": "clusters"
+ },
+ {
+  "q": "jamaic",
+  "kind": "truncation",
+  "expect": "jamaican"
+ },
+ {
+  "q": "treelin",
+  "kind": "truncation",
+  "expect": "treeline"
+ },
+ {
+  "q": "condim",
+  "kind": "truncation",
+  "expect": "condiment"
+ },
+ {
+  "q": "palechic",
+  "kind": "truncation",
+  "expect": "palechica"
+ },
+ {
+  "q": "yuengl",
+  "kind": "truncation",
+  "expect": "yuengling"
+ },
+ {
+  "q": "shirl",
+  "kind": "truncation",
+  "expect": "shirley"
+ },
+ {
+  "q": "freshlin",
+  "kind": "truncation",
+  "expect": "freshline"
+ },
+ {
+  "q": "farmst",
+  "kind": "truncation",
+  "expect": "farmstyle"
+ },
+ {
+  "q": "spreadab",
+  "kind": "truncation",
+  "expect": "spreadable"
+ },
+ {
+  "q": "talen",
+  "kind": "truncation",
+  "expect": "talenti"
+ },
+ {
+  "q": "bourbo",
+  "kind": "truncation",
+  "expect": "bourbon"
+ },
+ {
+  "q": "lifestyl",
+  "kind": "truncation",
+  "expect": "lifestyle"
+ },
+ {
+  "q": "chickp",
+  "kind": "truncation",
+  "expect": "chickpea"
+ },
+ {
+  "q": "cannell",
+  "kind": "truncation",
+  "expect": "cannellini"
+ },
+ {
+  "q": "defe",
+  "kind": "truncation",
+  "expect": "defense"
+ },
+ {
+  "q": "carbonat",
+  "kind": "truncation",
+  "expect": "carbonated"
+ },
+ {
+  "q": "sunnys",
+  "kind": "truncation",
+  "expect": "sunnyside"
+ },
+ {
+  "q": "overnig",
+  "kind": "truncation",
+  "expect": "overnight"
+ },
+ {
+  "q": "philadelp",
+  "kind": "truncation",
+  "expect": "philadelphia"
+ },
+ {
+  "q": "evergree",
+  "kind": "truncation",
+  "expect": "evergreen"
+ },
+ {
+  "q": "middleswar",
+  "kind": "truncation",
+  "expect": "middleswarth"
+ },
+ {
+  "q": "kentuck",
+  "kind": "truncation",
+  "expect": "kentucky"
+ },
+ {
+  "q": "heave",
+  "kind": "truncation",
+  "expect": "heavenly"
+ },
+ {
+  "q": "orowea",
+  "kind": "truncation",
+  "expect": "oroweat"
+ },
+ {
+  "q": "secr",
+  "kind": "truncation",
+  "expect": "secrets"
+ },
+ {
+  "q": "tabl",
+  "kind": "truncation",
+  "expect": "tablets"
+ },
+ {
+  "q": "stauffe",
+  "kind": "truncation",
+  "expect": "stauffer"
+ },
+ {
+  "q": "enhan",
+  "kind": "truncation",
+  "expect": "enhanced"
+ },
+ {
+  "q": "walki",
+  "kind": "truncation",
+  "expect": "walking"
+ },
+ {
+  "q": "turki",
+  "kind": "truncation",
+  "expect": "turkish"
+ },
+ {
+  "q": "nutric",
+  "kind": "truncation",
+  "expect": "nutricost"
+ },
+ {
+  "q": "jalape",
+  "kind": "truncation",
+  "expect": "jalapenos"
+ },
+ {
+  "q": "sava",
+  "kind": "truncation",
+  "expect": "savannah"
+ },
+ {
+  "q": "panz",
+  "kind": "truncation",
+  "expect": "panzanella"
+ },
+ {
+  "q": "loll",
+  "kind": "truncation",
+  "expect": "lollipops"
+ },
+ {
+  "q": "casti",
+  "kind": "truncation",
+  "expect": "castillo"
+ },
+ {
+  "q": "wildbrin",
+  "kind": "truncation",
+  "expect": "wildbrine"
+ },
+ {
+  "q": "chocola",
+  "kind": "truncation",
+  "expect": "chocolatey"
+ },
+ {
+  "q": "braunschwe",
+  "kind": "truncation",
+  "expect": "braunschweiger"
+ },
+ {
+  "q": "dierber",
+  "kind": "truncation",
+  "expect": "dierbergs"
+ },
+ {
+  "q": "jamai",
+  "kind": "truncation",
+  "expect": "jamaica"
+ },
+ {
+  "q": "pharmac",
+  "kind": "truncation",
+  "expect": "pharmacy"
+ },
+ {
+  "q": "blackbe",
+  "kind": "truncation",
+  "expect": "blackberry"
+ },
+ {
+  "q": "amazo",
+  "kind": "truncation",
+  "expect": "amazonas"
+ },
+ {
+  "q": "cappe",
+  "kind": "truncation",
+  "expect": "cappello"
+ },
+ {
+  "q": "sanpell",
+  "kind": "truncation",
+  "expect": "sanpellegrino"
+ },
+ {
+  "q": "burs",
+  "kind": "truncation",
+  "expect": "bursting"
+ },
+ {
+  "q": "boyar",
+  "kind": "truncation",
+  "expect": "boyardee"
+ },
+ {
+  "q": "memphi",
+  "kind": "truncation",
+  "expect": "memphis"
+ },
+ {
+  "q": "quesadi",
+  "kind": "truncation",
+  "expect": "quesadilla"
+ },
+ {
+  "q": "specia",
+  "kind": "truncation",
+  "expect": "specialty"
+ },
+ {
+  "q": "arti",
+  "kind": "truncation",
+  "expect": "artichokes"
+ },
+ {
+  "q": "sunflow",
+  "kind": "truncation",
+  "expect": "sunflower"
+ },
+ {
+  "q": "sugarda",
+  "kind": "truncation",
+  "expect": "sugardale"
+ },
+ {
+  "q": "pengu",
+  "kind": "truncation",
+  "expect": "penguins"
+ },
+ {
+  "q": "repl",
+  "kind": "truncation",
+  "expect": "replenish"
+ },
+ {
+  "q": "vermicel",
+  "kind": "truncation",
+  "expect": "vermicelli"
+ },
+ {
+  "q": "loui",
+  "kind": "truncation",
+  "expect": "louisburg"
+ },
+ {
+  "q": "albe",
+  "kind": "truncation",
+  "expect": "albertsons"
+ },
+ {
+  "q": "calabr",
+  "kind": "truncation",
+  "expect": "calabrese"
+ },
+ {
+  "q": "empan",
+  "kind": "truncation",
+  "expect": "empanadas"
+ },
+ {
+  "q": "morni",
+  "kind": "truncation",
+  "expect": "morning"
+ },
+ {
+  "q": "packe",
+  "kind": "truncation",
+  "expect": "packers"
+ },
+ {
+  "q": "quesa",
+  "kind": "truncation",
+  "expect": "quesadillas"
+ },
+ {
+  "q": "formagg",
+  "kind": "truncation",
+  "expect": "formaggio"
+ },
+ {
+  "q": "ronzo",
+  "kind": "truncation",
+  "expect": "ronzoni"
+ },
+ {
+  "q": "mermai",
+  "kind": "truncation",
+  "expect": "mermaid"
+ },
+ {
+  "q": "cayen",
+  "kind": "truncation",
+  "expect": "cayenne"
+ },
+ {
+  "q": "pelle",
+  "kind": "truncation",
+  "expect": "pellegrino"
+ },
+ {
+  "q": "ricemil",
+  "kind": "truncation",
+  "expect": "ricemilk"
+ },
+ {
+  "q": "prepa",
+  "kind": "truncation",
+  "expect": "prepared"
+ },
+ {
+  "q": "bakesh",
+  "kind": "truncation",
+  "expect": "bakeshop"
+ },
+ {
+  "q": "ricol",
+  "kind": "truncation",
+  "expect": "ricolino"
+ },
+ {
+  "q": "seite",
+  "kind": "truncation",
+  "expect": "seitenbacher"
+ },
+ {
+  "q": "poult",
+  "kind": "truncation",
+  "expect": "poultry"
+ },
+ {
+  "q": "shoul",
+  "kind": "truncation",
+  "expect": "shoulder"
+ },
+ {
+  "q": "geva",
+  "kind": "truncation",
+  "expect": "gevalia"
+ },
+ {
+  "q": "washing",
+  "kind": "truncation",
+  "expect": "washington"
+ },
+ {
+  "q": "sath",
+  "kind": "truncation",
+  "expect": "sathers"
+ },
+ {
+  "q": "hodg",
+  "kind": "truncation",
+  "expect": "hodgson"
+ },
+ {
+  "q": "diabe",
+  "kind": "truncation",
+  "expect": "diabetic"
+ },
+ {
+  "q": "splend",
+  "kind": "truncation",
+  "expect": "splenda"
+ },
+ {
+  "q": "gordi",
+  "kind": "truncation",
+  "expect": "gorditas"
+ },
+ {
+  "q": "rayb",
+  "kind": "truncation",
+  "expect": "raybern"
+ },
+ {
+  "q": "passa",
+  "kind": "truncation",
+  "expect": "passage"
+ },
+ {
+  "q": "buddi",
+  "kind": "truncation",
+  "expect": "buddies"
+ },
+ {
+  "q": "wate",
+  "kind": "truncation",
+  "expect": "watermelon"
+ },
+ {
+  "q": "biscui",
+  "kind": "truncation",
+  "expect": "biscuit"
+ },
+ {
+  "q": "infusi",
+  "kind": "truncation",
+  "expect": "infusion"
+ },
+ {
+  "q": "broo",
+  "kind": "truncation",
+  "expect": "brookie"
+ },
+ {
+  "q": "rinald",
+  "kind": "truncation",
+  "expect": "rinaldi"
+ },
+ {
+  "q": "marce",
+  "kind": "truncation",
+  "expect": "marcela"
+ },
+ {
+  "q": "phillip",
+  "kind": "truncation",
+  "expect": "phillips"
+ },
+ {
+  "q": "applewa",
+  "kind": "truncation",
+  "expect": "appleways"
+ },
+ {
+  "q": "macadam",
+  "kind": "truncation",
+  "expect": "macadamia"
+ },
+ {
+  "q": "deliciousl",
+  "kind": "truncation",
+  "expect": "deliciously"
+ },
+ {
+  "q": "cobbl",
+  "kind": "truncation",
+  "expect": "cobbler"
+ },
+ {
+  "q": "seawee",
+  "kind": "truncation",
+  "expect": "seaweed"
+ },
+ {
+  "q": "oyst",
+  "kind": "truncation",
+  "expect": "oysters"
+ },
+ {
+  "q": "remlinge",
+  "kind": "truncation",
+  "expect": "remlinger"
+ },
+ {
+  "q": "mcco",
+  "kind": "truncation",
+  "expect": "mcconnell"
+ },
+ {
+  "q": "chestn",
+  "kind": "truncation",
+  "expect": "chestnut"
+ },
+ {
+  "q": "butto",
+  "kind": "truncation",
+  "expect": "buttons"
+ },
+ {
+  "q": "monteci",
+  "kind": "truncation",
+  "expect": "montecito"
+ },
+ {
+  "q": "spon",
+  "kind": "truncation",
+  "expect": "spongebob"
+ },
+ {
+  "q": "inspir",
+  "kind": "truncation",
+  "expect": "inspired"
+ },
+ {
+  "q": "desig",
+  "kind": "truncation",
+  "expect": "designer"
+ },
+ {
+  "q": "caffeinat",
+  "kind": "truncation",
+  "expect": "caffeinated"
+ },
+ {
+  "q": "schweb",
+  "kind": "truncation",
+  "expect": "schwebel"
+ },
+ {
+  "q": "maryl",
+  "kind": "truncation",
+  "expect": "maryland"
+ },
+ {
+  "q": "rais",
+  "kind": "truncation",
+  "expect": "raisins"
+ },
+ {
+  "q": "chilie",
+  "kind": "truncation",
+  "expect": "chilies"
+ },
+ {
+  "q": "boomchick",
+  "kind": "truncation",
+  "expect": "boomchickapop"
+ },
+ {
+  "q": "rubi",
+  "kind": "truncation",
+  "expect": "rubicon"
+ },
+ {
+  "q": "lemonhea",
+  "kind": "truncation",
+  "expect": "lemonhead"
+ },
+ {
+  "q": "shephe",
+  "kind": "truncation",
+  "expect": "shepherd"
+ },
+ {
+  "q": "simm",
+  "kind": "truncation",
+  "expect": "simmered"
+ },
+ {
+  "q": "confec",
+  "kind": "truncation",
+  "expect": "confections"
+ },
+ {
+  "q": "advanc",
+  "kind": "truncation",
+  "expect": "advance"
+ },
+ {
+  "q": "terrapi",
+  "kind": "truncation",
+  "expect": "terrapin"
+ },
+ {
+  "q": "unrefine",
+  "kind": "truncation",
+  "expect": "unrefined"
+ },
+ {
+  "q": "doubl",
+  "kind": "truncation",
+  "expect": "doubles"
+ },
+ {
+  "q": "frescad",
+  "kind": "truncation",
+  "expect": "frescados"
+ },
+ {
+  "q": "bast",
+  "kind": "truncation",
+  "expect": "basting"
+ },
+ {
+  "q": "alleg",
+  "kind": "truncation",
+  "expect": "allegro"
+ },
+ {
+  "q": "explor",
+  "kind": "truncation",
+  "expect": "explore"
+ },
+ {
+  "q": "flavorin",
+  "kind": "truncation",
+  "expect": "flavoring"
+ },
+ {
+  "q": "cassav",
+  "kind": "truncation",
+  "expect": "cassava"
+ }
+]

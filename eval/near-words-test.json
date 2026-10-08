@@ -1,0 +1,1002 @@
+[
+ {
+  "q": "puck",
+  "kind": "control",
+  "near": "pack"
+ },
+ {
+  "q": "bang",
+  "kind": "control",
+  "near": "bag"
+ },
+ {
+  "q": "zest",
+  "kind": "control",
+  "near": "best"
+ },
+ {
+  "q": "nice",
+  "kind": "control",
+  "near": "ice"
+ },
+ {
+  "q": "nick",
+  "kind": "control",
+  "near": "nice"
+ },
+ {
+  "q": "kraut",
+  "kind": "control",
+  "near": "kraft"
+ },
+ {
+  "q": "barley",
+  "kind": "control",
+  "near": "barly"
+ },
+ {
+  "q": "feel",
+  "kind": "control",
+  "near": "peel"
+ },
+ {
+  "q": "chik",
+  "kind": "control",
+  "near": "chip"
+ },
+ {
+  "q": "nutz",
+  "kind": "control",
+  "near": "nut"
+ },
+ {
+  "q": "bree",
+  "kind": "control",
+  "near": "free"
+ },
+ {
+  "q": "heath",
+  "kind": "control",
+  "near": "health"
+ },
+ {
+  "q": "zinc",
+  "kind": "control",
+  "near": "inc"
+ },
+ {
+  "q": "parm",
+  "kind": "control",
+  "near": "farm"
+ },
+ {
+  "q": "prep",
+  "kind": "control",
+  "near": "pre"
+ },
+ {
+  "q": "dell",
+  "kind": "control",
+  "near": "dill"
+ },
+ {
+  "q": "later",
+  "kind": "control",
+  "near": "water"
+ },
+ {
+  "q": "hing",
+  "kind": "control",
+  "near": "king"
+ },
+ {
+  "q": "blow",
+  "kind": "control",
+  "near": "low"
+ },
+ {
+  "q": "wella",
+  "kind": "control",
+  "near": "well"
+ },
+ {
+  "q": "ling",
+  "kind": "control",
+  "near": "laing"
+ },
+ {
+  "q": "cara",
+  "kind": "control",
+  "near": "casa"
+ },
+ {
+  "q": "zing",
+  "kind": "control",
+  "near": "king"
+ },
+ {
+  "q": "shot",
+  "kind": "control",
+  "near": "hot"
+ },
+ {
+  "q": "kung",
+  "kind": "control",
+  "near": "king"
+ },
+ {
+  "q": "cool",
+  "kind": "control",
+  "near": "cook"
+ },
+ {
+  "q": "lola",
+  "kind": "control",
+  "near": "cola"
+ },
+ {
+  "q": "mood",
+  "kind": "control",
+  "near": "food"
+ },
+ {
+  "q": "roar",
+  "kind": "control",
+  "near": "road"
+ },
+ {
+  "q": "whips",
+  "kind": "control",
+  "near": "chips"
+ },
+ {
+  "q": "stacks",
+  "kind": "control",
+  "near": "snacks"
+ },
+ {
+  "q": "seal",
+  "kind": "control",
+  "near": "sea"
+ },
+ {
+  "q": "mike",
+  "kind": "control",
+  "near": "milke"
+ },
+ {
+  "q": "vide",
+  "kind": "control",
+  "near": "side"
+ },
+ {
+  "q": "flat",
+  "kind": "control",
+  "near": "fat"
+ },
+ {
+  "q": "andy",
+  "kind": "control",
+  "near": "candy"
+ },
+ {
+  "q": "zola",
+  "kind": "control",
+  "near": "cola"
+ },
+ {
+  "q": "sail",
+  "kind": "control",
+  "near": "tail"
+ },
+ {
+  "q": "relion",
+  "kind": "control",
+  "near": "region"
+ },
+ {
+  "q": "loss",
+  "kind": "control",
+  "near": "lows"
+ },
+ {
+  "q": "bend",
+  "kind": "control",
+  "near": "blend"
+ },
+ {
+  "q": "doke",
+  "kind": "control",
+  "near": "dole"
+ },
+ {
+  "q": "thaw",
+  "kind": "control",
+  "near": "thai"
+ },
+ {
+  "q": "dash",
+  "kind": "control",
+  "near": "nash"
+ },
+ {
+  "q": "fall",
+  "kind": "control",
+  "near": "fill"
+ },
+ {
+  "q": "pais",
+  "kind": "control",
+  "near": "paks"
+ },
+ {
+  "q": "bill",
+  "kind": "control",
+  "near": "mill"
+ },
+ {
+  "q": "dining",
+  "kind": "control",
+  "near": "wining"
+ },
+ {
+  "q": "voss",
+  "kind": "control",
+  "near": "ross"
+ },
+ {
+  "q": "twister",
+  "kind": "control",
+  "near": "twiste"
+ },
+ {
+  "q": "cora",
+  "kind": "control",
+  "near": "corn"
+ },
+ {
+  "q": "chek",
+  "kind": "control",
+  "near": "chef"
+ },
+ {
+  "q": "good",
+  "kind": "control",
+  "near": "food"
+ },
+ {
+  "q": "mate",
+  "kind": "control",
+  "near": "meate"
+ },
+ {
+  "q": "reed",
+  "kind": "control",
+  "near": "red"
+ },
+ {
+  "q": "tide",
+  "kind": "control",
+  "near": "time"
+ },
+ {
+  "q": "toll",
+  "kind": "control",
+  "near": "roll"
+ },
+ {
+  "q": "clio",
+  "kind": "control",
+  "near": "clif"
+ },
+ {
+  "q": "chow",
+  "kind": "control",
+  "near": "chop"
+ },
+ {
+  "q": "crema",
+  "kind": "control",
+  "near": "cream"
+ },
+ {
+  "q": "yams",
+  "kind": "control",
+  "near": "hams"
+ },
+ {
+  "q": "silk",
+  "kind": "control",
+  "near": "milk"
+ },
+ {
+  "q": "shan",
+  "kind": "control",
+  "near": "san"
+ },
+ {
+  "q": "gari",
+  "kind": "control",
+  "near": "mari"
+ },
+ {
+  "q": "dare",
+  "kind": "control",
+  "near": "dark"
+ },
+ {
+  "q": "lower",
+  "kind": "control",
+  "near": "lowe"
+ },
+ {
+  "q": "leek",
+  "kind": "control",
+  "near": "lee"
+ },
+ {
+  "q": "peet",
+  "kind": "control",
+  "near": "peel"
+ },
+ {
+  "q": "glow",
+  "kind": "control",
+  "near": "low"
+ },
+ {
+  "q": "abby",
+  "kind": "control",
+  "near": "baby"
+ },
+ {
+  "q": "jonny",
+  "kind": "control",
+  "near": "jenny"
+ },
+ {
+  "q": "topo",
+  "kind": "control",
+  "near": "top"
+ },
+ {
+  "q": "lord",
+  "kind": "control",
+  "near": "load"
+ },
+ {
+  "q": "fare",
+  "kind": "control",
+  "near": "farm"
+ },
+ {
+  "q": "krab",
+  "kind": "control",
+  "near": "crab"
+ },
+ {
+  "q": "torn",
+  "kind": "control",
+  "near": "corn"
+ },
+ {
+  "q": "firm",
+  "kind": "control",
+  "near": "farm"
+ },
+ {
+  "q": "shor",
+  "kind": "control",
+  "near": "shop"
+ },
+ {
+  "q": "liver",
+  "kind": "control",
+  "near": "oliver"
+ },
+ {
+  "q": "near",
+  "kind": "control",
+  "near": "bear"
+ },
+ {
+  "q": "bare",
+  "kind": "control",
+  "near": "bar"
+ },
+ {
+  "q": "push",
+  "kind": "control",
+  "near": "bush"
+ },
+ {
+  "q": "rita",
+  "kind": "control",
+  "near": "rite"
+ },
+ {
+  "q": "flav",
+  "kind": "control",
+  "near": "flax"
+ },
+ {
+  "q": "malt",
+  "kind": "control",
+  "near": "salt"
+ },
+ {
+  "q": "dirt",
+  "kind": "control",
+  "near": "diet"
+ },
+ {
+  "q": "tang",
+  "kind": "control",
+  "near": "tangy"
+ },
+ {
+  "q": "boca",
+  "kind": "control",
+  "near": "coca"
+ },
+ {
+  "q": "clay",
+  "kind": "control",
+  "near": "lay"
+ },
+ {
+  "q": "dazs",
+  "kind": "control",
+  "near": "days"
+ },
+ {
+  "q": "jean",
+  "kind": "control",
+  "near": "bean"
+ },
+ {
+  "q": "luke",
+  "kind": "control",
+  "near": "lake"
+ },
+ {
+  "q": "jans",
+  "kind": "control",
+  "near": "vans"
+ },
+ {
+  "q": "park",
+  "kind": "control",
+  "near": "dark"
+ },
+ {
+  "q": "lior",
+  "kind": "control",
+  "near": "lion"
+ },
+ {
+  "q": "rods",
+  "kind": "control",
+  "near": "reds"
+ },
+ {
+  "q": "perch",
+  "kind": "control",
+  "near": "peach"
+ },
+ {
+  "q": "curly",
+  "kind": "control",
+  "near": "curry"
+ },
+ {
+  "q": "desert",
+  "kind": "control",
+  "near": "dessert"
+ },
+ {
+  "q": "peachy",
+  "kind": "control",
+  "near": "peach"
+ },
+ {
+  "q": "flavour",
+  "kind": "control",
+  "near": "flavor"
+ },
+ {
+  "q": "pate",
+  "kind": "control",
+  "near": "paste"
+ },
+ {
+  "q": "flow",
+  "kind": "control",
+  "near": "low"
+ },
+ {
+  "q": "snak",
+  "kind": "control",
+  "near": "snack"
+ },
+ {
+  "q": "duet",
+  "kind": "control",
+  "near": "diet"
+ },
+ {
+  "q": "italia",
+  "kind": "control",
+  "near": "italian"
+ },
+ {
+  "q": "taro",
+  "kind": "control",
+  "near": "taco"
+ },
+ {
+  "q": "feet",
+  "kind": "control",
+  "near": "beet"
+ },
+ {
+  "q": "usda",
+  "kind": "control",
+  "near": "usa"
+ },
+ {
+  "q": "stur",
+  "kind": "control",
+  "near": "sour"
+ },
+ {
+  "q": "inch",
+  "kind": "control",
+  "near": "inc"
+ },
+ {
+  "q": "steaz",
+  "kind": "control",
+  "near": "steak"
+ },
+ {
+  "q": "born",
+  "kind": "control",
+  "near": "corn"
+ },
+ {
+  "q": "brea",
+  "kind": "control",
+  "near": "bread"
+ },
+ {
+  "q": "pole",
+  "kind": "control",
+  "near": "dole"
+ },
+ {
+  "q": "korn",
+  "kind": "control",
+  "near": "corn"
+ },
+ {
+  "q": "choy",
+  "kind": "control",
+  "near": "chop"
+ },
+ {
+  "q": "goods",
+  "kind": "control",
+  "near": "foods"
+ },
+ {
+  "q": "blake",
+  "kind": "control",
+  "near": "bake"
+ },
+ {
+  "q": "foss",
+  "kind": "control",
+  "near": "ross"
+ },
+ {
+  "q": "saucy",
+  "kind": "control",
+  "near": "sauce"
+ },
+ {
+  "q": "cloves",
+  "kind": "control",
+  "near": "clover"
+ },
+ {
+  "q": "warm",
+  "kind": "control",
+  "near": "farm"
+ },
+ {
+  "q": "wars",
+  "kind": "control",
+  "near": "bars"
+ },
+ {
+  "q": "milky",
+  "kind": "control",
+  "near": "milk"
+ },
+ {
+  "q": "ease",
+  "kind": "control",
+  "near": "base"
+ },
+ {
+  "q": "pace",
+  "kind": "control",
+  "near": "pack"
+ },
+ {
+  "q": "cave",
+  "kind": "control",
+  "near": "cake"
+ },
+ {
+  "q": "host",
+  "kind": "control",
+  "near": "hot"
+ },
+ {
+  "q": "flamas",
+  "kind": "control",
+  "near": "flames"
+ },
+ {
+  "q": "care",
+  "kind": "control",
+  "near": "cake"
+ },
+ {
+  "q": "nola",
+  "kind": "control",
+  "near": "cola"
+ },
+ {
+  "q": "come",
+  "kind": "control",
+  "near": "home"
+ },
+ {
+  "q": "sheets",
+  "kind": "control",
+  "near": "sweets"
+ },
+ {
+  "q": "boil",
+  "kind": "control",
+  "near": "oil"
+ },
+ {
+  "q": "tyme",
+  "kind": "control",
+  "near": "time"
+ },
+ {
+  "q": "kill",
+  "kind": "control",
+  "near": "mill"
+ },
+ {
+  "q": "shur",
+  "kind": "control",
+  "near": "sour"
+ },
+ {
+  "q": "beam",
+  "kind": "control",
+  "near": "bean"
+ },
+ {
+  "q": "bass",
+  "kind": "control",
+  "near": "bars"
+ },
+ {
+  "q": "slime",
+  "kind": "control",
+  "near": "slice"
+ },
+ {
+  "q": "atar",
+  "kind": "control",
+  "near": "star"
+ },
+ {
+  "q": "mold",
+  "kind": "control",
+  "near": "mild"
+ },
+ {
+  "q": "brad",
+  "kind": "control",
+  "near": "brand"
+ },
+ {
+  "q": "child",
+  "kind": "control",
+  "near": "chili"
+ },
+ {
+  "q": "jenn",
+  "kind": "control",
+  "near": "penn"
+ },
+ {
+  "q": "bacn",
+  "kind": "control",
+  "near": "bacon"
+ },
+ {
+  "q": "drew",
+  "kind": "control",
+  "near": "brew"
+ },
+ {
+  "q": "hail",
+  "kind": "control",
+  "near": "hain"
+ },
+ {
+  "q": "beach",
+  "kind": "control",
+  "near": "peach"
+ },
+ {
+  "q": "bons",
+  "kind": "control",
+  "near": "sons"
+ },
+ {
+  "q": "airy",
+  "kind": "control",
+  "near": "dairy"
+ },
+ {
+  "q": "lady",
+  "kind": "control",
+  "near": "lay"
+ },
+ {
+  "q": "melts",
+  "kind": "control",
+  "near": "meats"
+ },
+ {
+  "q": "palo",
+  "kind": "control",
+  "near": "alo"
+ },
+ {
+  "q": "boss",
+  "kind": "control",
+  "near": "ross"
+ },
+ {
+  "q": "lift",
+  "kind": "control",
+  "near": "life"
+ },
+ {
+  "q": "chop",
+  "kind": "control",
+  "near": "chip"
+ },
+ {
+  "q": "bark",
+  "kind": "control",
+  "near": "bar"
+ },
+ {
+  "q": "pine",
+  "kind": "control",
+  "near": "pie"
+ },
+ {
+  "q": "zips",
+  "kind": "control",
+  "near": "dips"
+ },
+ {
+  "q": "lips",
+  "kind": "control",
+  "near": "dips"
+ },
+ {
+  "q": "kist",
+  "kind": "control",
+  "near": "kit"
+ },
+ {
+  "q": "play",
+  "kind": "control",
+  "near": "lay"
+ },
+ {
+  "q": "lake",
+  "kind": "control",
+  "near": "bake"
+ },
+ {
+  "q": "joan",
+  "kind": "control",
+  "near": "john"
+ },
+ {
+  "q": "rolo",
+  "kind": "control",
+  "near": "roll"
+ },
+ {
+  "q": "dory",
+  "kind": "control",
+  "near": "dry"
+ },
+ {
+  "q": "rick",
+  "kind": "control",
+  "near": "rice"
+ },
+ {
+  "q": "vero",
+  "kind": "control",
+  "near": "zero"
+ },
+ {
+  "q": "cult",
+  "kind": "control",
+  "near": "cut"
+ },
+ {
+  "q": "hour",
+  "kind": "control",
+  "near": "sour"
+ },
+ {
+  "q": "flag",
+  "kind": "control",
+  "near": "flax"
+ },
+ {
+  "q": "shore",
+  "kind": "control",
+  "near": "store"
+ },
+ {
+  "q": "case",
+  "kind": "control",
+  "near": "cake"
+ },
+ {
+  "q": "sweety",
+  "kind": "control",
+  "near": "sweet"
+ },
+ {
+  "q": "frey",
+  "kind": "control",
+  "near": "free"
+ },
+ {
+  "q": "dots",
+  "kind": "control",
+  "near": "hots"
+ },
+ {
+  "q": "nest",
+  "kind": "control",
+  "near": "best"
+ },
+ {
+  "q": "bear",
+  "kind": "control",
+  "near": "bar"
+ },
+ {
+  "q": "caps",
+  "kind": "control",
+  "near": "cups"
+ },
+ {
+  "q": "china",
+  "kind": "control",
+  "near": "chia"
+ },
+ {
+  "q": "pada",
+  "kind": "control",
+  "near": "papa"
+ },
+ {
+  "q": "gods",
+  "kind": "control",
+  "near": "goods"
+ },
+ {
+  "q": "flor",
+  "kind": "control",
+  "near": "flour"
+ },
+ {
+  "q": "lard",
+  "kind": "control",
+  "near": "hard"
+ },
+ {
+  "q": "pail",
+  "kind": "control",
+  "near": "tail"
+ },
+ {
+  "q": "creamer",
+  "kind": "control",
+  "near": "creame"
+ },
+ {
+  "q": "lives",
+  "kind": "control",
+  "near": "olives"
+ },
+ {
+  "q": "nate",
+  "kind": "control",
+  "near": "date"
+ },
+ {
+  "q": "maiz",
+  "kind": "control",
+  "near": "maid"
+ },
+ {
+  "q": "kite",
+  "kind": "control",
+  "near": "bite"
+ },
+ {
+  "q": "rain",
+  "kind": "control",
+  "near": "grain"
+ },
+ {
+  "q": "twirls",
+  "kind": "control",
+  "near": "swirls"
+ },
+ {
+  "q": "pour",
+  "kind": "control",
+  "near": "sour"
+ },
+ {
+  "q": "bees",
+  "kind": "control",
+  "near": "beef"
+ },
+ {
+  "q": "hood",
+  "kind": "control",
+  "near": "food"
+ },
+ {
+  "q": "fresa",
+  "kind": "control",
+  "near": "fresh"
+ },
+ {
+  "q": "hope",
+  "kind": "control",
+  "near": "home"
+ },
+ {
+  "q": "jays",
+  "kind": "control",
+  "near": "lays"
+ }
+]
