@@ -2,7 +2,9 @@
 // use, and correctly spelled controls, both sampled with a fixed seed. Rerunning it on the same
 // load writes the same file. Words in any eval file made before it are left out, so each set
 // shares no word with the earlier ones. With --truncate it writes words cut short instead, as a
-// user types them, each kept to at least four letters and at least one letter short:
+// user types them, each kept to at least four letters and at least one letter short. With --near
+// it writes correctly spelled words that sit one edit from a word of another stem found in at least
+// ten times as many products, the controls a respelling is most likely to get wrong:
 //   node scripts/make-spelling-set.ts                                               # development
 //   node scripts/make-spelling-set.ts --seed 20261008 --out synthetic-test.json     # test, version 2
 //   node scripts/make-spelling-set.ts --seed 20261009 --out synthetic-test-2.json   # test, version 2.1
@@ -11,6 +13,7 @@
 //   node scripts/make-spelling-set.ts --seed 20261012 --out truncation-2.json --truncate --min-length 7
 //   node scripts/make-spelling-set.ts --seed 20261013 --out synthetic-test-4.json   # test, version 2.3
 //   node scripts/make-spelling-set.ts --seed 20261014 --out truncation-3.json --truncate --min-length 7
+//   node scripts/make-spelling-set.ts --seed 20261015 --out near-words.json --near --min-length 4   # development
 import { readFile, writeFile } from 'node:fs/promises'
 import { connect } from '../src/db.ts'
 import { tokens } from '../src/tokens.ts'
@@ -22,6 +25,7 @@ const arg = (name: string, fallback: string) => {
 const SEED = Number(arg('--seed', '20261007'))
 const OUT = arg('--out', 'synthetic.json')
 const TRUNCATE = process.argv.includes('--truncate')
+const NEAR = process.argv.includes('--near')
 const TYPOS = 300
 const CONTROLS = 200
 // A word must appear in this many product names, so the sample holds words, not stray tokens.
@@ -81,6 +85,7 @@ const ORDER = [
   'truncation-2.json',
   'synthetic-test-4.json',
   'truncation-3.json',
+  'near-words.json',
 ]
 const EXCLUDE = ORDER.includes(OUT) ? ORDER.slice(0, ORDER.indexOf(OUT)) : ORDER
 const used = new Set<string>()
@@ -113,6 +118,39 @@ try {
   for (let i = words.length - 1; i > 0; i--) {
     const j = pick(i + 1)
     ;[words[i], words[j]] = [words[j], words[i]]
+  }
+
+  if (NEAR) {
+    const index = new Map(
+      (await pool.query<{ word: string; stem: string; match_count: number }>('SELECT word, stem, match_count FROM search.words')).rows.map(r => [r.word, r]),
+    )
+    const edits = (w: string) => {
+      const out = new Set<string>()
+      for (let i = 0; i <= w.length; i++) {
+        if (i < w.length) out.add(w.slice(0, i) + w.slice(i + 1))
+        if (i + 1 < w.length) out.add(w.slice(0, i) + w[i + 1] + w[i] + w.slice(i + 2))
+        for (const c of LETTERS) {
+          out.add(w.slice(0, i) + c + w.slice(i))
+          if (i < w.length) out.add(w.slice(0, i) + c + w.slice(i + 1))
+        }
+      }
+      out.delete(w)
+      return [...out]
+    }
+    const cases: { q: string; kind: 'control'; near: string }[] = []
+    for (const word of words) {
+      if (cases.length === CONTROLS) break
+      const own = index.get(word)
+      if (!own) continue
+      const near = edits(word)
+        .map(e => index.get(e))
+        .filter(e => e !== undefined && e.stem !== own.stem && e.match_count >= 10 * own.match_count)
+        .sort((a, b) => b!.match_count - a!.match_count || a!.word.localeCompare(b!.word))[0]
+      if (near) cases.push({ q: word, kind: 'control', near: near.word })
+    }
+    await writeFile(new URL(`../eval/${OUT}`, import.meta.url), `${JSON.stringify(cases, null, 1)}\n`)
+    console.log(`${words.length} eligible words; wrote ${cases.length} near-word controls`)
+    process.exit(0)
   }
 
   if (TRUNCATE) {

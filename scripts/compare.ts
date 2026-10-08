@@ -11,7 +11,8 @@
 // The queries are eval/queries.json, eval/spelling.json, eval/synthetic.json, eval/absent.json and,
 // when present, the later sets eval/synthetic-test.json, eval/wikipedia.json,
 // eval/synthetic-test-2.json, eval/truncation.json, eval/synthetic-test-3.json,
-// eval/truncation-2.json, eval/synthetic-test-4.json and eval/truncation-3.json.
+// eval/truncation-2.json, eval/synthetic-test-4.json, eval/truncation-3.json, eval/near-words.json
+// and eval/near-words-test.json.
 // The first run builds the table baseline.documents from search.source, which takes about half a
 // minute on the full load.
 //   JEV_MODEL=jev-1.13.0 node --env-file=.env scripts/compare.ts
@@ -37,6 +38,8 @@ type QuerySet =
   | 'truncation-2'
   | 'synthetic-test-4'
   | 'truncation-3'
+  | 'near-words'
+  | 'near-words-test'
   | 'absent'
 
 interface Case {
@@ -70,6 +73,8 @@ for (const [file, set] of [
   ['truncation-2.json', 'truncation-2'],
   ['synthetic-test-4.json', 'synthetic-test-4'],
   ['truncation-3.json', 'truncation-3'],
+  ['near-words.json', 'near-words'],
+  ['near-words-test.json', 'near-words-test'],
 ] as const) {
   if (!(await exists(file))) continue
   const data = await read(file)
@@ -194,7 +199,7 @@ function norvig(q: string): string | null {
 function frequencyRule(q: string, similar: SimilarWord[]): string | null {
   const words = tokens(q)
   const best = similar
-    .filter(r => words[r.pos - 1] === r.word && r.alternative_matches >= 10 * Math.max(r.word_matches, 1))
+    .filter(r => !r.completes && words[r.pos - 1] === r.word && r.alternative_matches >= 10 * Math.max(r.word_matches, 1))
     .sort((a, b) => b.alternative_matches - a.alternative_matches)[0]
   return best ? words.with(best.pos - 1, best.alternative).join(' ') : null
 }

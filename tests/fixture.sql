@@ -29,7 +29,11 @@ INSERT INTO fixture_items VALUES
   (21, 'Witch Hazel Herbal Tea',    'Herb Co',        '078000000055',   'Drinks',   3),
   (22, 'Monk Fruit Drops',          'Zenmart',        '078000000062',   'Pantry',   2),
   (23, 'Monkey Bread',              'Zenmart',        '078000000079',   'Bakery',   8),
-  (24, 'Monkey Munch',              'Zenmart',        '078000000086',   'Snacks',   6);
+  (24, 'Monkey Munch',              'Zenmart',        '078000000086',   'Snacks',   6),
+  (25, 'Healhty Snack Mix',         'Zenmart',        '078000000093',   'Snacks',   1),
+  (26, 'Health Tonic',              'Zenmart',        '078000000109',   'Drinks',   4),
+  (27, 'Health Flakes',             'Zenmart',        '078000000116',   'Cereal',   2),
+  (28, 'Health Crisps',             'Zenmart',        '078000000123',   'Snacks',   3);
 
 CREATE SCHEMA search;
 

@@ -222,12 +222,15 @@ $$;
 -- so "hersheys" counts the Hershey products and is not offered "hershey". An alternative is offered
 -- only if its stem differs from the typed word's and the search finds it in more products than
 -- both the typed word and the most common word, of another stem, that starts with the typed word.
--- A word the search does not find but that starts some product word gets none: the user is most
--- likely still typing it, and the prefix step answers ("strawb" finds strawberries, and is not
--- offered "straw"). Longer completions are left to the prefix step. Words under four letters,
--- words with digits and stop words get none.
-CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8)
-RETURNS TABLE (pos int, word text, word_matches int, alternative text, alternative_matches int)
+-- A word still being typed (see search.query) gets none, so the prefix step answers ("strawb" finds
+-- strawberries, and is not offered "straw"), unless an alternative is found in finish_ratio times
+-- as many products as the most common word that starts with it. Then the alternatives come with
+-- that word, marked completes, so Jev can weigh "health" against HEALHTY for "healht". word_example
+-- names the most popular product whose name uses the typed word as typed. Words under four
+-- letters, words with digits and stop words get none.
+DROP FUNCTION IF EXISTS search.similar_words(text, int);
+CREATE OR REPLACE FUNCTION search.similar_words(q text, per_word int DEFAULT 8, finish_ratio int DEFAULT 100)
+RETURNS TABLE (pos int, word text, word_matches int, word_example text, alternative text, alternative_matches int, completes boolean)
 LANGUAGE sql STABLE
 SET search_path = search, public, extensions
 SET pg_trgm.similarity_threshold = 0.3
@@ -239,22 +242,28 @@ AS $$
   ), counted AS (
     SELECT ty.*, coalesce((SELECT max(s.match_count) FROM search.words s WHERE s.stem = ty.stem), 0) AS matches,
            ARRAY(SELECT search.edits1(ty.word)) AS edits,
-           cs.completion_stems, cs.completion_counts
+           cs.completion_stems, cs.completion_counts, cs.completion_words,
+           coalesce(cs.completion_stems[1] <> ty.stem, false)
+             AND NOT EXISTS (SELECT 1 FROM search.words s WHERE s.word = ty.word) AS unfinished
     FROM typed ty
-    -- The two most common stems among words that start with the typed word, with their counts. The
-    -- byte range is the prefix match that the index on word text_pattern_ops can serve.
+    -- The two most common stems among words that start with the typed word, with their counts and
+    -- most used word. The byte range is the prefix match that the index on word text_pattern_ops
+    -- can serve.
     CROSS JOIN LATERAL (
       SELECT array_agg(x.stem ORDER BY x.n DESC, x.stem) AS completion_stems,
-             array_agg(x.n ORDER BY x.n DESC, x.stem) AS completion_counts
+             array_agg(x.n ORDER BY x.n DESC, x.stem) AS completion_counts,
+             array_agg(x.w ORDER BY x.n DESC, x.stem) AS completion_words
       FROM (
-        SELECT s.stem, max(s.match_count) AS n FROM search.words s
+        SELECT s.stem, max(s.match_count) AS n, (array_agg(s.word ORDER BY s.doc_count DESC, s.word))[1] AS w
+        FROM search.words s
         WHERE s.word ~>=~ ty.word AND s.word ~<~ (ty.word || chr(1114111)) AND s.word <> ty.word
         GROUP BY s.stem ORDER BY n DESC, s.stem LIMIT 2
       ) x
     ) cs
   ), offered AS (
     SELECT c.pos, c.word, c.matches, x.alternative, x.alternative_matches,
-           row_number() OVER (PARTITION BY c.pos ORDER BY x.kind, x.sim DESC, x.alternative_matches DESC, x.alternative) AS n
+           row_number() OVER (PARTITION BY c.pos ORDER BY x.kind, x.sim DESC, x.alternative_matches DESC, x.alternative) AS n,
+           max(x.alternative_matches) OVER (PARTITION BY c.pos) AS best
     FROM counted c
     CROSS JOIN LATERAL (
       SELECT DISTINCT ON (y.alternative) y.*
@@ -281,13 +290,31 @@ AS $$
       ) y
       ORDER BY y.alternative, y.kind
     ) x
-    -- A word still being typed is left to the prefix step (see search.query).
-    WHERE NOT (coalesce(c.completion_stems[1] <> c.stem, false) AND NOT EXISTS (SELECT 1 FROM search.words s WHERE s.word = c.word))
+  ), kept AS (
+    SELECT o.pos, o.word, o.matches, o.alternative, o.alternative_matches, false AS completes, o.n
+    FROM offered o JOIN counted c ON c.pos = o.pos
+    WHERE o.n <= least(greatest(coalesce(per_word, 8), 1), 50)
+      AND (NOT c.unfinished OR (o.best >= greatest(coalesce(finish_ratio, 100), 1)::bigint * c.completion_counts[1]
+                                AND o.alternative <> c.completion_words[1]))
+    UNION ALL
+    SELECT c.pos, c.word, c.matches, c.completion_words[1], c.completion_counts[1], true, 0
+    FROM counted c
+    WHERE c.unfinished
+      AND EXISTS (SELECT 1 FROM offered o WHERE o.pos = c.pos
+                  AND o.best >= greatest(coalesce(finish_ratio, 100), 1)::bigint * c.completion_counts[1])
+  ), examples AS (
+    SELECT k.pos, (
+      SELECT d.name FROM search.documents d
+      WHERE d.prefix_vector @@ to_tsquery('simple', quote_literal(k.word))
+      ORDER BY d.rank DESC NULLS LAST, d.id
+      LIMIT 1
+    ) AS name
+    FROM (SELECT DISTINCT pos, word FROM kept) k
   )
-  SELECT o.pos, o.word, o.matches, o.alternative, o.alternative_matches
-  FROM offered o
-  WHERE o.n <= least(greatest(coalesce(per_word, 8), 1), 50)
-  ORDER BY o.pos, o.n
+  SELECT k.pos, k.word, k.matches, e.name, k.alternative, k.alternative_matches, k.completes
+  FROM kept k
+  JOIN examples e ON e.pos = k.pos
+  ORDER BY k.pos, k.n
 $$;
 
 CREATE OR REPLACE FUNCTION search.refresh()

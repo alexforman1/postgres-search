@@ -30,6 +30,8 @@ interface Rec {
     | 'truncation-2'
     | 'synthetic-test-4'
     | 'truncation-3'
+    | 'near-words'
+    | 'near-words-test'
     | 'absent'
   kind: string
   edit?: string
@@ -256,6 +258,8 @@ const ALL_GROUPS: Group[] = [
   { name: 'truncation-3', take: r => r.set === 'truncation-3' },
   { name: 'truncation-3, one letter cut', take: r => r.set === 'truncation-3' && (r.expect ?? '').length - r.q.length === 1 },
   { name: 'truncation-3, two or more letters cut', take: r => r.set === 'truncation-3' && (r.expect ?? '').length - r.q.length >= 2 },
+  { name: 'near-words', take: r => r.set === 'near-words' },
+  { name: 'near-words-test', take: r => r.set === 'near-words-test' },
 ]
 const GROUPS = ALL_GROUPS.filter(g => runs[0].records.some(g.take))
 const hasTest = runs[0].records.some(isTest)
@@ -509,7 +513,7 @@ const CORRECTOR_LABEL: Record<Corrector, string> = {
 }
 const CORRECTORS: Corrector[] = (['jev', 'norvig', 'frequency', 'wide'] as Corrector[]).filter(c => c !== 'wide' || hasWide)
 const suggestionOf = (r: Rec, c: Corrector) => (c === 'cascade' ? (r.suggestions.norvig ?? r.suggestions.jev) : (r.suggestions[c] ?? null))
-const spellingSets = (['held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'synthetic-test-3', 'synthetic-test-4'] as const).filter(set => runs[0].records.some(r => r.set === set))
+const spellingSets = (['held-out', 'synthetic', 'synthetic-test', 'wikipedia', 'synthetic-test-2', 'synthetic-test-3', 'synthetic-test-4', 'near-words', 'near-words-test'] as const).filter(set => runs[0].records.some(r => r.set === set))
 // Analyses of the spelling question use the test sets when present.
 const spellingScope = (r: Rec) => (hasTest ? isTest(r) : r.set === 'held-out' || r.set === 'synthetic')
 const scopeName = hasTest
